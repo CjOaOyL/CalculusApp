@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculus Teaching App</title>
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <!-- Function Plot for graphing (built on D3) -->
+    <script src="https://cdn.jsdelivr.net/npm/function-plot@1.25.0/dist/function-plot.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar">
+        <div class="nav-header">
+            <h2>&#128218; Calculus App</h2>
+        </div>
+        <ul>
+            <li><a href="#" class="nav-link active" data-section="dashboard">&#127968; Dashboard</a></li>
+            <li class="nav-category">Limits &amp; Continuity</li>
+            <li><a href="#" class="nav-link" data-section="limits-intro">Introduction to Limits</a></li>
+            <li><a href="#" class="nav-link" data-section="limits-rules">Limit Laws &amp; Techniques</a></li>
+            <li><a href="#" class="nav-link" data-section="limits-continuity">Continuity</a></li>
+            <li><a href="#" class="nav-link" data-section="limits-quiz">Quiz: Limits</a></li>
+            <li class="nav-category">Derivatives</li>
+            <li><a href="#" class="nav-link" data-section="deriv-intro">What is a Derivative?</a></li>
+            <li><a href="#" class="nav-link" data-section="deriv-rules">Derivative Rules</a></li>
+            <li><a href="#" class="nav-link" data-section="deriv-apps">Applications</a></li>
+            <li><a href="#" class="nav-link" data-section="deriv-quiz">Quiz: Derivatives</a></li>
+            <li class="nav-category">Integrals</li>
+            <li><a href="#" class="nav-link" data-section="integ-intro">What is an Integral?</a></li>
+            <li><a href="#" class="nav-link" data-section="integ-techniques">Techniques</a></li>
+            <li><a href="#" class="nav-link" data-section="integ-apps">Applications</a></li>
+            <li><a href="#" class="nav-link" data-section="integ-quiz">Quiz: Integrals</a></li>
+            <li class="nav-category">Sequences &amp; Series</li>
+            <li><a href="#" class="nav-link" data-section="series-intro">Sequences &amp; Series</a></li>
+            <li><a href="#" class="nav-link" data-section="series-tests">Convergence Tests</a></li>
+            <li><a href="#" class="nav-link" data-section="series-taylor">Taylor &amp; Maclaurin</a></li>
+            <li><a href="#" class="nav-link" data-section="series-quiz">Quiz: Series</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div id="main-content">
+        <header>
+            <button id="menu-toggle">&#9776;</button>
+            <h1>Calculus Teaching App</h1>
+            <div id="progress-bar-container">
+                <div id="progress-bar"></div>
+                <span id="progress-text">0% Complete</span>
+            </div>
+        </header>
+
+        <div id="content-area">
+            <!-- Content dynamically injected here -->
+        </div>
+
+        <footer>
+            <p>&copy; 2026 Calculus Teaching App</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
