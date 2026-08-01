@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chasse: Les Baux-de-Provence</title>
+<link rel="icon" href="data:,">
+<title>Chasse: Avignon</title>
 <!-- MISSION PACKS · hunt engine v1 · pairs with dossier les-baux.html
      Photos live in memory only (and in the phone's camera roll); the save code
      stores checkmarks/answers, and the exported report embeds the photos. -->
@@ -249,7 +250,7 @@ input[type=file]{display:none}
       <span class="hd-user mono" id="hdUser"></span>
     </div>
     <div class="hd-top">
-      <span class="hd-title hdr-face">Chasse: Les Baux-de-Provence</span>
+      <span class="hd-title hdr-face">Chasse: Avignon</span>
       <span class="net mono" id="netInd"><span class="dot"></span>HORS LIGNE</span>
     </div>
     <div class="gauge">
@@ -262,10 +263,10 @@ input[type=file]{display:none}
 
 <div class="wrap">
   <div class="cover">
-    <div class="eyebrow mono">RÉGION: PROVENCE · CHASSE 02 · PAIRS WITH DOSSIER 02</div>
-    <h1>La Chasse du Rocher</h1>
-    <div class="sub">Fourteen targets on the rock. The dossier told you what happened here — now find the evidence with your own camera.</div>
-    <div class="classif mono">TERRAIN: CHÂTEAU · VILLAGE · CARRIÈRES</div>
+    <div class="eyebrow mono">RÉGION: PROVENCE · CHASSE 04 · PAIRS WITH DOSSIER: AVIGNON</div>
+    <h1>La Chasse des Papes</h1>
+    <div class="sub">The Popes' Palace, a bridge to nowhere, and the world's biggest stage. Fourteen targets in Avignon — find the evidence with your own camera.</div>
+    <div class="classif mono">TERRAIN: PALAIS · CITÉ · PONT</div>
   </div>
 
   <div class="vocab-box">
@@ -290,52 +291,52 @@ input[type=file]{display:none}
 
 <script id="pack">
 const HUNT = {
-meta:{id:"hunt-les-baux",region:"Provence",pairs:"les-baux",
-  ranks:[[0,"PAGE"],[60,"ÉCLAIREUR/EUSE"],[110,"ŒIL DE FAUCON"],[150,"MAÎTRE/SSE DES ARCHIVES"]]},
+meta:{id:"hunt-avignon",region:"Provence",pairs:"avignon",
+  ranks:[[0,"NOVICE"],[55,"PÈLERIN·E"],[100,"ŒIL DU LÉGAT"],[135,"GARDIEN·NE DU PALAIS"]]},
 tiers:{1:["REPÉRAGE",5],2:["ŒIL DE CHEVALIER",10],3:["SAVOIR DU DOSSIER",15]},
 items:[
-{id:"star",tier:3,zone:"château",title:"The sixteen-rayed star",
- hint:"On carved arms, a shield, signage, or the chapel — the emblem of the Baux family.",
- reveal:"This is the star of Bethlehem — the family's claim, carved in stone, that they descended from Balthazar the Magus. Sixteen rays, silver on red (« gueules à l'étoile à seize rais d'argent »). An unfalsifiable origin story doing seven centuries of PR work. Pièce N°1."},
-{id:"troglo",tier:2,zone:"château",title:"A room carved from the living rock",
- hint:"Inside the keep and along the cliff edge — walls with no joints, just cut stone.",
- reveal:"The castle wasn't only built ON the rock, it was carved OUT of it — rooms, stairs, dovecotes and cisterns hewn straight into the limestone. That's why Richelieu's gunpowder couldn't fully erase it: you can demolish walls, but not a mountain. Pièce N°1."},
-{id:"demolition",tier:3,zone:"château",title:"Evidence of the 1632 demolition",
- hint:"Look for a tower face sheared clean off, exposing rooms like a doll's house.",
- reveal:"What you photographed isn't decay — it's state policy. Richelieu's miners split the keep with gunpowder in 1632 so no one could ever again defy the king from here, and the residents were fined 100,000 livres to pay for it. A ruin as a receipt. Pièce N°3."},
-{id:"siege",tier:1,zone:"château",title:"A siege engine",
- hint:"The trebuchet or couillard on the plateau — demonstrations most summer afternoons.",
- reveal:"Reconstructions of the artillery of the Baux's world — the trebuchet here is among the largest in Europe. Counterweight physics: tons of ballast falling a few metres launches a stone hundreds. The castle's cliffs made most of these useless against it, which was the point of building here. Pièce N°1."},
-{id:"cistern",tier:2,zone:"château",title:"A cistern cut into the stone",
- hint:"Large rectangular basins hewn in the rock, sometimes with steps or channels.",
- reveal:"There is no spring on the summit. Every drop of water for a princely court had to be caught from rain and stored in rock-cut cisterns — the fortress's true weak point in any long siege. Water, not walls, decided how long 'vassals never' could hold. Pièce N°1."},
-{id:"view",tier:1,zone:"château",title:"The surveillance view",
- hint:"From the Sarrasin tower or plateau edge: frame a shot toward Arles or the Camargue.",
- reveal:"This sightline IS the castle's reason to exist. From here the lords watched the Rhône plain, the roads to Arles, and anyone coming to collect taxes or loyalty. A fortress is a camera that shoots back. Pièce N°1."},
-{id:"toolmarks",tier:2,zone:"château",title:"Quarryman's tool marks",
- hint:"Regular parallel grooves or pick lines on cut stone faces — castle or Carrières.",
- reveal:"Each stroke you see is one swing of a pick or saw, most from centuries before machines. Compare with the Roman marks at the Pont du Gard — same soft limestone, same techniques, 1,500 years apart. The stone remembers every worker. Pièce N°5."},
-{id:"manville",tier:3,zone:"village",title:"« Post tenebras lux » window",
- hint:"A carved Renaissance window on the Hôtel de Manville (now the mairie), Grande Rue.",
- reveal:"« After darkness, light » — the motto of Calvin's Geneva, carved openly in 1571. Proof in stone that Les Baux was a Protestant stronghold, which is exactly why Richelieu's France saw it as a threat worth demolishing sixty years later. You found the motive for Pièce N°3."},
-{id:"occitan",tier:2,zone:"village",title:"Occitan words in the wild",
- hint:"Street signs, house names — carriero, oustau, lou/la with a Provençal look.",
- reveal:"Occitan (Provençal) was the language of the troubadours' songs at this very court — the language much of Europe's idea of romantic love was invented in. French arrived as the state's language; these signs are the older layer showing through. Pièce N°2."},
-{id:"shopcount",tier:3,zone:"village",obs:true,title:"The Grande Rue census",
- hint:"Walk the main street once. Count: how many businesses vs how many look like lived-in homes? Enter e.g. « 34 shops / 3 homes ».",
- reveal:"Whatever you counted, the ratio is the whole modern dilemma of Pièce N°6: ~300 residents, ~1.5 million visitors. A village that is 90%+ commerce is an economy without a community — or is it a community saved by its economy? Your numbers are primary-source evidence; keep them for the tourism brief."},
-{id:"aop",tier:1,zone:"village",title:"An AOP Vallée des Baux label",
- hint:"Any shop selling local olive oil — find the AOP seal on the bottle or tin.",
- reveal:"Appellation d'Origine Protégée: the law protects this valley's oil like a great wine — variety, method and origin all certified. Olives were here before the lords and will outlast the crowds; the AOP is the oldest economy on this rock still running. Pièce N°6."},
-{id:"redearth",tier:2,zone:"route",title:"Bauxite-red earth",
- hint:"Rust-red soil or rock faces in road cuts around the Alpilles — no detour needed, shoot from where you pass.",
- reveal:"That red is iron oxide in aluminium-rich ground — the ore family Berthier analysed here in 1821 and the world named bauxite, after this village. You are photographing the reason the name 'Les Baux' is in every chemistry textbook on Earth. Pièce N°4."},
-{id:"alu",tier:1,zone:"anywhere",title:"Aluminium in your hand",
- hint:"A drink can, a phone, a café chair — anything aluminium. Caption it with its bauxite connection.",
- reveal:"~14 grams of metal, ~0.2 kWh of electricity, and a name born 3 km from where you're standing. Every can is Les Baux's strangest monument: the fortress fell, the word conquered. Pièce N°4 — and your nuclear dossier, since smelting is why aluminium chases cheap power."},
-{id:"interdit",tier:1,zone:"anywhere",title:"« Interdit »",
- hint:"Any sign containing the word interdit. Bonus: caption what exactly is forbidden.",
- reveal:"Interdit = forbidden. Ironic hunt target of the day: a village whose motto was 'vassals never', now governed — like everywhere — by small polite prohibitions. Language points: sens interdit (no entry), baignade interdite (no swimming), défense d'entrer (keep out)."}
+{id:"facade",tier:1,zone:"palais",title:"The palace façade",
+ hint:"Stand back on the Place du Palais and frame the whole front of the Palais des Papes.",
+ reveal:"The largest Gothic palace in the world — about 15,000 m², four cathedrals of floor space, built in under 20 years. Part cathedral, part castle, part head office of Christendom. Pièce N°2."},
+{id:"horloge",tier:1,zone:"cité",title:"Place de l'Horloge",
+ hint:"The main café square with the carousel and the town hall — grab a wide shot.",
+ reveal:"The living room of the old papal city, still its social heart. Under the square lie remains of the Roman forum — Avignon, like Arles, keeps living on top of itself. Pièce N°1."},
+{id:"rhone",tier:1,zone:"rhône",title:"The Rhône",
+ hint:"Frame the river from the bank or the bridge.",
+ reveal:"The same great river that runs past Arles — it made Avignon a crossroads and then spent centuries tearing its bridge down. Water built this city and water humbled it. Pièce N°6."},
+{id:"gothic",tier:1,zone:"anywhere",title:"A pointed Gothic arch",
+ hint:"A pointed doorway, window or vault — the papal city is full of them.",
+ reveal:"The pointed arch is the signature of Gothic building: it carries weight upward so walls can be thinner and windows taller. The whole papal city was raised in this then-modern style, fast and on purpose. Pièce N°2."},
+{id:"machico",tier:2,zone:"palais",title:"Battlements on a holy palace",
+ hint:"Look up at the top of the palace walls: crenellations and the stone boxes (machicolations) that jut out over the entrance.",
+ reveal:"Machicolations let defenders drop things on attackers below. Why does God's palace need them? Because a pope away from Rome had real enemies — and power that isn't certain has to look unbreakable. Pièce N°2."},
+{id:"rampart",tier:2,zone:"cité",title:"The city ramparts or a gate",
+ hint:"A stretch of the medieval wall that still rings the old town, or one of its stone gates (a « porte »).",
+ reveal:"The popes walled their whole city — kilometres of ramparts still standing, one of the best-preserved medieval enclosures in France. A town that felt it needed protecting had good reasons. Pièce N°2."},
+{id:"arches4",tier:2,zone:"pont",title:"The four surviving arches",
+ hint:"From the riverbank, frame the Pont Saint-Bénézet — count the arches as you shoot.",
+ reveal:"Four. That's what's left of an original twenty-two. Hold that number for your census below — it's the whole story of the bridge in one figure. Pièce N°6."},
+{id:"keys",tier:2,zone:"anywhere",title:"The crossed papal keys",
+ hint:"The emblem of two crossed keys (often under a crown/tiara) — carved on a gate, a wall, or printed on a sign.",
+ reveal:"The keys of Saint Peter — the power to 'bind and loose,' to forgive or condemn. Stamped all over Avignon, they are a logo of authority, the medieval version of a brand on everything the papacy owned. Pièce N°3."},
+{id:"festival",tier:2,zone:"cité",title:"A Festival d'Avignon trace",
+ hint:"A festival poster, banner or stage sign (everywhere in July; year-round on shops and walls). No luck? Use the 🌐 web-image path.",
+ reveal:"Every July the palace's great courtyard — built to overawe Christendom — becomes the main stage of one of the world's biggest theatre festivals (since 1947). A fortress of power now performs power for audiences who go home. Pièce N°6."},
+{id:"bridgeend",tier:3,zone:"pont",title:"The bridge that stops in the river",
+ hint:"Walk out onto the Pont Saint-Bénézet (or shoot from the bank) and photograph the broken end, hanging over the water.",
+ reveal:"A world-famous bridge that goes nowhere. The Rhône smashed it again and again; after the flood of 1668 the town gave up. The most sung-about bridge on Earth is a beautiful dead end — a fact the cheerful song never mentions. Pièce N°6."},
+{id:"souspont",tier:3,zone:"rhône",title:"Where you'd dance SOUS le pont",
+ hint:"From the island (Île de la Barthelasse) or under an arch — frame the underside of the bridge. Not crossing the river? Use the 🌐 web-image path and say where you'd have stood.",
+ reveal:"« Sur le pont d'Avignon » is almost certainly wrong: the bridge was too narrow to dance on, so people danced SOUS le pont — under it, on the island. You just photographed the correction to a song the whole world sings. Pièce N°6."},
+{id:"twopalaces",tier:3,zone:"palais",title:"Austere vs lavish — the two palaces",
+ hint:"Find where the plain, severe wall of the old palace meets the more decorated new one, and capture both in one frame.",
+ reveal:"Two popes, two personalities in one building: Benedict XII the ex-monk built the bare Palais Vieux; Clement VI the luxury-loving prince added the ornate Palais Neuf. 'The Church' wasn't one thing — it was particular people making particular choices. Pièce N°2."},
+{id:"chateauneuf",tier:3,zone:"route",title:"Châteauneuf-du-Pape, with the papal keys",
+ hint:"A bottle of Châteauneuf-du-Pape in any shop — look for the crossed keys and tiara embossed into the glass. A drive away? Use the 🌐 web-image path.",
+ reveal:"« The pope's new castle » — the summer residence and vineyard of the Avignon popes, still named after them 700 years on, the keys pressed right into the glass. Provence guards its terroir like treasure (recall the AOP olive oil of Les Baux). Pièce N°3."},
+{id:"census",tier:3,zone:"pont",obs:true,title:"Count the arches",
+ hint:"Look at the Pont Saint-Bénézet (in person or from a photo) and count the arches still standing. Enter the number, e.g. « 4 arches ».",
+ reveal:"Four — out of the original twenty-two. Your count is primary-source evidence for Pièce N°6: a monument the world remembers as whole is, in fact, four-fifths gone. What else that 'everyone knows' would fall apart if you actually counted? Keep the number for the media-literacy brief."}
 ]};
 </script>
 <script id="engine">
@@ -538,7 +539,7 @@ function openSave(){
 function closeModal(){$("modal").classList.remove("open");}
 
 function openReport(){
-  const p=S.profile||{name:"Agent",emoji:"🦅"};
+  const p=S.profile||{name:"Agent",emoji:"🕊️"};
   const rows=HUNT.items.map(i=>{
     const st=S.items[i.id];if(!st)return"";
     return `<div style="border:1px solid #999;padding:12px;margin:12px 0;page-break-inside:avoid">
@@ -554,10 +555,10 @@ function openReport(){
   .stamp{border:3px solid #2E7D46;color:#2E7D46;display:inline-block;padding:2px 14px;transform:rotate(-4deg);font-weight:700}</style>
   </head><body>
   <p style="letter-spacing:.2em;font-size:11px">ARCHIVES DE PROVENCE · RAPPORT DE CHASSE</p>
-  <h1>${p.emoji} ${esc(p.name)} — Les Baux-de-Provence</h1>
+  <h1>${p.emoji} ${esc(p.name)} — Avignon</h1>
   <p><span class="stamp">${rank()} · ${S.pts} PTS · ${Object.keys(S.items).length}/${HUNT.items.length} TROUVÉS</span></p>
   ${rows}
-  <p style="font-size:12px;color:#666">Generated ${new Date().toLocaleDateString()} · Mission Packs · pairs with Dossier: Les Baux-de-Provence</p>
+  <p style="font-size:12px;color:#666">Generated ${new Date().toLocaleDateString()} · Mission Packs · pairs with Dossier: Avignon</p>
   </body></html>`;
   const blob=new Blob([html],{type:"text/html"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);
@@ -575,8 +576,8 @@ function setup(){
   <input id="pname" maxlength="20" placeholder="Prénom">
   <p>Choose your mark:</p><div class="emoji-row" id="emos"></div>
   <button class="btn" id="goBtn">Commencer la chasse</button></div>`;
-  let emoji="🦅";
-  ["🦅","⭐","🏰","📷","🫒","🗿","🔦","🐍"].forEach(e=>{
+  let emoji="🕊️";
+  ["🕊️","🔑","🏛️","📷","🍷","🎭","🌉","⛪"].forEach(e=>{
     const b=document.createElement("button");b.textContent=e;
     if(e===emoji)b.classList.add("sel");
     b.onclick=()=>{emoji=e;$("emos").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");};

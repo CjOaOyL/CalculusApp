@@ -426,17 +426,20 @@ function renderOpen(item,body,tp){
   }
   body.innerHTML=`
     <div class="hi-actions">
-      <button class="btn">📷 Photo (+${tp})</button>
-      <button class="btn alt">🌐 Web image (+${Math.ceil(tp/2)})</button>
+      <button class="btn" data-a="cam">📷 Take photo (+${tp})</button>
+      <button class="btn alt" data-a="lib">🖼️ From library (+${tp})</button>
+      <button class="btn alt" data-a="web">🌐 Web image (+${Math.ceil(tp/2)})</button>
     </div>
-    <input type="file" accept="image/*" capture="environment">
+    <input type="file" class="cam-in" accept="image/*" capture="environment">
+    <input type="file" class="lib-in" accept="image/*">
     <div class="hi-url"><input placeholder="Paste image URL…">
       <input placeholder="Where would you have seen this in person?" style="margin-top:6px">
       <button class="btn" style="margin-top:6px">Submit for half points</button></div>`;
-  const file=body.querySelector("input[type=file]");
-  body.querySelectorAll(".hi-actions .btn")[0].onclick=()=>file.click();
-  file.onchange=()=>{
-    const f=file.files[0];if(!f)return;
+  const camIn=body.querySelector(".cam-in"), libIn=body.querySelector(".lib-in");
+  body.querySelector('[data-a="cam"]').onclick=()=>camIn.click();
+  body.querySelector('[data-a="lib"]').onclick=()=>libIn.click();
+  const usePhoto=(inp)=>{
+    const f=inp.files[0];if(!f)return;
     const r=new FileReader();
     r.onload=()=>{
       // downscale for the report so exports stay a sane size
@@ -452,7 +455,9 @@ function renderOpen(item,body,tp){
     };
     r.readAsDataURL(f);
   };
-  body.querySelectorAll(".hi-actions .btn")[1].onclick=()=>
+  camIn.onchange=()=>usePhoto(camIn);
+  libIn.onchange=()=>usePhoto(libIn);
+  body.querySelector('[data-a="web"]').onclick=()=>
     body.querySelector(".hi-url").classList.add("open");
   body.querySelector(".hi-url .btn").onclick=()=>{
     const[u,w]=body.querySelectorAll(".hi-url input");
