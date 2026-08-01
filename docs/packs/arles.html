@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>Dossier: Arles</title>
+<!--
+  MISSION PACKS — offline-first learning engine
+  Repo layout for later extraction (Claude Code handoff):
+    /engine/engine.js  = the script block tagged id=engine
+    /engine/style.css  = the style block
+    /packs/nuclear-france.json = the PACK constant
+  Build step: inline pack + engine + css into one distributable HTML.
+  AI endpoint: CONFIG.aiEndpoint — works keyless inside Claude.ai artifacts;
+  point it at your own proxy (Cloudflare Worker holding the API key) when
+  hosted on cjoaoyl.github.io.
+-->
+<style>
+:root{
+  --paper:#F4F2EA; --paper2:#ECE9DE; --ink:#22262E; --ink2:#5A5F6A;
+  --navy:#16345F; --bleu:#0B57A4; --rouge:#C21F30; --amber:#E39A1D;
+  --line:#C8C3B2; --ok:#2E7D46; --card:#FBFAF5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:17px; line-height:1.55;
+}
+.mono{font-family:'Courier New',Courier,monospace}
+.hdr-face{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase; letter-spacing:.14em; font-weight:700}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px 80px}
+
+/* ---------- header / gauge ---------- */
+header{
+  position:sticky;top:0;z-index:50;background:var(--paper);
+  border-bottom:3px double var(--navy);
+}
+.hd-in{max-width:680px;margin:0 auto;padding:10px 16px 8px}
+.hd-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.hd-rf{font-size:10px;letter-spacing:.22em;color:var(--ink2)}
+.hd-title{font-size:15px;color:var(--navy)}
+.hd-user{font-size:12px;color:var(--ink2);white-space:nowrap}
+.gauge{margin-top:7px}
+.gauge-label{display:flex;justify-content:space-between;font-size:10px;
+  color:var(--ink2);letter-spacing:.18em}
+.gauge-bar{position:relative;height:14px;border:1.5px solid var(--navy);
+  background:repeating-linear-gradient(90deg,transparent 0 9.8%,var(--line) 9.8% 10%);
+  margin-top:2px}
+.gauge-fill{position:absolute;left:0;top:0;bottom:0;background:var(--amber);
+  width:0%;transition:width .6s ease}
+.gauge-rank{position:absolute;right:4px;top:-1px;font-size:10px;color:var(--navy);font-weight:700}
+
+/* ---------- sommaire ---------- */
+.cover{padding:26px 0 8px;text-align:center;border-bottom:1px solid var(--line)}
+.cover .eyebrow{font-size:11px;color:var(--rouge);letter-spacing:.3em}
+.cover h1{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.06em;font-size:34px;line-height:1.1;
+  color:var(--navy);margin:8px 0 4px}
+.cover .sub{font-style:italic;color:var(--ink2);font-size:15px}
+.cover .classif{display:inline-block;margin-top:12px;padding:2px 12px;
+  border:2px solid var(--rouge);color:var(--rouge);font-size:11px;
+  letter-spacing:.25em;transform:rotate(-2deg)}
+.toc{padding:14px 0}
+.toc-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);
+  padding:12px 14px;margin:8px 0;cursor:pointer;font:inherit;color:inherit}
+.toc-item:active{background:var(--paper2)}
+.toc-num{font-size:10px;color:var(--ink2);letter-spacing:.15em;min-width:64px}
+.toc-t{flex:1}
+.toc-t b{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--navy);font-size:15px;display:block}
+.toc-t i{font-size:13px;color:var(--ink2)}
+.toc-st{font-size:18px}
+.toc-pts{font-size:11px;color:var(--ink2)}
+
+/* ---------- section view ---------- */
+.sec{display:none;padding-top:14px}
+.sec.active{display:block}
+.crumb{background:none;border:none;color:var(--bleu);font:inherit;font-size:14px;
+  cursor:pointer;padding:8px 0;text-decoration:underline}
+.piece-tag{font-size:11px;color:var(--rouge);letter-spacing:.25em;margin-top:4px}
+.sec h2{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.05em;font-size:27px;color:var(--navy);
+  line-height:1.15;margin:2px 0 2px}
+.sec .fr-sub{font-style:italic;color:var(--ink2);margin-bottom:14px;font-size:15px}
+.sec p{margin:0 0 14px}
+.sec .stamped{position:relative}
+.stamp{display:inline-block;border:3px solid var(--ok);color:var(--ok);
+  padding:2px 14px;font-size:15px;letter-spacing:.2em;transform:rotate(-6deg);
+  font-weight:700;margin:6px 0}
+@media (prefers-reduced-motion:no-preference){
+  .stamp{animation:slam .25s ease-out}
+  @keyframes slam{from{transform:rotate(-6deg) scale(2);opacity:0}
+    to{transform:rotate(-6deg) scale(1);opacity:1}}
+}
+
+/* vocab chips */
+.v{border-bottom:2px dotted var(--bleu);color:var(--navy);cursor:pointer;
+  font-style:italic}
+.v .en{color:var(--rouge);font-style:normal;font-size:.88em}
+.vocab-box{background:var(--paper2);border:1px dashed var(--ink2);padding:10px 12px;
+  margin:16px 0;font-size:14px}
+.vocab-box b{letter-spacing:.15em;font-size:11px;color:var(--ink2)}
+
+/* interactive + question cards */
+.card{background:var(--card);border:1px solid var(--line);padding:14px;margin:18px 0}
+.card-tag{font-size:10px;letter-spacing:.22em;color:var(--bleu);margin-bottom:8px}
+.card-tag.ai{color:var(--rouge)}
+.qtext{font-weight:700;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;background:var(--paper);
+  border:1.5px solid var(--line);padding:10px 12px;margin:6px 0;font:inherit;
+  font-size:15px;cursor:pointer;color:var(--ink)}
+.opt:not(:disabled):active{border-color:var(--bleu)}
+.opt.right{border-color:var(--ok);background:#EAF4EC}
+.opt.wrong{border-color:var(--rouge);background:#F8ECEC;opacity:.75}
+.opt:disabled{cursor:default}
+.expl{font-size:14px;color:var(--ink2);border-left:3px solid var(--ok);
+  padding:6px 10px;margin-top:8px;background:var(--paper2)}
+.pts-pop{color:var(--rouge);font-weight:700;font-size:14px;
+  font-family:'Courier New',monospace}
+textarea{width:100%;min-height:96px;font:inherit;font-size:15px;padding:10px;
+  border:1.5px solid var(--line);background:var(--paper);color:var(--ink)}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:none;
+  padding:10px 18px;font-family:'Arial Narrow',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.12em;font-size:14px;cursor:pointer;
+  margin-top:8px}
+.btn.alt{background:var(--paper);color:var(--navy);border:1.5px solid var(--navy)}
+.btn.red{background:var(--rouge)}
+.btn:disabled{opacity:.45;cursor:default}
+button:focus-visible,.opt:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--amber);outline-offset:2px}
+.note{font-size:13px;color:var(--ink2);font-style:italic}
+.model-ans{border:1px solid var(--ok);background:#EFF6F0;padding:10px;
+  font-size:14px;margin-top:8px}
+
+/* simulator */
+.sim-stats{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;margin:8px 0}
+.sim-stat{background:var(--paper2);padding:6px 10px;border:1px solid var(--line)}
+.sim-stat b{display:block;font-size:17px;color:var(--navy)}
+.sim-log{font-size:13px;max-height:120px;overflow-y:auto;border:1px solid var(--line);
+  padding:8px;margin-top:8px;background:var(--paper)}
+.rbar{display:flex;gap:3px;margin:8px 0;flex-wrap:wrap}
+.rblock{width:22px;height:30px;border:1.5px solid var(--navy);background:var(--paper)}
+.rblock.done{background:var(--amber)}
+.rblock.custom{background:var(--rouge)}
+
+/* sort game */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{border:1.5px solid var(--navy);background:var(--paper);padding:8px 12px;
+  font:inherit;font-size:14px;cursor:pointer}
+.chip:disabled{opacity:.35}
+.slots{min-height:44px;border:1.5px dashed var(--ink2);padding:8px;
+  display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;background:var(--paper2)}
+.slot-chip{border:1.5px solid var(--bleu);padding:8px 12px;font-size:14px;
+  background:#fff;cursor:pointer}
+.slot-chip.good{border-color:var(--ok);background:#EAF4EC}
+.slot-chip.bad{border-color:var(--rouge);background:#F8ECEC}
+
+/* bill comparator */
+.bill-row{margin:10px 0}
+.bill-name{font-size:12px;letter-spacing:.15em;color:var(--ink2)}
+.bill-bar{height:26px;background:var(--bleu);color:#fff;display:flex;
+  align-items:center;padding:0 8px;font-family:'Courier New',monospace;
+  font-size:14px;min-width:70px;transition:width .3s}
+.bill-bar.nj{background:var(--rouge)}
+input[type=range]{width:100%;accent-color:var(--navy)}
+
+/* outbox / footer bar */
+.dock{position:fixed;bottom:0;left:0;right:0;background:var(--navy);z-index:60}
+.dock-in{max-width:680px;margin:0 auto;display:flex}
+.dock button{flex:1;background:none;border:none;color:#fff;padding:11px 4px;
+  font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.1em;font-size:12px;cursor:pointer;border-right:1px solid rgba(255,255,255,.2)}
+.dock button:last-child{border-right:none}
+.badge{display:inline-block;background:var(--amber);color:var(--ink);
+  border-radius:9px;font-size:11px;padding:0 6px;margin-left:4px;font-weight:700}
+.net{font-size:10px;letter-spacing:.15em}
+.net .dot{display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--rouge);vertical-align:middle;margin-right:4px}
+.net.on .dot{background:var(--ok)}
+
+/* modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(20,24,32,.55);z-index:100}
+.modal.open{display:flex;align-items:flex-end;justify-content:center}
+.modal-in{background:var(--paper);width:100%;max-width:680px;max-height:86vh;
+  overflow-y:auto;padding:18px 16px 28px;border-top:4px solid var(--navy)}
+.modal-in h3{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--navy);margin-bottom:10px}
+.ob-item{border:1px solid var(--line);background:var(--card);padding:10px;margin:8px 0;
+  font-size:14px}
+.ob-q{font-weight:700}
+.ob-a{font-style:italic;color:var(--ink2);margin:4px 0}
+.ob-fb{border-left:3px solid var(--ok);padding:4px 8px;background:#EFF6F0;margin-top:6px}
+.ob-status{font-size:11px;letter-spacing:.15em}
+.setup input{width:100%;font:inherit;font-size:17px;padding:10px;
+  border:1.5px solid var(--line);background:#fff;margin:8px 0}
+.emoji-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.emoji-row button{font-size:26px;background:var(--paper2);border:2px solid transparent;
+  padding:6px 10px;cursor:pointer}
+.emoji-row button.sel{border-color:var(--navy);background:#fff}
+.phrase{border-bottom:1px solid var(--line);padding:8px 0;font-size:15px}
+.phrase i{color:var(--ink2);font-size:13px;display:block}
+hr.rule{border:none;border-top:1px solid var(--line);margin:20px 0}
+.toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);
+  background:var(--navy);color:#fff;padding:10px 16px;font-size:14px;z-index:200;
+  max-width:92%;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.3);
+  opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.saveflag{font-size:11px;letter-spacing:.12em;color:var(--ink2);margin-top:6px}
+
+.refline{font-size:14px;margin:10px 0;word-break:break-word}
+.refline a{color:var(--bleu)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd-in">
+    <div class="hd-top">
+      <span class="hd-rf mono">RÉPUBLIQUE FRANÇAISE · ARCHIVES DE PROVENCE</span>
+      <span class="hd-user mono" id="hdUser"></span>
+    </div>
+    <div class="hd-top">
+      <span class="hd-title hdr-face">Dossier: Arles</span>
+      <span class="net mono" id="netInd"><span class="dot"></span>HORS LIGNE</span>
+    </div>
+    <div class="gauge">
+      <div class="gauge-label mono"><span>CONSERVATION</span><span id="ptsLbl">0 pts</span></div>
+      <div class="gauge-bar"><div class="gauge-fill" id="gaugeFill"></div>
+        <span class="gauge-rank mono" id="rankLbl"></span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="home">
+    <div class="cover">
+      <div class="eyebrow mono">RÉGION: PROVENCE · MISSION 03</div>
+      <h1>Arles</h1>
+      <div class="sub">Capital of an empire. A town built inside a stadium. A painter this city drove out. And a river that keeps handing back its dead.</div>
+      <div class="classif mono">POUR LECTURE IMMÉDIATE</div>
+    </div>
+    <div class="toc" id="toc"></div>
+    <div class="vocab-box">
+      <b class="mono">PHRASES DU JOUR — say these out loud today</b>
+      <div id="phraseBox"></div>
+    </div>
+  </div>
+  <div id="secView"></div>
+</div>
+
+<div class="dock">
+  <div class="dock-in">
+    <button id="dockHome">Sommaire</button>
+    <button id="dockOutbox">À évaluer<span class="badge" id="obBadge" style="display:none">0</span></button>
+    <button id="dockSave">Sauvegarde</button>
+    <button id="dockReport">Rapport</button>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="modal-in" id="modalIn"></div></div>
+
+<script id="pack">
+/* ============ PACK: arles ============ */
+const PACK = {
+meta:{id:"arles",region:"Provence",title:"Arles",
+  ranks:[[0,"STAGIAIRE"],[80,"ARCHIVISTE"],[150,"CONSERVATEUR·TRICE"],[220,"GARDIEN·NE D'ARELATE"]],
+  maxPts:258},
+phrases:[
+  ["On peut visiter les arènes ?","Can we visit the amphitheatre?"],
+  ["C'est par où, la maison de Van Gogh ?","Which way to Van Gogh's house?"],
+  ["Deux billets, s'il vous plaît.","Two tickets, please."],
+  ["Il fait très chaud aujourd'hui.","It's very hot today."],
+  ["Où est le Rhône ?","Where's the Rhône?"]
+],
+sections:[
+/* ---------- 1 ---------- */
+{id:"arelate",num:"PIÈCE N°1",title:"Arelate",en:"The city that has been everything",
+vocab:[["le fleuve","the river"],["les arènes","the amphitheatre"],["un empereur","an emperor"],["la ville","the town"]],
+body:[
+"Welcome to the archive, stagiaire. You are the newest hire at the <b>Musée de l'Arles antique</b> — the blue museum on the edge of town — and your first case is the town itself. Arles sits where the <b>Rhône</b>, the great {{le fleuve||river}} of the south, splits to run down to the sea. That position made it, and this is the thread of your whole file: <b>Arles never throws anything away</b>. It keeps living inside its old buildings, and its dead keep coming back up out of the river.",
+"The Romans called it <b>Arelate</b>. In 49 BC the town made the luckiest bet in its history: it backed <b>Julius Caesar</b> in his war against nearby Massalia (Marseille). Caesar won, punished Marseille, and rewarded Arles with its trade. Within a lifetime it was a rich colony with {{les arènes||an amphitheatre}} seating perhaps 20,000, a theatre, baths, and a bridge of boats across the river. Later the {{un empereur||emperor}} <b>Constantine</b> made it a favourite residence and all but a western capital — the poet Ausonius called it <i>Gallula Roma</i>, 'the little Rome of the Gauls.'",
+"Then Rome fell, and here is where Arles gets strange. The empire's grandest buildings did not become romantic ruins — they became <i>real estate</i>. You will spend this file watching one {{la ville||town}} be an imperial capital, a walled village crammed inside a stadium, a painter's obsession, and finally the base of a giant twisting metal tower. Same rock, same river. Nothing wasted."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"Why did Arles suddenly grow rich under the Romans?",
+ opts:["It discovered gold nearby","It backed Julius Caesar against Marseille in 49 BC and inherited its trade","It was the birthplace of an emperor","It controlled the only road to Spain"],
+ a:1,expl:"Backing the winner of a civil war paid off for centuries. Marseille's loss became Arles' river-port fortune — geography plus a well-timed bet."},
+{t:"mcq",q:"What did the poet Ausonius nickname Arles?",
+ opts:["The Athens of Gaul","The little Rome of the Gauls","The port of two seas","The white city"],
+ a:1,expl:"« Gallula Roma Arelas. » Under Constantine, Arles held imperial power in the West — a provincial town punching at capital weight."},
+{t:"selfcheck",q:"This file's claim is « Arles never throws anything away. » Before you read on, predict two different ways a city might reuse a huge old building instead of demolishing it.",
+ model:"Reasonable answers: turn it into housing or a fortress (people literally living in the walls); quarry it for stone to build new things; convert it to a new public use (church, market, museum, concert venue); or make it a paid tourist attraction. Arles has done nearly all of these to the same amphitheatre."}
+]},
+/* ---------- 2 ---------- */
+{id:"machine",num:"PIÈCE N°2",title:"La Machine Romaine",en:"How a city of stone actually ran",
+vocab:[["l'eau","water"],["un moulin","a mill"],["le pain","bread"],["une roue","a wheel"],["la farine","flour"]],
+body:[
+"Rome did not just build monuments here; it built <i>infrastructure</i>. The amphitheatre you can still walk through was an engineered machine for crowds — tiered exits so 20,000 people could empty in minutes, and a rigging of masts and cloth (the <i>velum</i>) that sailors hauled up to shade the seats. But the most astonishing Roman thing near Arles is 12 km away, and almost nobody visits it.",
+"At <b>Barbegal</b>, near Fontvieille, a Roman aqueduct carrying {{l'eau||water}} from the Alpilles hit a steep hillside — and engineers turned the drop into a factory. Sixteen {{une roue||waterwheels}} were stacked in two rows of eight down the slope; the water spilled from one wheel onto the next, each turning a {{un moulin||mill}}stone. The result was {{la farine||flour}} by the tonne: enough {{le pain||bread}} for many thousands of people, ground by falling water instead of by hand. Historians call it one of the largest concentrations of mechanical power anywhere in the world before the Middle Ages — a hint of the Industrial Revolution, seventeen centuries early.",
+"Read the next line like a scientist: <b>we do not know exactly how much it made.</b> Careful estimates run from about 4.5 tonnes of flour a day up to roughly 25 — a fivefold spread, argued in real journals from tooth-marks on millstones and mineral crusts in the channels. That uncertainty is not a weakness of the story; it <i>is</i> the story of how archaeology works. Run the machine yourself below and see the range."
+],
+interactive:"barbegal",
+questions:[
+{t:"mcq",q:"What did the sixteen wheels at Barbegal actually do?",
+ opts:["Lift water into the town","Grind grain into flour, powered by aqueduct water","Saw stone for the amphitheatre","Generate an early form of electricity"],
+ a:1,expl:"Overshot wheels in series: the outflow of each drove the next one down the hill. A water-powered flour mill on an industrial scale."},
+{t:"mcq",q:"Why do historians give a RANGE (about 4.5 to 25 tonnes/day) instead of one number?",
+ opts:["They are lazy","The evidence is indirect — the mills are gone, so output is reconstructed from clues and the clues allow different answers","The Romans kept no records at all","The site is a fake"],
+ a:1,expl:"Wear marks, water-flow, and mineral deposits each imply different throughputs. Honest history reports the spread, not a false-precise single figure."},
+{t:"ai",qid:"ai-factory",q:"⚡ BRIEF POUR LES ARCHIVES : Was Barbegal a « factory »? Make the strongest case FOR calling it the ancient world's first factory, AND the strongest case AGAINST it, using at least three specific facts from this Pièce. Then say where you land. (5–8 sentences.)",
+ rubric:"Award up to 20 points. Strong answers (15-20) steelman BOTH sides with specifics — FOR: concentrated mechanical power (16 wheels), mass output (tonnes/day feeding thousands), division of a process, water replacing human labour, a purpose-built single-product site; AGAINST: no wage-labour or machines-making-machines, powered by water not fuel/engines, a one-off not a repeatable industrial system, and 'factory' is a modern word we're projecting backwards. Then a reasoned personal position. 8-14: both sides attempted but one is thin, or no position. Under 8: one-sided or vague. Any defensible position earns full marks; reward genuine engagement with the opposing view."}
+]},
+/* ---------- 3 ---------- */
+{id:"argent",num:"PIÈCE N°3",title:"Suivez l'Argent",en:"Two economies, seventeen centuries apart",
+vocab:[["l'argent","money"],["vendre","to sell"],["un tableau","a painting"],["pauvre","poor"],["un bateau","a boat"]],
+body:[
+"Follow the {{l'argent||money}} and a city tells the truth about itself. Roman Arles got rich as a <b>river port</b>: grain, wine and olive oil moved through here on their way to feed the capital, and a powerful guild of boatmen ran the traffic. When you stand on the quay, you are standing on the reason the town existed — a {{un bateau||boat}} economy, the Rhône as a highway to Rome.",
+"Now jump 1,700 years, to the strangest entry in your file. In 1888 a poor Dutch painter arrived, rented a small yellow house, and in about fifteen months made roughly <b>200</b> pictures — the sunflowers, the café at night, the bedroom, the starry Rhône. His name was <b>Vincent van Gogh</b>. In his whole life he managed to {{vendre||sell}} essentially <i>one</i> {{un tableau||painting}}. He was {{pauvre||poor}}; his brother Theo paid his rent and sent him paint. The people of Arles did not buy his work — many thought he was frightening.",
+"Here is the surprise this whole dossier turns on. That penniless man is now the reason more than a million people a year come to Arles, filling its cafés and hotels and gift shops. The town that could not feed him now feeds itself on his name — exactly the way Les Baux, up the road, lives off 1.5 million visitors to a fortress it once had to pay Richelieu to blow up. Reputation is an economy too, and it often pays out to the wrong century. Run the numbers below."
+],
+interactive:"vangogh",
+questions:[
+{t:"mcq",q:"How did Roman Arles primarily make its money?",
+ opts:["Silver mines","As a river port moving grain, wine and oil toward Rome","Building warships","Banking"],
+ a:1,expl:"The Rhône was the motorway of the ancient south. Arles taxed and handled the cargo — geography as income, again."},
+{t:"mcq",q:"Roughly how many paintings did Van Gogh sell during his lifetime?",
+ opts:["Hundreds","About half of what he made","Essentially one","None at all, ever"],
+ a:2,expl:"« The Red Vineyard », painted just outside Arles, is the canvas usually counted as sold in his life — for about 400 francs. Theo funded the rest."},
+{t:"selfcheck",q:"In two or three sentences, explain the irony of Van Gogh's economics in Arles.",
+ model:"The man was too poor to sell his work and was rejected by the town, yet that same work later made Arles wealthy as a tourist destination. The value was real all along; the world only recognised it after he was dead and could not benefit. The town now profits from the very person it once wanted gone."},
+{t:"ai",qid:"ai-latevalue",q:"⚡ BRIEF : Why does art (or music, or an idea) so often become valuable only AFTER its maker is gone? Give at least three specific reasons, use the Van Gogh case as one example, and name one honest counter-argument (a case where value was recognised early). (5–8 sentences.)",
+ rubric:"Award up to 20 points. Strong answers (15-20) offer 3+ real mechanisms — scarcity (no new works once dead), story/myth adding value, slow shifts in taste, gatekeepers and critics catching up, survivorship bias (we only remember the ones later vindicated) — anchor at least one in Van Gogh, and honestly note that plenty of artists WERE recognised and rich while alive (so 'dead = valuable' is a bias, not a law). 8-14: some reasons but thin, or no counter-argument. Under 8: vague. Reward the counter-argument and specific reasoning; any defensible view earns full marks."}
+]},
+/* ---------- 4 ---------- */
+{id:"fleuve",num:"PIÈCE N°4",title:"Le Fleuve Qui Rend Tout",en:"The Rhône as an archive",
+vocab:[["profond","deep"],["une statue","a statue"],["trouver","to find"],["le passé","the past"]],
+body:[
+"The same river that made Arles rich also tried to drown it — the Rhône floods, and the town has fought its water for two thousand years. But the {{profond||deep}}, dark, low-oxygen mud of a big river is one of the best preservers on Earth: things dropped or sunk are sealed away from the air that would rot or corrode them. So the Rhône at Arles is not just a river. It is an {{le passé||past}} that keeps handing itself back.",
+"In 2007, divers from France's underwater-archaeology service pulled a life-sized marble bust of a hard-faced man from the riverbed. Some experts announced it as a portrait of <b>Julius Caesar</b> carved in his own lifetime — which would make it extraordinarily rare. Notice your training, archivist: other experts disagree, and the identification is <i>contested</i>. On your file this is a « <b>possible</b> Caesar », not a fact. A dramatic claim and a proven claim are different objects.",
+"Four years later, in 2011, a whole Roman <b>barge</b> came up — <i>Arles-Rhône 3</i>, about 31 metres of flat cargo boat that sank around 2,000 years ago, raised, treated and rebuilt inside your own museum. To {{trouver||find}} a {{une statue||statue}} is lucky; to raise an entire working boat from the mud is a small miracle of engineering. Everything in this Pièce came out of the water. The river is the archive, and it is not finished depositing."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"What was pulled from the Rhône near Arles in 2007?",
+ opts:["A chest of gold coins","A marble bust that MIGHT be Julius Caesar","A complete temple","Van Gogh's lost paintings"],
+ a:1,expl:"Recovered by DRASSM divers. Some date it to Caesar's lifetime; the attribution remains debated — a textbook 'maybe.'"},
+{t:"mcq",q:"How should a careful archivist treat « this bust is definitely Caesar »?",
+ opts:["Accept it — it was on the news","Treat it as a contested claim, not settled fact, and look for the evidence on each side","Reject it — busts can't survive underwater","Assume the opposite is true"],
+ a:1,expl:"Contested is not the same as false — but it is not the same as proven either. Hold the claim open and weigh the arguments."},
+{t:"selfcheck",q:"Why is the bottom of a big muddy river a surprisingly GOOD place for ancient objects to survive? Give the main reason.",
+ model:"The deep mud seals objects away from oxygen (and from people who would reuse or loot them). Without air, marble, wood and metal decay far more slowly, so a boat or statue can survive roughly intact for two millennia until archaeologists raise it."}
+]},
+/* ---------- 5 ---------- */
+{id:"echecs",num:"PIÈCE N°5",title:"Les Échecs",en:"Read closely — the parts that hurt",
+vocab:[["une oreille","an ear"],["malade","ill"],["la guerre","war"],["un taureau","a bull"]],
+body:[
+"A file that only flatters its subject is a failed file, so read this Pièce closely. Van Gogh's fifteen months here ended badly. On the night of <b>23 December 1888</b> he cut off part of his own {{une oreille||ear}} during a mental collapse. He was {{malade||ill}}, in and out of hospital, and in early 1889 around thirty of his neighbours signed a <b>petition</b> declaring him dangerous and asking the authorities to shut up the yellow house. In May 1889 he left Arles for the asylum at Saint-Rémy. The town's most famous resident was, in his own time, someone it wanted removed.",
+"There is a second wound. The <b>Yellow House</b> itself — the most famous little building in modern art — no longer exists. On <b>25 June 1944</b>, American bombers aiming at the railway bridge over the Rhône hit the Place Lamartine; the house was wrecked in the {{la guerre||war}} and later pulled down. You can stand on the spot, but the house is a bomb-site turned street corner. Fame did not protect it.",
+"And a living argument you should meet head-on. The Roman arena still holds spectacles — including, during the summer <i>feria</i>, the Spanish-style <b>corrida</b>, in which a {{un taureau||bull}} is killed in front of a crowd, in a ring 2,000 years old. Nearby, the Camargue has its own tradition, the <i>course camarguaise</i>, where young men snatch a rosette from between the bull's horns and <b>the bull lives</b> to compete again. People here feel strongly on all sides — heritage, cruelty, identity, money. Your job on the next question is not to be told what to think, but to argue it honestly."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"What happened to Van Gogh's Yellow House?",
+ opts:["It's a museum today","It was destroyed by bombing in 1944 and demolished — the site is now an ordinary street corner","He burned it down himself","It was moved to Amsterdam"],
+ a:1,expl:"Allied bombs aimed at the Rhône rail bridge wrecked Place Lamartine on 25 June 1944. The world's most painted house is gone."},
+{t:"mcq",q:"In the Camargue's own « course camarguaise », what happens to the bull?",
+ opts:["It is killed, as in a Spanish corrida","It lives — the men try to snatch a rosette from its horns","It is set free into the wild","There is no bull, only horses"],
+ a:1,expl:"A key distinction the arena blurs: the local tradition is non-lethal and the star bulls become famous. The lethal corrida is the imported Spanish form."},
+{t:"ai",qid:"ai-corrida",q:"⚡ BRIEF : Should bull-killing corridas be allowed to continue in the Roman arena of Arles? Make the strongest case FOR (tradition, local identity, livelihoods, the arena's history of spectacle) AND the strongest case AGAINST (the animal's suffering, changing values), each with specifics, then state where you land. (6–10 sentences.)",
+ rubric:"Award up to 20 points. This is deliberately hard and has no official answer. Strong answers (15-20) genuinely steelman BOTH sides — FOR: centuries-old regional tradition, economic and cultural weight of the feria, the arena's 2,000-year history as a place of public spectacle, local self-determination; AGAINST: deliberate infliction of suffering/death on an animal for entertainment, shifting ethics, the existence of a non-lethal alternative (course camarguaise) that keeps the tradition without the killing — then take a clear personal position. 8-14: both sides attempted but one is a strawman, or no position taken. Under 8: one-sided or preachy. State explicitly that ANY reasoned position — for, against, or a middle path — can earn full marks; grade the quality of argument, never the conclusion."}
+]},
+/* ---------- 6 ---------- */
+{id:"aujourdhui",num:"PIÈCE N°6",title:"Aujourd'hui",en:"Why a dead empire is your problem",
+vocab:[["un touriste","a tourist"],["le métal","metal"],["briller","to shine"],["l'avenir","the future"]],
+body:[
+"Bring the file up to today. Arles owns <b>not a single</b> permanent Van Gogh painting — the originals hang in Amsterdam, Paris, New York — yet over a million {{un touriste||tourists}} a year come here to stand where he stood. The town lives off an artist it never bought, which is the same over-tourism question Les Baux faces: when does a place stop being a community and become a backdrop? Hold that tension; it has no clean answer.",
+"And Arles has done its trick again — turned a dead thing into the next thing. On the site of the town's abandoned <b>railway workshops</b>, the architect Frank Gehry built the <b>LUMA tower</b> (opened 2021): 56 metres of twisting {{le métal||metal}}, wrapped in around 11,000 stainless-steel panels designed to {{briller||shine}} and flicker like Van Gogh's <i>Starry Night</i>, its stone base echoing the pale limestone of the Alpilles. Old railyard becomes art tower — arena becomes village becomes monument. Same move, new century.",
+"This is where your three Provence files connect, archivist. That metal skin is the thread: making the metals of modern life — the aluminium in Les Baux's bauxite, the steel on Gehry's tower — takes <i>enormous</i> electricity, which is exactly why the nuclear dossier exists. Limestone, bauxite, reactors, a painter's ghost, a river full of statues: one small city, holding all of it at once. The {{l'avenir||future}} it's betting on now is images — Arles is a world capital of photography every summer. Value recognised too late is not just Van Gogh's problem. It is the puzzle of knowing, in your own feed today, what will matter tomorrow."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"What is the LUMA Tower, and where does it stand?",
+ opts:["A restored Roman tower in the arena","A twisting metal art-tower by Frank Gehry (2021), built on Arles' old railway workshops","A nuclear cooling tower","A medieval castle keep"],
+ a:1,expl:"~11,000 steel panels meant to shimmer like Starry Night, on a reused railyard. Arles reinventing a ruin, one more time."},
+{t:"mcq",q:"What connects the LUMA tower's metal skin to your Les Baux and nuclear dossiers?",
+ opts:["Nothing — they're unrelated","Making structural metals like aluminium and steel takes huge amounts of electricity — the link between bauxite, reactors and this tower","They were all built by the Romans","They all use the same limestone"],
+ a:1,expl:"Metal is congealed electricity (recall the aluminium calculator in Les Baux). Bauxite → metal → power → nuclear. The series is one world."},
+{t:"selfcheck",q:"« Value recognised too late » was Van Gogh's story. Name one way that same problem shows up in YOUR world today, and why it's hard to solve.",
+ model:"Open answer — accept anything specific and honest: a song/creator ignored until they blow up; a friend or idea dismissed then vindicated; a cheap early investment; a warning nobody acted on. The hard part is that at the time, the valuable thing looks the same as all the worthless things around it — you can only tell them apart afterwards."},
+{t:"ai",qid:"ai-reinvention",q:"⚡ BRIEF FINAL : Arles keeps turning ruins into the next thing (arena → walled village → monument; railyard → LUMA). You advise the mayor. Propose how a small historic city should balance tourism income against staying a real, livable community — at least two concrete measures — and honestly answer the strongest objection (for example from shopkeepers who need the crowds). (6–10 sentences.)",
+ rubric:"Award up to 20 points. Strong answers (15-20) give 2+ concrete, plausible measures (visitor caps or timed tickets, protecting housing from becoming all shops/rentals, spreading visitors across seasons, earmarking tourist revenue for residents' services, supporting non-tourist industry like LUMA/photography/agriculture) AND seriously engage a real counter-argument (livelihoods depend on volume; limits cost money and jobs; enforcement is hard) instead of dismissing it. 8-14: reasonable ideas but the objection is ignored or handled weakly. Under 8: vague 'promote responsible tourism' with no mechanism. Reward specificity and honest trade-offs; any coherent position can score full marks."}
+]},
+/* ---------- 7 ---------- */
+{id:"sources",num:"PIÈCE N°7",title:"Les Sources",en:"Dig deeper (when online)",
+vocab:[],
+body:[
+"The archive behind your file. As always, sort them as you read: which are <b>primary</b> (the objects and the artist's own words) and which are <b>interpretation</b> (a guide, a blog, a tourist plaque)? Van Gogh wrote hundreds of letters to his brother — those letters are a primary source, closer to the truth than any sign in the street. And remember the bust: even a museum can host a claim that is still being argued.",
+"REFS"
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"Which of these is a PRIMARY source on Van Gogh's time in Arles?",
+ opts:["A tourist plaque on a street corner","A travel blog's top-10 list","Van Gogh's own letters to his brother Theo","This learning game"],
+ a:2,expl:"His letters were written at the time, by the person himself. Everything else here — including this pack — is interpretation built on top of primary sources like those."}
+]}
+],
+refs:[
+["Musée départemental Arles antique — the barge & the Rhône finds","https://www.arles-antique.fr/"],
+["Fondation Vincent van Gogh Arles","https://www.fondation-vincentvangogh-arles.org/"],
+["The Van Gogh Letters (searchable, annotated originals)","https://www.vangoghletters.org/vg/"],
+["UNESCO — Arles, Roman and Romanesque Monuments","https://whc.unesco.org/en/list/164/"],
+["Barbegal watermills — the 2018 study in Science Advances","https://www.science.org/doi/10.1126/sciadv.aar3620"],
+["LUMA Arles — Gehry's tower & the Parc des Ateliers","https://www.luma.org/en/arles.html"],
+["Les Rencontres d'Arles — the photography festival","https://www.rencontres-arles.com/en"]
+]
+};
+</script>
+<script id="engine">
+/* ============ ENGINE ============ */
+const CONFIG = {
+  aiEndpoint: "https://api.anthropic.com/v1/messages", // swap for your proxy when self-hosted
+  aiModel: "claude-sonnet-4-6"
+};
+const S = { profile:null, pts:0, done:{}, secDone:{}, outbox:[], simRuns:0 };
+
+/* ---- local persistence ---- */
+const STORE=(()=>{
+  let ok=false;
+  try{localStorage.setItem("__mp","1");localStorage.removeItem("__mp");ok=true;}catch(e){ok=false;}
+  const K="missionpack:"+PACK.meta.id;
+  return{ok,
+    save(o){if(!ok)return false;try{localStorage.setItem(K,JSON.stringify(o));return true;}catch(e){return false;}},
+    load(){if(!ok)return null;try{return JSON.parse(localStorage.getItem(K)||"null");}catch(e){return null;}},
+    clear(){if(!ok)return;try{localStorage.removeItem(K);}catch(e){}}};
+})();
+let persistTimer=null, wiped=false;
+function persist(){
+  if(!STORE.ok||wiped)return;
+  clearTimeout(persistTimer);
+  persistTimer=setTimeout(()=>STORE.save(S),250);
+}
+function persistNow(){if(STORE.ok&&!wiped)STORE.save(S);}
+addEventListener("visibilitychange",()=>{if(document.hidden)persistNow();});
+addEventListener("pagehide",persistNow);
+function toast(msg){
+  const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add("show"));
+  setTimeout(()=>{t.classList.remove("show");setTimeout(()=>t.remove(),350);},3200);
+}
+
+const $ = id => document.getElementById(id);
+const esc = t => t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ---- vocab markup: {{fr||en}} -> tap-to-reveal ---- */
+function fmt(t){
+  return t.replace(/\{\{(.+?)\|\|(.+?)\}\}/g,
+    (_,fr,en)=>`<span class="v" onclick="this.classList.add('revealed');this.querySelector('.en').style.display='inline'">${fr} <span class="en" style="display:none">(${en})</span></span>`);
+}
+
+/* ---- points ---- */
+function addPts(n, el){
+  S.pts += n;
+  renderGauge();
+  persist();
+  if(el){ const s=document.createElement("span"); s.className="pts-pop";
+    s.textContent=" +"+n+" pts"; el.appendChild(s); }
+}
+function rank(){
+  let r=PACK.meta.ranks[0][1];
+  for(const [min,name] of PACK.meta.ranks) if(S.pts>=min) r=name;
+  return r;
+}
+function renderGauge(){
+  $("ptsLbl").textContent = S.pts+" pts";
+  $("gaugeFill").style.width = Math.min(100, S.pts/PACK.meta.maxPts*100)+"%";
+  $("rankLbl").textContent = rank();
+}
+
+/* ---- navigation ---- */
+function showHome(){
+  $("home").style.display="block"; $("secView").innerHTML="";
+  renderTOC(); window.scrollTo(0,0);
+}
+function renderTOC(){
+  const toc=$("toc"); toc.innerHTML="";
+  PACK.sections.forEach((sec,i)=>{
+    const doneQ = sec.questions.filter(q=>S.done[qKey(sec,q)]).length;
+    const b=document.createElement("button"); b.className="toc-item";
+    b.innerHTML=`<span class="toc-num mono">${sec.num}</span>
+      <span class="toc-t"><b>${sec.title}</b><i>${sec.en}</i></span>
+      <span class="toc-pts mono">${doneQ}/${sec.questions.length}</span>
+      <span class="toc-st">${S.secDone[sec.id]?"✅":"📄"}</span>`;
+    b.onclick=()=>showSection(i);
+    toc.appendChild(b);
+  });
+  $("phraseBox").innerHTML = PACK.phrases.map(p=>
+    `<div class="phrase">« ${p[0]} »<i>${p[1]}</i></div>`).join("");
+}
+function qKey(sec,q){ return sec.id+"::"+(q.qid||q.q.slice(0,40)); }
+
+function showSection(i){
+  const sec=PACK.sections[i];
+  $("home").style.display="none";
+  const v=$("secView");
+  let bodyHtml = sec.body.map(p=>{
+    if(p==="REFS") return PACK.refs.map(r=>
+      `<div class="refline">▸ <a href="${r[1]}" target="_blank" rel="noopener">${r[0]}</a><br><span class="mono" style="font-size:11px;color:var(--ink2)">${r[1]}</span></div>`).join("");
+    return `<p>${fmt(p)}</p>`;
+  }).join("");
+  const vocabHtml = sec.vocab.length ?
+    `<div class="vocab-box"><b class="mono">VOCABULAIRE — tap the dotted words above, then test yourself:</b><br>`+
+    sec.vocab.map(v=>`<span class="v" onclick="this.querySelector('.en').style.display='inline'">${v[0]} <span class="en" style="display:none">= ${v[1]}</span></span>`).join(" · ")+`</div>`:"";
+  v.innerHTML = `<div class="sec active">
+    <button class="crumb" onclick="showHome()">← Sommaire</button>
+    <div class="piece-tag mono">${sec.num}</div>
+    <h2>${sec.title}</h2>
+    <div class="fr-sub">${sec.en}</div>
+    <div id="stampZone"></div>
+    ${bodyHtml}${vocabHtml}
+    <div id="inter"></div>
+    <hr class="rule">
+    <div id="qs"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:20px">
+      <button class="btn alt" onclick="showHome()">← Sommaire</button>
+      ${i<PACK.sections.length-1?`<button class="btn" onclick="showSection(${i+1})">Pièce suivante →</button>`:
+        `<button class="btn red" onclick="openReport()">Générer le rapport</button>`}
+    </div></div>`;
+  renderInteractive(sec, $("inter"));
+  renderQuestions(sec, $("qs"));
+  if(S.secDone[sec.id]) $("stampZone").innerHTML='<span class="stamp mono">VALIDÉ ✔</span>';
+  window.scrollTo(0,0);
+}
+
+/* ---- questions ---- */
+function renderQuestions(sec, host){
+  sec.questions.forEach(q=>{
+    const key=qKey(sec,q), card=document.createElement("div"); card.className="card";
+    if(q.t==="mcq"){
+      card.innerHTML=`<div class="card-tag mono">QUESTION · 10 PTS</div>
+        <div class="qtext">${esc(q.q)}</div>`;
+      const doneInfo = S.done[key];
+      q.opts.forEach((o,oi)=>{
+        const b=document.createElement("button"); b.className="opt"; b.textContent=o;
+        if(doneInfo){ b.disabled=true;
+          if(oi===q.a) b.classList.add("right");
+        } else b.onclick=()=>{
+          if(S.done[key]) return;
+          const first = !card.dataset.missed;
+          if(oi===q.a){
+            b.classList.add("right");
+            card.querySelectorAll(".opt").forEach(x=>x.disabled=true);
+            S.done[key]={pts:first?10:5};
+            addPts(first?10:5, b);
+            const e=document.createElement("div"); e.className="expl";
+            e.textContent=q.expl; card.appendChild(e);
+            checkSectionDone(sec);
+          } else { b.classList.add("wrong"); b.disabled=true; card.dataset.missed=1; }
+        };
+        card.appendChild(b);
+      });
+      if(doneInfo){ const e=document.createElement("div"); e.className="expl";
+        e.textContent=q.expl; card.appendChild(e); }
+    }
+    if(q.t==="selfcheck"){
+      card.innerHTML=`<div class="card-tag mono">RÉPONSE LIBRE · AUTO-ÉVALUATION · MAX 8 PTS</div>
+        <div class="qtext">${esc(q.q)}</div>
+        <textarea placeholder="Write your answer first — no peeking."></textarea>
+        <button class="btn alt">Reveal model answer</button><div class="sc-zone"></div>`;
+      const ta=card.querySelector("textarea"), zone=card.querySelector(".sc-zone");
+      card.querySelector("button").onclick=function(){
+        if(ta.value.trim().length<20){ zone.innerHTML='<p class="note">Write at least a couple of sentences first.</p>'; return;}
+        this.disabled=true; ta.disabled=true;
+        zone.innerHTML=`<div class="model-ans"><b>Model answer:</b> ${esc(q.model)}</div>
+          <p class="note">Honor system: how close were you?</p>`;
+        [["Nailed it",8],["Mostly",5],["Missed it",2]].forEach(([lbl,p])=>{
+          const b=document.createElement("button"); b.className="btn alt";
+          b.style.marginRight="8px"; b.textContent=lbl+" (+"+p+")";
+          b.onclick=()=>{ if(S.done[key])return;
+            S.done[key]={pts:p,ans:ta.value}; addPts(p,b);
+            zone.querySelectorAll(".btn").forEach(x=>x.disabled=true);
+            checkSectionDone(sec); };
+          zone.appendChild(b);
+        });
+      };
+      if(S.done[key]){ ta.value=S.done[key].ans||""; ta.disabled=true;
+        card.querySelector("button").disabled=true; }
+    }
+    if(q.t==="ai"){
+      card.innerHTML=`<div class="card-tag ai mono">⚡ ÉVALUATION PAR IA · MAX 20 PTS · QUEUED UNTIL ONLINE</div>
+        <div class="qtext">${esc(q.q)}</div>
+        <textarea placeholder="Your best thinking — a real AI will grade this against a rubric when you reconnect."></textarea>
+        <button class="btn">Queue for evaluation</button><div class="ai-zone"></div>`;
+      const ta=card.querySelector("textarea"), zone=card.querySelector(".ai-zone");
+      const existing = S.outbox.find(o=>o.qid===q.qid);
+      if(existing){ ta.value=existing.answer; ta.disabled=true;
+        card.querySelector("button").disabled=true;
+        zone.innerHTML = obStatusHtml(existing); }
+      card.querySelector("button").onclick=function(){
+        if(ta.value.trim().length<40){ zone.innerHTML='<p class="note">This one deserves a real answer — write more.</p>'; return; }
+        this.disabled=true; ta.disabled=true;
+        S.outbox.push({qid:q.qid,q:q.q,rubric:q.rubric,answer:ta.value,status:"queued"});
+        zone.innerHTML='<p class="note">✉ Queued. Open "À évaluer" when you have a connection.</p>';
+        renderBadge();
+      };
+      host.appendChild(card); return;
+    }
+    host.appendChild(card);
+  });
+}
+function checkSectionDone(sec){
+  const core = sec.questions.filter(q=>q.t!=="ai");
+  if(core.every(q=>S.done[qKey(sec,q)]) && !S.secDone[sec.id]){
+    S.secDone[sec.id]=true;
+    persist();
+    const z=$("stampZone"); if(z) z.innerHTML='<span class="stamp mono">VALIDÉ ✔</span>';
+  }
+}
+function obStatusHtml(o){
+  if(o.status==="done") return `<div class="ob-fb"><b>${o.score}/20</b> — ${esc(o.feedback)}</div>`;
+  if(o.status==="error") return `<p class="note">Evaluation failed — retry from the outbox.</p>`;
+  return '<p class="note">✉ Queued for evaluation.</p>';
+}
+/* ---- interactives ---- */
+function renderInteractive(sec, host){
+  if(sec.interactive==="barbegal") return interBarbegal(host);
+  if(sec.interactive==="vangogh") return interVanGogh(host);
+}
+
+/* Barbegal: set wheels + water flow, read flour output and mouths fed */
+function interBarbegal(host){
+  const PER_WHEEL=1000;                       // kg flour/day per wheel at normal flow
+  const FLOW={faible:0.5, normal:1, crue:1.6}; // low / normal / flood
+  let wheels=8, flow="normal", seen={};
+  host.innerHTML=`<div class="card"><div class="card-tag mono">SIMULATEUR · LES MEULES DE BARBEGAL · +8 PTS</div>
+   <div class="qtext">Sixteen wheels on one hillside, turned by aqueduct water. Set the machine and read the output — the historians' own estimates run from about 4.5 to 25 tonnes of flour a day.</div>
+   <label class="mono" style="font-size:12px">ROUES (waterwheels): <span id="bgWval">8</span> / 16</label>
+   <input type="range" id="bgWheels" min="1" max="16" value="8" style="margin:6px 0">
+   <div class="mono" style="font-size:12px">DÉBIT (water flow):</div>
+   <div class="chips" id="bgFlow"></div>
+   <div id="bgOut"></div></div>`;
+  const fc=host.querySelector("#bgFlow");
+  [["Faible (summer)","faible"],["Normal","normal"],["Crue (flood)","crue"]].forEach(([l,k])=>{
+    const b=document.createElement("button");b.className="chip";b.textContent=l;
+    if(k===flow)b.style.fontWeight="700";
+    b.onclick=()=>{flow=k;[...fc.children].forEach(x=>x.style.fontWeight="");b.style.fontWeight="700";calc();};
+    fc.appendChild(b);
+  });
+  const wr=host.querySelector("#bgWheels");
+  wr.oninput=()=>{wheels=+wr.value;host.querySelector("#bgWval").textContent=wheels;calc();};
+  function calc(){
+    const kg=Math.round(wheels*PER_WHEEL*FLOW[flow]);
+    const people=Math.round(kg*1.1);
+    const t=(kg/1000).toFixed(1);
+    const punch = (wheels>=15 && flow==="crue")
+      ? "That's near the very top estimate — a Roman flour factory feeding a small town, and the largest concentration of mechanical power known anywhere before the Middle Ages."
+      : "Roman Arles held maybe 30–40,000 people; from one hillside, Barbegal could feed a real slice of them.";
+    host.querySelector("#bgOut").innerHTML=`<div class="expl"><b class="mono">${t} tonnes</b> of flour a day — bread for roughly <b class="mono">${people.toLocaleString()}</b> people. ${punch}</div>`;
+    seen[wheels+"-"+flow]=1;
+    if(Object.keys(seen).length>=3 && !S.done["barbegal"]){S.done["barbegal"]={pts:8};addPts(8,host.querySelector("#bgOut"));}
+  }
+  calc();
+}
+
+/* Van Gogh: made vs sold vs worth — tap to reveal each */
+function interVanGogh(host){
+  const rows=[
+    ["Combien il a PEINT à Arles ?","≈ 200 tableaux",
+     "In about 15 months (Feb 1888 – May 1889) Van Gogh painted roughly 200 canvases here — the Sunflowers, the Yellow House, the Café Terrace at Night, Starry Night over the Rhône."],
+    ["Combien il a VENDU de son vivant ?","1",
+     "« The Red Vineyard », painted just outside Arles, is the one canvas usually counted as sold in his lifetime — for about 400 francs, in 1890. His brother Theo paid for everything else."],
+    ["Combien ça vaut AUJOURD'HUI ?","≈ 82 000 000 $",
+     "His « Portrait of Dr Gachet » sold for about 82.5 million dollars in 1990. The town that couldn't sell a single one of his pictures now lives on his name."]
+  ];
+  host.innerHTML=`<div class="card"><div class="card-tag mono">DOSSIER CHIFFRÉ · VAN GOGH · +8 PTS</div>
+   <div class="qtext">Three numbers tell the whole story. Tap each to reveal it.</div>
+   <div id="vgRows"></div><div id="vgOut"></div></div>`;
+  const rowsHost=host.querySelector("#vgRows");let seen=0;
+  rows.forEach(r=>{
+    const b=document.createElement("button");b.className="opt";b.textContent=r[0];
+    b.onclick=()=>{
+      if(b.disabled)return;
+      b.disabled=true;b.classList.add("right");
+      b.innerHTML=`${r[0]} &nbsp; <b class="mono">${r[1]}</b>`;
+      const e=document.createElement("div");e.className="expl";e.textContent=r[2];
+      b.after(e);
+      seen++;
+      if(seen>=3 && !S.done["vangogh"]){
+        S.done["vangogh"]={pts:8};addPts(8,host.querySelector("#vgOut"));
+        host.querySelector("#vgOut").innerHTML='<div class="expl"><b>Made ≈ 200, sold 1, now worth fortunes.</b> That gap — value the world only saw once he was gone — is the surprise this whole dossier turns on.</div>';
+      }
+    };
+    rowsHost.appendChild(b);
+  });
+}
+
+/* ---- outbox / AI evaluation ---- */
+function renderBadge(){
+  persist();
+  const q=S.outbox.filter(o=>o.status!=="done").length;
+  $("obBadge").style.display=q?"inline-block":"none";
+  $("obBadge").textContent=q;
+}
+function openOutbox(){
+  const m=$("modalIn");
+  let h=`<h3>À Évaluer — Answer Outbox</h3>`;
+  if(!S.outbox.length) h+=`<p class="note">Nothing queued yet. The ⚡ questions in the dossier land here.</p>`;
+  S.outbox.forEach(o=>{
+    h+=`<div class="ob-item"><div class="ob-status mono">${o.status==="done"?"✔ ÉVALUÉ":o.status==="error"?"✖ ERREUR":o.status==="sending"?"… ENVOI":"✉ EN ATTENTE"}</div>
+      <div class="ob-q">${esc(o.q)}</div><div class="ob-a">${esc(o.answer)}</div>
+      ${o.status==="done"?`<div class="ob-fb"><b>${o.score}/20</b> — ${esc(o.feedback)}</div>`:""}</div>`;
+  });
+  const pending=S.outbox.filter(o=>o.status==="queued"||o.status==="error").length;
+  h+=`<button class="btn" id="obSend" ${pending?"":"disabled"}>Evaluate ${pending} answer(s) now (needs connection)</button>
+      <button class="btn alt" onclick="closeModal()">Close</button>
+      <p class="note" id="obMsg"></p>`;
+  m.innerHTML=h; $("modal").classList.add("open");
+  const sb=$("obSend"); if(sb) sb.onclick=sendOutbox;
+}
+async function sendOutbox(){
+  $("obMsg").textContent="Contacting the evaluator…";
+  for(const o of S.outbox){
+    if(o.status==="done") continue;
+    o.status="sending";
+    try{
+      const resp=await fetch(CONFIG.aiEndpoint,{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:CONFIG.aiModel,max_tokens:1000,messages:[{role:"user",
+          content:`You are grading a bright 12-15 year old's answer in a learning game about the history and archaeology of Arles. Question: "${o.q}"\nGrading rubric: ${o.rubric}\nStudent answer: "${o.answer}"\nRespond with ONLY a JSON object, no markdown fences, no preamble: {"score": <integer 0-20>, "feedback": "<2-4 encouraging but honest sentences: what was strong, what was missing, one thing to think about next>"}`}]})});
+      const data=await resp.json();
+      const txt=(data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("\n");
+      const parsed=JSON.parse(txt.replace(/```json|```/g,"").trim());
+      o.score=Math.max(0,Math.min(20,parseInt(parsed.score)||0));
+      o.feedback=parsed.feedback||"Evaluated.";
+      o.status="done";
+      const key="ai::"+o.qid;
+      if(!S.done[key]){ S.done[key]={pts:o.score}; S.pts+=o.score; renderGauge(); }
+    }catch(e){ o.status="error"; }
+  }
+  renderBadge(); openOutbox();
+  $("obMsg").textContent=S.outbox.some(o=>o.status==="error")?
+    "Some evaluations failed — check your connection and retry.":"All evaluated. Scores added to your PRESTIGE.";
+}
+function closeModal(){ $("modal").classList.remove("open"); }
+
+/* ---- save / restore ---- */
+function openSave(){
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+  $("modalIn").innerHTML=`<h3>Code de Sauvegarde</h3>
+  <p class="note">Copy this code somewhere safe (notes app / message it to a parent). Paste it back here to restore your progress on any device or after closing the app.</p>
+  <textarea id="saveCode" style="min-height:120px" class="mono">${code}</textarea>
+  <button class="btn" id="copyBtn">Copy code</button>
+  <hr class="rule">
+  <p class="note">Restore: paste a code above, then —</p>
+  <button class="btn alt" id="loadBtn">Load pasted code</button>
+  <button class="btn alt" onclick="closeModal()">Close</button>
+  <hr class="rule">
+  <p class="saveflag mono">${STORE.ok?"✔ AUTO-SAVE ACTIVE ON THIS DEVICE":"⚠ AUTO-SAVE UNAVAILABLE HERE — KEEP THE CODE ABOVE"}</p>
+  <p class="note">Progress saves automatically as you go. The code is only needed to move to another device or browser.</p>
+  <button class="btn red" id="resetBtn">Start over (erase progress)</button>
+  <p class="note" id="saveMsg"></p>`;
+  $("modal").classList.add("open");
+  $("copyBtn").onclick=async()=>{ try{ await navigator.clipboard.writeText($("saveCode").value);
+    $("saveMsg").textContent="Copied.";}catch(e){ $("saveCode").select();
+    $("saveMsg").textContent="Select-all and copy manually."; } };
+  $("resetBtn").onclick=()=>{
+    if(!confirm("Erase all progress on this device and start over?"))return;
+    wiped=true;clearTimeout(persistTimer);STORE.clear();location.reload();
+  };
+  $("loadBtn").onclick=()=>{ try{
+      const obj=JSON.parse(decodeURIComponent(escape(atob($("saveCode").value.trim()))));
+      Object.assign(S,obj); persistNow(); renderGauge(); renderBadge(); showHome(); closeModal();
+    }catch(e){ $("saveMsg").textContent="That code didn't parse — check it copied fully."; } };
+}
+
+/* ---- report export ---- */
+function openReport(){
+  const p=S.profile||{name:"Agent",emoji:"🕵️"};
+  const aiRows=S.outbox.map(o=>`<div style="border:1px solid #999;padding:10px;margin:10px 0">
+    <b>${esc(o.q)}</b><p><i>${esc(o.answer)}</i></p>
+    ${o.status==="done"?`<p><b>Score ${o.score}/20.</b> ${esc(o.feedback)}</p>`:"<p>(not yet evaluated)</p>"}</div>`).join("")||"<p>No written briefs submitted.</p>";
+  const vocabRows=PACK.sections.flatMap(s=>s.vocab).map(v=>`<tr><td style="padding:4px 12px 4px 0"><i>${v[0]}</i></td><td>${v[1]}</td></tr>`).join("");
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rapport — ${esc(p.name)}</title>
+  <style>body{font-family:Georgia,serif;max-width:640px;margin:24px auto;padding:0 16px;color:#22262E;background:#F4F2EA}
+  h1,h2{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;color:#16345F}
+  .stamp{border:3px solid #2E7D46;color:#2E7D46;display:inline-block;padding:2px 14px;transform:rotate(-4deg);font-weight:700}</style></head><body>
+  <p style="letter-spacing:.2em;font-size:11px">RÉPUBLIQUE FRANÇAISE · RAPPORT DE MISSION</p>
+  <h1>${p.emoji} ${esc(p.name)} — Arles</h1>
+  <p><span class="stamp">GRADE FINAL: ${rank()} · ${S.pts} PTS</span></p>
+  <p>Sections validated: ${Object.keys(S.secDone).length} / ${PACK.sections.length-1}</p>
+  <h2>Ministerial briefs & AI feedback</h2>${aiRows}
+  <h2>Vocabulaire acquis</h2><table>${vocabRows}</table>
+  <p style="font-size:12px;color:#666">Generated ${new Date().toLocaleDateString()} · Mission Packs · Région Provence</p>
+  </body></html>`;
+  const blob=new Blob([html],{type:"text/html"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`rapport-${(p.name||"agent").toLowerCase().replace(/\s+/g,"-")}.html`;
+  a.click();
+}
+
+/* ---- network indicator ---- */
+function netUpdate(){
+  const on=navigator.onLine, el=$("netInd");
+  el.classList.toggle("on",on);
+  el.innerHTML=`<span class="dot"></span>${on?"EN LIGNE":"HORS LIGNE"}`;
+}
+addEventListener("online",netUpdate); addEventListener("offline",netUpdate);
+
+/* ---- profile setup ---- */
+function setup(){
+  $("modalIn").innerHTML=`<h3>Identification de l'agent</h3>
+  <div class="setup"><p>Your name, archivist:</p>
+  <input id="pname" maxlength="20" placeholder="Prénom">
+  <p>Choose your official seal:</p><div class="emoji-row" id="emos"></div>
+  <button class="btn" id="goBtn">Ouvrir le dossier</button></div>`;
+  let emoji="🕵️";
+  ["🕵️","⚡","🥖","🦖","🚀","🐸","👑","🔬"].forEach(e=>{
+    const b=document.createElement("button"); b.textContent=e;
+    if(e===emoji) b.classList.add("sel");
+    b.onclick=()=>{ emoji=e; $("emos").querySelectorAll("button").forEach(x=>x.classList.remove("sel")); b.classList.add("sel"); };
+    $("emos").appendChild(b);
+  });
+  $("modal").classList.add("open");
+  $("goBtn").onclick=()=>{
+    S.profile={name:$("pname").value.trim()||"Agent X",emoji};
+    $("hdUser").textContent=emoji+" "+S.profile.name;
+    persistNow(); closeModal(); showHome();
+  };
+}
+
+/* ---- boot ---- */
+$("dockHome").onclick=showHome;
+$("dockOutbox").onclick=openOutbox;
+$("dockSave").onclick=openSave;
+$("dockReport").onclick=openReport;
+$("modal").onclick=e=>{ if(e.target.id==="modal") closeModal(); };
+(function boot(){
+  const saved=STORE.load();
+  if(saved&&saved.profile){
+    Object.assign(S,saved);
+    $("hdUser").textContent=(S.profile.emoji||"")+" "+(S.profile.name||"");
+    renderGauge(); renderBadge(); netUpdate(); showHome();
+    toast("Bon retour, "+(S.profile.name||"")+" — progress restored ("+S.pts+" pts)");
+  } else {
+    renderGauge(); renderBadge(); netUpdate(); renderTOC(); setup();
+  }
+})();
+</script>
+</body>
+</html>

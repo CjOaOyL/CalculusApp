@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>Chasse: Arles</title>
+<!-- MISSION PACKS · hunt engine v1 · pairs with dossier les-baux.html
+     Photos live in memory only (and in the phone's camera roll); the save code
+     stores checkmarks/answers, and the exported report embeds the photos. -->
+<style>
+
+:root{
+  --paper:#F4F2EA; --paper2:#ECE9DE; --ink:#22262E; --ink2:#5A5F6A;
+  --navy:#16345F; --bleu:#0B57A4; --rouge:#C21F30; --amber:#E39A1D;
+  --line:#C8C3B2; --ok:#2E7D46; --card:#FBFAF5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:17px; line-height:1.55;
+}
+.mono{font-family:'Courier New',Courier,monospace}
+.hdr-face{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase; letter-spacing:.14em; font-weight:700}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px 80px}
+
+/* ---------- header / gauge ---------- */
+header{
+  position:sticky;top:0;z-index:50;background:var(--paper);
+  border-bottom:3px double var(--navy);
+}
+.hd-in{max-width:680px;margin:0 auto;padding:10px 16px 8px}
+.hd-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.hd-rf{font-size:10px;letter-spacing:.22em;color:var(--ink2)}
+.hd-title{font-size:15px;color:var(--navy)}
+.hd-user{font-size:12px;color:var(--ink2);white-space:nowrap}
+.gauge{margin-top:7px}
+.gauge-label{display:flex;justify-content:space-between;font-size:10px;
+  color:var(--ink2);letter-spacing:.18em}
+.gauge-bar{position:relative;height:14px;border:1.5px solid var(--navy);
+  background:repeating-linear-gradient(90deg,transparent 0 9.8%,var(--line) 9.8% 10%);
+  margin-top:2px}
+.gauge-fill{position:absolute;left:0;top:0;bottom:0;background:var(--amber);
+  width:0%;transition:width .6s ease}
+.gauge-rank{position:absolute;right:4px;top:-1px;font-size:10px;color:var(--navy);font-weight:700}
+
+/* ---------- sommaire ---------- */
+.cover{padding:26px 0 8px;text-align:center;border-bottom:1px solid var(--line)}
+.cover .eyebrow{font-size:11px;color:var(--rouge);letter-spacing:.3em}
+.cover h1{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.06em;font-size:34px;line-height:1.1;
+  color:var(--navy);margin:8px 0 4px}
+.cover .sub{font-style:italic;color:var(--ink2);font-size:15px}
+.cover .classif{display:inline-block;margin-top:12px;padding:2px 12px;
+  border:2px solid var(--rouge);color:var(--rouge);font-size:11px;
+  letter-spacing:.25em;transform:rotate(-2deg)}
+.toc{padding:14px 0}
+.toc-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);
+  padding:12px 14px;margin:8px 0;cursor:pointer;font:inherit;color:inherit}
+.toc-item:active{background:var(--paper2)}
+.toc-num{font-size:10px;color:var(--ink2);letter-spacing:.15em;min-width:64px}
+.toc-t{flex:1}
+.toc-t b{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--navy);font-size:15px;display:block}
+.toc-t i{font-size:13px;color:var(--ink2)}
+.toc-st{font-size:18px}
+.toc-pts{font-size:11px;color:var(--ink2)}
+
+/* ---------- section view ---------- */
+.sec{display:none;padding-top:14px}
+.sec.active{display:block}
+.crumb{background:none;border:none;color:var(--bleu);font:inherit;font-size:14px;
+  cursor:pointer;padding:8px 0;text-decoration:underline}
+.piece-tag{font-size:11px;color:var(--rouge);letter-spacing:.25em;margin-top:4px}
+.sec h2{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.05em;font-size:27px;color:var(--navy);
+  line-height:1.15;margin:2px 0 2px}
+.sec .fr-sub{font-style:italic;color:var(--ink2);margin-bottom:14px;font-size:15px}
+.sec p{margin:0 0 14px}
+.sec .stamped{position:relative}
+.stamp{display:inline-block;border:3px solid var(--ok);color:var(--ok);
+  padding:2px 14px;font-size:15px;letter-spacing:.2em;transform:rotate(-6deg);
+  font-weight:700;margin:6px 0}
+@media (prefers-reduced-motion:no-preference){
+  .stamp{animation:slam .25s ease-out}
+  @keyframes slam{from{transform:rotate(-6deg) scale(2);opacity:0}
+    to{transform:rotate(-6deg) scale(1);opacity:1}}
+}
+
+/* vocab chips */
+.v{border-bottom:2px dotted var(--bleu);color:var(--navy);cursor:pointer;
+  font-style:italic}
+.v .en{color:var(--rouge);font-style:normal;font-size:.88em}
+.vocab-box{background:var(--paper2);border:1px dashed var(--ink2);padding:10px 12px;
+  margin:16px 0;font-size:14px}
+.vocab-box b{letter-spacing:.15em;font-size:11px;color:var(--ink2)}
+
+/* interactive + question cards */
+.card{background:var(--card);border:1px solid var(--line);padding:14px;margin:18px 0}
+.card-tag{font-size:10px;letter-spacing:.22em;color:var(--bleu);margin-bottom:8px}
+.card-tag.ai{color:var(--rouge)}
+.qtext{font-weight:700;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;background:var(--paper);
+  border:1.5px solid var(--line);padding:10px 12px;margin:6px 0;font:inherit;
+  font-size:15px;cursor:pointer;color:var(--ink)}
+.opt:not(:disabled):active{border-color:var(--bleu)}
+.opt.right{border-color:var(--ok);background:#EAF4EC}
+.opt.wrong{border-color:var(--rouge);background:#F8ECEC;opacity:.75}
+.opt:disabled{cursor:default}
+.expl{font-size:14px;color:var(--ink2);border-left:3px solid var(--ok);
+  padding:6px 10px;margin-top:8px;background:var(--paper2)}
+.pts-pop{color:var(--rouge);font-weight:700;font-size:14px;
+  font-family:'Courier New',monospace}
+textarea{width:100%;min-height:96px;font:inherit;font-size:15px;padding:10px;
+  border:1.5px solid var(--line);background:var(--paper);color:var(--ink)}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:none;
+  padding:10px 18px;font-family:'Arial Narrow',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.12em;font-size:14px;cursor:pointer;
+  margin-top:8px}
+.btn.alt{background:var(--paper);color:var(--navy);border:1.5px solid var(--navy)}
+.btn.red{background:var(--rouge)}
+.btn:disabled{opacity:.45;cursor:default}
+button:focus-visible,.opt:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--amber);outline-offset:2px}
+.note{font-size:13px;color:var(--ink2);font-style:italic}
+.model-ans{border:1px solid var(--ok);background:#EFF6F0;padding:10px;
+  font-size:14px;margin-top:8px}
+
+/* simulator */
+.sim-stats{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;margin:8px 0}
+.sim-stat{background:var(--paper2);padding:6px 10px;border:1px solid var(--line)}
+.sim-stat b{display:block;font-size:17px;color:var(--navy)}
+.sim-log{font-size:13px;max-height:120px;overflow-y:auto;border:1px solid var(--line);
+  padding:8px;margin-top:8px;background:var(--paper)}
+.rbar{display:flex;gap:3px;margin:8px 0;flex-wrap:wrap}
+.rblock{width:22px;height:30px;border:1.5px solid var(--navy);background:var(--paper)}
+.rblock.done{background:var(--amber)}
+.rblock.custom{background:var(--rouge)}
+
+/* sort game */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{border:1.5px solid var(--navy);background:var(--paper);padding:8px 12px;
+  font:inherit;font-size:14px;cursor:pointer}
+.chip:disabled{opacity:.35}
+.slots{min-height:44px;border:1.5px dashed var(--ink2);padding:8px;
+  display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;background:var(--paper2)}
+.slot-chip{border:1.5px solid var(--bleu);padding:8px 12px;font-size:14px;
+  background:#fff;cursor:pointer}
+.slot-chip.good{border-color:var(--ok);background:#EAF4EC}
+.slot-chip.bad{border-color:var(--rouge);background:#F8ECEC}
+
+/* bill comparator */
+.bill-row{margin:10px 0}
+.bill-name{font-size:12px;letter-spacing:.15em;color:var(--ink2)}
+.bill-bar{height:26px;background:var(--bleu);color:#fff;display:flex;
+  align-items:center;padding:0 8px;font-family:'Courier New',monospace;
+  font-size:14px;min-width:70px;transition:width .3s}
+.bill-bar.nj{background:var(--rouge)}
+input[type=range]{width:100%;accent-color:var(--navy)}
+
+/* outbox / footer bar */
+.dock{position:fixed;bottom:0;left:0;right:0;background:var(--navy);z-index:60}
+.dock-in{max-width:680px;margin:0 auto;display:flex}
+.dock button{flex:1;background:none;border:none;color:#fff;padding:11px 4px;
+  font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.1em;font-size:12px;cursor:pointer;border-right:1px solid rgba(255,255,255,.2)}
+.dock button:last-child{border-right:none}
+.badge{display:inline-block;background:var(--amber);color:var(--ink);
+  border-radius:9px;font-size:11px;padding:0 6px;margin-left:4px;font-weight:700}
+.net{font-size:10px;letter-spacing:.15em}
+.net .dot{display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--rouge);vertical-align:middle;margin-right:4px}
+.net.on .dot{background:var(--ok)}
+
+/* modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(20,24,32,.55);z-index:100}
+.modal.open{display:flex;align-items:flex-end;justify-content:center}
+.modal-in{background:var(--paper);width:100%;max-width:680px;max-height:86vh;
+  overflow-y:auto;padding:18px 16px 28px;border-top:4px solid var(--navy)}
+.modal-in h3{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--navy);margin-bottom:10px}
+.ob-item{border:1px solid var(--line);background:var(--card);padding:10px;margin:8px 0;
+  font-size:14px}
+.ob-q{font-weight:700}
+.ob-a{font-style:italic;color:var(--ink2);margin:4px 0}
+.ob-fb{border-left:3px solid var(--ok);padding:4px 8px;background:#EFF6F0;margin-top:6px}
+.ob-status{font-size:11px;letter-spacing:.15em}
+.setup input{width:100%;font:inherit;font-size:17px;padding:10px;
+  border:1.5px solid var(--line);background:#fff;margin:8px 0}
+.emoji-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.emoji-row button{font-size:26px;background:var(--paper2);border:2px solid transparent;
+  padding:6px 10px;cursor:pointer}
+.emoji-row button.sel{border-color:var(--navy);background:#fff}
+.phrase{border-bottom:1px solid var(--line);padding:8px 0;font-size:15px}
+.phrase i{color:var(--ink2);font-size:13px;display:block}
+hr.rule{border:none;border-top:1px solid var(--line);margin:20px 0}
+.refline{font-size:14px;margin:10px 0;word-break:break-word}
+.refline a{color:var(--bleu)}
+
+/* ---- hunt additions ---- */
+.hunt-item{background:var(--card);border:1px solid var(--line);
+  border-left:4px solid var(--navy);margin:12px 0;padding:12px 14px}
+.hunt-item.found{border-left-color:var(--ok)}
+.hi-top{display:flex;gap:10px;align-items:baseline}
+.hi-tier{font-size:10px;letter-spacing:.16em;color:var(--bleu);flex:none}
+.hi-tier.t3{color:var(--rouge)}
+.hi-pts{margin-left:auto;font-size:12px;color:var(--ink2);flex:none}
+.hi-title{font-weight:700;margin:4px 0 2px;font-size:16px}
+.hi-hint{font-size:13px;color:var(--ink2);font-style:italic}
+.hi-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.hi-photo{max-width:100%;max-height:220px;border:2px solid var(--navy);
+  display:block;margin:10px 0 4px}
+.hi-reveal{border-left:3px solid var(--ok);background:var(--paper2);
+  padding:8px 10px;margin-top:10px;font-size:14px}
+.hi-reveal b:first-child{color:var(--ok);letter-spacing:.12em;font-size:11px}
+.hi-cap{width:100%;font:inherit;font-size:14px;padding:8px;margin-top:8px;
+  border:1.5px solid var(--line);background:var(--paper)}
+.hi-url{display:none;margin-top:8px}
+.hi-url.open{display:block}
+.hi-url input{width:100%;font:inherit;font-size:14px;padding:8px;
+  border:1.5px solid var(--line);background:var(--paper)}
+.progress-strip{display:flex;gap:4px;flex-wrap:wrap;margin:10px 0}
+.pdot{width:16px;height:16px;border:1.5px solid var(--navy);background:var(--paper)}
+.pdot.on{background:var(--ok)}
+.pdot.half{background:var(--amber)}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.filter-row button{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;font-size:12px;padding:6px 10px;background:var(--paper);
+  border:1.5px solid var(--line);cursor:pointer;color:var(--ink)}
+.filter-row button.on{border-color:var(--navy);background:#fff;font-weight:700}
+input[type=file]{display:none}
+.toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);
+  background:var(--navy);color:#fff;padding:10px 16px;font-size:14px;z-index:200;
+  max-width:92%;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.3);
+  opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.saveflag{font-size:11px;letter-spacing:.12em;color:var(--ink2);margin-top:6px}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="hd-in">
+    <div class="hd-top">
+      <span class="hd-rf mono">RÉPUBLIQUE FRANÇAISE · ARCHIVES DE PROVENCE</span>
+      <span class="hd-user mono" id="hdUser"></span>
+    </div>
+    <div class="hd-top">
+      <span class="hd-title hdr-face">Chasse: Arles</span>
+      <span class="net mono" id="netInd"><span class="dot"></span>HORS LIGNE</span>
+    </div>
+    <div class="gauge">
+      <div class="gauge-label mono"><span>OBSERVATION</span><span id="ptsLbl">0 pts</span></div>
+      <div class="gauge-bar"><div class="gauge-fill" id="gaugeFill"></div>
+        <span class="gauge-rank mono" id="rankLbl"></span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="cover">
+    <div class="eyebrow mono">RÉGION: PROVENCE · CHASSE 03 · PAIRS WITH DOSSIER: ARLES</div>
+    <h1>La Chasse d'Arelate</h1>
+    <div class="sub">Roman arena, a painter's ghost, a river full of statues. Fourteen targets in Arles — find the evidence with your own camera.</div>
+    <div class="classif mono">TERRAIN: ARÈNES · VILLE · RHÔNE</div>
+  </div>
+
+  <div class="vocab-box">
+    <b class="mono">RÈGLES</b><br>
+    <span style="font-size:14px">📷 Your own photo = full points. 🌐 A web image (when a photo is impossible) = half points, and you must say where you'd have seen it. Tap <b>Révéler</b> after finding each one — that's where the history is. Photos stay on this device; export your Rapport before closing the app.</span>
+  </div>
+
+  <div class="progress-strip" id="pstrip"></div>
+  <div class="filter-row" id="filters"></div>
+  <div id="huntList"></div>
+</div>
+
+<div class="dock">
+  <div class="dock-in">
+    <button id="dockTop">↑ Haut</button>
+    <button id="dockSave">Sauvegarde</button>
+    <button id="dockReport">Rapport</button>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="modal-in" id="modalIn"></div></div>
+
+<script id="pack">
+const HUNT = {
+meta:{id:"hunt-arles",region:"Provence",pairs:"arles",
+  ranks:[[0,"STAGIAIRE"],[55,"ARPENTEUR·EUSE"],[100,"ŒIL D'ARLES"],[140,"GARDIEN·NE DES ARÈNES"]]},
+tiers:{1:["REPÉRAGE",5],2:["ŒIL DE CHEVALIER",10],3:["SAVOIR DU DOSSIER",15]},
+items:[
+{id:"arches",tier:1,zone:"arènes",title:"The double arcade of the amphitheatre",
+ hint:"Step back onto the ring road and frame the two stacked rows of arches.",
+ reveal:"Built around 90 AD to seat roughly 20,000 people — and still in use, which is the whole point of Arles: nothing is retired. The Romans gave 34 arches per level for fast crowd exits. Pièce N°1."},
+{id:"tower",tier:2,zone:"arènes",title:"A medieval tower on a Roman arena",
+ hint:"Look up: three square stone towers that clearly don't match the Roman curves.",
+ reveal:"When the empire fell, the arena wasn't abandoned — it was fortified. Three towers were bolted on in the Middle Ages when the whole monument became a walled town. You're photographing 1,000 years of reuse in one wall. Pièce N°1."},
+{id:"medieval",tier:3,zone:"arènes",title:"Proof that people LIVED inside the arena",
+ hint:"Hunt the arcades for filled-in doorways, brackets, or a straight medieval wall cutting across a Roman curve.",
+ reveal:"Until the 1820s the amphitheatre was crammed with about 200 houses and two chapels — a village inside a stadium. Residents were cleared out from 1825 to 'free' the Roman monument. The arena survived precisely because it was too useful as real estate to demolish. This is the dossier's core idea in stone. Pièce N°1 & N°6."},
+{id:"trophime",tier:2,zone:"ville",title:"The Last Judgment portal of St-Trophime",
+ hint:"On Place de la République: the carved doorway of saints, angels and the damned in chains.",
+ reveal:"A 12th-century Romanesque masterpiece — the saved processing one way, the condemned roped off to hell the other. It's part of the same UNESCO listing as the Roman monuments: Arles is protected for BOTH its Roman and its Romanesque layers. Pièce N°1."},
+{id:"cafe",tier:3,zone:"ville",title:"« Café Terrace at Night » — the exact spot",
+ hint:"On Place du Forum, match Van Gogh's angle on the yellow café.",
+ reveal:"Van Gogh painted this terrace in September 1888 — no black, he boasted, only blues and gold. The café is now kept painted yellow for exactly the photo you just took. The original canvas? Not in Arles — it hangs in the Kröller-Müller Museum in the Netherlands. Pièce N°3 & N°6."},
+{id:"yellowhouse",tier:3,zone:"ville",title:"Where the Yellow House stood",
+ hint:"Go to Place Lamartine near the rail line and photograph the empty / rebuilt corner where the house is gone.",
+ reveal:"The most famous little house in modern art no longer exists: American bombs aimed at the Rhône railway bridge wrecked it on 25 June 1944, and it was demolished. You are standing in a Van Gogh painting that was erased by a war. Pièce N°5."},
+{id:"repro",tier:3,zone:"ville",title:"A Van Gogh repro whose original is far away",
+ hint:"Photograph one of the city's Van Gogh easel-plaques — and in your caption, name WHICH museum owns the real one.",
+ reveal:"Arles is wallpapered with reproductions because it owns not one permanent Van Gogh original — they're in Amsterdam, Paris, New York, Otterlo. The town that drove him out now sells his image on every corner. That gap is the surprise the whole dossier turns on. Pièce N°3 & N°6."},
+{id:"planes",tier:1,zone:"ville",title:"Café under the plane trees",
+ hint:"The big mottled-bark plane trees shading a square — frame a café beneath them.",
+ reveal:"Planted for centuries to cool Provençal squares, the plane trees make the flickering light-and-shade Van Gogh chased here. Cheap shade is its own kind of infrastructure. Pièce N°3."},
+{id:"bull",tier:1,zone:"anywhere",title:"A bull, anywhere",
+ hint:"A taureau on a poster, a fountain, a shop sign, a menu — Arles is full of them.",
+ reveal:"Bulls run through Arles' identity via the Camargue and the summer feria. Remember the distinction from your file: the local course camarguaise lets the bull LIVE (men snatch a rosette from its horns); the imported Spanish corrida kills it in the Roman ring. Same animal, very different ethics. Pièce N°5."},
+{id:"luma",tier:1,zone:"anywhere",title:"The LUMA tower on the skyline",
+ hint:"Northeast of the centre: catch Frank Gehry's twisting silver tower glinting.",
+ reveal:"Opened 2021 on the town's abandoned railway workshops, wrapped in ~11,000 stainless-steel panels made to shimmer like Starry Night. Old railyard becomes art tower — Arles reinventing a ruin one more time. And that metal skin is the thread to your other files: making it takes enormous electricity (bauxite → aluminium → reactors). Pièce N°6."},
+{id:"alyscamps",tier:2,zone:"alyscamps",title:"A sarcophagus at the Alyscamps",
+ hint:"The avenue of stone coffins Van Gogh and Gauguin painted together. Not going? Use the 🌐 web-image path and say where you'd have seen it.",
+ reveal:"One of the most famous necropolises of the ancient world — and over the centuries the town gave away its finest sarcophagi as gifts to visiting dignitaries. A cemetery slowly re-gifted. Van Gogh and Gauguin set up easels here side by side in 1888, just before it all fell apart. Pièce N°5."},
+{id:"riverfind",tier:3,zone:"rhône",title:"A river-find in the blue museum",
+ hint:"At the Musée de l'Arles antique, photograph the raised Roman barge or the marble 'Caesar' bust. Skipping it? 🌐 web-image path.",
+ reveal:"Both came out of the Rhône: the 31-metre barge Arles-Rhône 3, raised whole in 2011, and the marble bust dredged in 2007 that SOME experts call a lifetime portrait of Julius Caesar — an identification still contested. Photograph the label carefully: is it stated as fact or as a maybe? Pièce N°4."},
+{id:"barbegal",tier:3,zone:"route",title:"The mills of Barbegal",
+ hint:"Only if your route passes Fontvieille: the double stair of ruined mill-races down the hillside. Otherwise claim it with a 🌐 web image and say where you'd have seen it.",
+ reveal:"Sixteen waterwheels in two rows once ground flour by the tonne here — arguably the largest factory of the ancient world, seventeen centuries before the Industrial Revolution. Almost nobody detours for it, which is exactly why it's a tier-3 find. Pièce N°2."},
+{id:"census",tier:3,zone:"ville",obs:true,title:"The Van Gogh census",
+ hint:"Walk one street of the old town once. Count: how many businesses vs lived-in homes? (Or how many Van Gogh easels you pass.) Enter e.g. « 18 shops / 2 homes ».",
+ reveal:"Whatever you counted, your numbers are primary-source evidence for Pièce N°6: over a million visitors a year, a historic centre turning shop by shop into a backdrop. Is that a community saved by tourism, or replaced by it? Keep your count for the mayor's brief."}
+]};
+</script>
+<script id="engine">
+const S={profile:null,pts:0,items:{}}; // items[id]={mode:'photo'|'web',pts,cap,url,dataUrl?}
+
+/* ---- local persistence (photos stored per-item to survive quota limits) ---- */
+const STORE=(()=>{
+  let ok=false;
+  try{localStorage.setItem("__mp","1");localStorage.removeItem("__mp");ok=true;}catch(e){ok=false;}
+  const K="missionpack:"+HUNT.meta.id, P=K+":photo:";
+  return{ok,K,P,
+    save(o){if(!ok)return false;try{localStorage.setItem(K,JSON.stringify(o));return true;}catch(e){return false;}},
+    load(){if(!ok)return null;try{return JSON.parse(localStorage.getItem(K)||"null");}catch(e){return null;}},
+    savePhoto(id,d){if(!ok)return false;try{localStorage.setItem(P+id,d);return true;}catch(e){return false;}},
+    loadPhoto(id){if(!ok)return null;try{return localStorage.getItem(P+id);}catch(e){return null;}},
+    clear(){if(!ok)return;try{
+      Object.keys(localStorage).filter(k=>k.startsWith(K)).forEach(k=>localStorage.removeItem(k));
+    }catch(e){}}};
+})();
+let wiped=false;
+function persist(){
+  if(!STORE.ok||wiped)return;
+  const slim={profile:S.profile,pts:S.pts,items:{}};
+  for(const k in S.items){const{dataUrl,...rest}=S.items[k];slim.items[k]=rest;}
+  STORE.save(slim);
+}
+addEventListener("visibilitychange",()=>{if(document.hidden)persist();});
+addEventListener("pagehide",persist);
+function toast(msg){
+  const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add("show"));
+  setTimeout(()=>{t.classList.remove("show");setTimeout(()=>t.remove(),350);},3200);
+}
+
+const $=id=>document.getElementById(id);
+const esc=t=>(t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function rank(){let r=HUNT.meta.ranks[0][1];
+  for(const[m,n]of HUNT.meta.ranks)if(S.pts>=m)r=n;return r;}
+function renderGauge(){
+  const max=HUNT.items.reduce((a,i)=>a+HUNT.tiers[i.tier][1],0);
+  $("ptsLbl").textContent=S.pts+" / "+max+" pts";
+  $("gaugeFill").style.width=Math.min(100,S.pts/max*100)+"%";
+  $("rankLbl").textContent=rank();
+  $("pstrip").innerHTML=HUNT.items.map(i=>{
+    const st=S.items[i.id];
+    return `<div class="pdot ${st?(st.mode==="web"?"half":"on"):""}" title="${esc(i.title)}"></div>`;
+  }).join("");
+}
+
+let filter="all";
+function renderList(){
+  const host=$("huntList");host.innerHTML="";
+  const zones=["all",...new Set(HUNT.items.map(i=>i.zone))];
+  $("filters").innerHTML="";
+  zones.forEach(z=>{const b=document.createElement("button");
+    b.textContent=z==="all"?"tout":z;b.classList.toggle("on",filter===z);
+    b.onclick=()=>{filter=z;renderList();};$("filters").appendChild(b);});
+  HUNT.items.filter(i=>filter==="all"||i.zone===filter).forEach(item=>{
+    const[tn,tp]=HUNT.tiers[item.tier];
+    const st=S.items[item.id];
+    const el=document.createElement("div");
+    el.className="hunt-item"+(st?" found":"");
+    el.innerHTML=`<div class="hi-top">
+        <span class="hi-tier mono ${item.tier===3?"t3":""}">${tn}</span>
+        <span class="hi-pts mono">${tp} pts · ${item.zone}</span></div>
+      <div class="hi-title">${st?"✔ ":""}${esc(item.title)}</div>
+      <div class="hi-hint">${esc(item.hint)}</div>
+      <div class="hi-body"></div>`;
+    const body=el.querySelector(".hi-body");
+    if(st) renderFound(item,st,body); else renderOpen(item,body,tp);
+    host.appendChild(el);
+  });
+  renderGauge();
+}
+
+function renderOpen(item,body,tp){
+  if(item.obs){
+    body.innerHTML=`<input class="hi-cap" placeholder="Your count / observation…">
+      <div class="hi-actions"><button class="btn">Record it (+${tp})</button></div>`;
+    body.querySelector(".btn").onclick=()=>{
+      const v=body.querySelector("input").value.trim();
+      if(v.length<3)return alert("Enter your observation first.");
+      complete(item,{mode:"photo",pts:tp,cap:v});
+    };
+    return;
+  }
+  body.innerHTML=`
+    <div class="hi-actions">
+      <button class="btn">📷 Photo (+${tp})</button>
+      <button class="btn alt">🌐 Web image (+${Math.ceil(tp/2)})</button>
+    </div>
+    <input type="file" accept="image/*" capture="environment">
+    <div class="hi-url"><input placeholder="Paste image URL…">
+      <input placeholder="Where would you have seen this in person?" style="margin-top:6px">
+      <button class="btn" style="margin-top:6px">Submit for half points</button></div>`;
+  const file=body.querySelector("input[type=file]");
+  body.querySelectorAll(".hi-actions .btn")[0].onclick=()=>file.click();
+  file.onchange=()=>{
+    const f=file.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{
+      // downscale for the report so exports stay a sane size
+      const img=new Image();
+      img.onload=()=>{
+        const c=document.createElement("canvas");
+        const sc=Math.min(1,760/Math.max(img.width,img.height));
+        c.width=img.width*sc;c.height=img.height*sc;
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+        complete(item,{mode:"photo",pts:tp,dataUrl:c.toDataURL("image/jpeg",.72)});
+      };
+      img.src=r.result;
+    };
+    r.readAsDataURL(f);
+  };
+  body.querySelectorAll(".hi-actions .btn")[1].onclick=()=>
+    body.querySelector(".hi-url").classList.add("open");
+  body.querySelector(".hi-url .btn").onclick=()=>{
+    const[u,w]=body.querySelectorAll(".hi-url input");
+    if(!u.value.trim().startsWith("http"))return alert("Paste a full image URL (https://…)");
+    if(w.value.trim().length<8)return alert("Say where you'd have seen it — that's the deal.");
+    complete(item,{mode:"web",pts:Math.ceil(tp/2),url:u.value.trim(),cap:w.value.trim()});
+  };
+}
+
+function renderFound(item,st,body){
+  body.innerHTML=`
+    ${st.dataUrl?`<img class="hi-photo" src="${st.dataUrl}" alt="">`:""}
+    ${st.mode==="web"?`<div class="note">🌐 web image (half points): ${esc(st.url)}</div>`:""}
+    ${item.obs?`<div class="note">Recorded: « ${esc(st.cap)} »</div>`:""}
+    ${!item.obs?`<input class="hi-cap" placeholder="Caption for your report (optional)…" value="${esc(st.cap&&st.mode!=="web"?st.cap:"")}">`:""}
+    <div class="hi-actions"><button class="btn alt">Révéler l'histoire</button></div>
+    <div class="hi-reveal" style="display:none"><b>CE QUE VOUS AVEZ TROUVÉ · </b>${esc(item.reveal)}</div>`;
+  const cap=body.querySelector(".hi-cap");
+  if(cap)cap.onchange=()=>{st.cap=cap.value;};
+  body.querySelector(".btn").onclick=function(){
+    body.querySelector(".hi-reveal").style.display="block";this.style.display="none";
+  };
+}
+
+function complete(item,st){
+  S.items[item.id]=st;S.pts+=st.pts;
+  if(st.dataUrl){
+    if(!STORE.savePhoto(item.id,st.dataUrl)){
+      st.photoUnsaved=true;
+      toast("Photo kept for now, but device storage is full — export your Rapport today.");
+    }
+  }
+  persist();
+  renderList();
+  // auto-open the reveal on completion
+  setTimeout(()=>{
+    const els=[...document.querySelectorAll(".hunt-item")];
+    const el=els.find(e=>e.querySelector(".hi-title")?.textContent.includes(item.title));
+    if(el){el.scrollIntoView({block:"center"});
+      const b=el.querySelector(".hi-actions .btn");if(b)b.click();}
+  },80);
+}
+
+/* save code: excludes photo data (too large) — keeps checkmarks, points, captions */
+function openSave(){
+  const slim={profile:S.profile,pts:S.pts,items:{}};
+  for(const k in S.items){const{dataUrl,...rest}=S.items[k];slim.items[k]=rest;}
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(slim))));
+  $("modalIn").innerHTML=`<h3>Code de Sauvegarde</h3>
+  <p class="note">Saves your checkmarks, points and captions — NOT the photos (those are in your camera roll; export the Rapport today to keep them together).</p>
+  <textarea id="saveCode" class="mono" style="width:100%;min-height:110px">${code}</textarea>
+  <button class="btn" id="copyBtn">Copy</button>
+  <button class="btn alt" id="loadBtn">Load pasted code</button>
+  <button class="btn alt" onclick="closeModal()">Close</button>
+  <hr class="rule">
+  <p class="saveflag mono">${STORE.ok?"✔ AUTO-SAVE ACTIVE ON THIS DEVICE":"⚠ AUTO-SAVE UNAVAILABLE HERE — KEEP THE CODE ABOVE"}</p>
+  <p class="note">Finds, points and photos save automatically on this device. The code moves your finds (not photos) to another device.</p>
+  <button class="btn red" id="resetBtn">Start over (erase progress)</button>
+  <p class="note" id="saveMsg"></p>`;
+  $("modal").classList.add("open");
+  $("copyBtn").onclick=async()=>{try{await navigator.clipboard.writeText($("saveCode").value);
+    $("saveMsg").textContent="Copied.";}catch(e){$("saveMsg").textContent="Copy manually.";}};
+  $("resetBtn").onclick=()=>{
+    if(!confirm("Erase all finds and photos on this device and start over?"))return;
+    wiped=true;STORE.clear();location.reload();
+  };
+  $("loadBtn").onclick=()=>{try{
+    const o=JSON.parse(decodeURIComponent(escape(atob($("saveCode").value.trim()))));
+    // merge: photos already in memory survive a code load
+    for(const k in o.items||{}){
+      if(S.items[k]&&S.items[k].dataUrl) o.items[k].dataUrl=S.items[k].dataUrl;
+    }
+    S.profile=o.profile||S.profile;S.items=o.items||S.items;
+    S.pts=Object.values(S.items).reduce((a,i)=>a+(i.pts||0),0);
+    if(S.profile)$("hdUser").textContent=(S.profile.emoji||"")+" "+(S.profile.name||"");
+    persist();renderList();closeModal();
+  }catch(e){$("saveMsg").textContent="Code didn't parse.";}};
+}
+function closeModal(){$("modal").classList.remove("open");}
+
+function openReport(){
+  const p=S.profile||{name:"Agent",emoji:"🎨"};
+  const rows=HUNT.items.map(i=>{
+    const st=S.items[i.id];if(!st)return"";
+    return `<div style="border:1px solid #999;padding:12px;margin:12px 0;page-break-inside:avoid">
+      <b>${esc(i.title)}</b> <span style="color:#666">(${st.pts} pts${st.mode==="web"?" · web image":""})</span>
+      ${st.dataUrl?`<br><img src="${st.dataUrl}" style="max-width:100%;max-height:340px;border:2px solid #16345F;margin:8px 0">`:""}
+      ${st.cap?`<p><i>« ${esc(st.cap)} »</i></p>`:""}
+      ${st.url?`<p style="font-size:12px;color:#666">${esc(st.url)}</p>`:""}
+      <p style="font-size:14px">${esc(i.reveal)}</p></div>`;
+  }).join("")||"<p>No finds recorded.</p>";
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Chasse — ${esc(p.name)}</title>
+  <style>body{font-family:Georgia,serif;max-width:640px;margin:24px auto;padding:0 16px;color:#22262E;background:#F4F2EA}
+  h1{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;color:#16345F}
+  .stamp{border:3px solid #2E7D46;color:#2E7D46;display:inline-block;padding:2px 14px;transform:rotate(-4deg);font-weight:700}</style>
+  </head><body>
+  <p style="letter-spacing:.2em;font-size:11px">ARCHIVES DE PROVENCE · RAPPORT DE CHASSE</p>
+  <h1>${p.emoji} ${esc(p.name)} — Arles</h1>
+  <p><span class="stamp">${rank()} · ${S.pts} PTS · ${Object.keys(S.items).length}/${HUNT.items.length} TROUVÉS</span></p>
+  ${rows}
+  <p style="font-size:12px;color:#666">Generated ${new Date().toLocaleDateString()} · Mission Packs · pairs with Dossier: Arles</p>
+  </body></html>`;
+  const blob=new Blob([html],{type:"text/html"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=`chasse-${(p.name||"agent").toLowerCase().replace(/\s+/g,"-")}.html`;a.click();
+}
+
+function netUpdate(){const on=navigator.onLine,el=$("netInd");
+  el.classList.toggle("on",on);
+  el.innerHTML=`<span class="dot"></span>${on?"EN LIGNE":"HORS LIGNE"}`;}
+addEventListener("online",netUpdate);addEventListener("offline",netUpdate);
+
+function setup(){
+  $("modalIn").innerHTML=`<h3>Identification de l'éclaireur</h3>
+  <div class="setup"><p>Your name, scout:</p>
+  <input id="pname" maxlength="20" placeholder="Prénom">
+  <p>Choose your mark:</p><div class="emoji-row" id="emos"></div>
+  <button class="btn" id="goBtn">Commencer la chasse</button></div>`;
+  let emoji="🎨";
+  ["🎨","🌻","🏛️","📷","🐂","⛵","🪨","🌊"].forEach(e=>{
+    const b=document.createElement("button");b.textContent=e;
+    if(e===emoji)b.classList.add("sel");
+    b.onclick=()=>{emoji=e;$("emos").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");};
+    $("emos").appendChild(b);});
+  $("modal").classList.add("open");
+  $("goBtn").onclick=()=>{S.profile={name:$("pname").value.trim()||"Éclaireur",emoji};
+    $("hdUser").textContent=emoji+" "+S.profile.name;persist();closeModal();};
+}
+
+$("dockTop").onclick=()=>window.scrollTo({top:0,behavior:"smooth"});
+$("dockSave").onclick=openSave;
+$("dockReport").onclick=openReport;
+$("modal").onclick=e=>{if(e.target.id==="modal")closeModal();};
+(function boot(){
+  const saved=STORE.load();
+  if(saved&&saved.profile){
+    S.profile=saved.profile;S.items=saved.items||{};
+    for(const id in S.items){
+      const d=STORE.loadPhoto(id);
+      if(d)S.items[id].dataUrl=d;
+    }
+    S.pts=Object.values(S.items).reduce((a,i)=>a+(i.pts||0),0);
+    $("hdUser").textContent=(S.profile.emoji||"")+" "+(S.profile.name||"");
+    renderList();netUpdate();
+    toast("Bon retour, "+(S.profile.name||"")+" — "+Object.keys(S.items).length+" finds restored");
+  } else {
+    renderList();netUpdate();setup();
+  }
+})();
+</script>
+</body>
+</html>
