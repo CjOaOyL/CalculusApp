@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Packs</title>
+<style>
+  :root{
+    --paper:#F4F2EA; --ink:#22262E; --ink2:#5A5F6A;
+    --navy:#16345F; --rouge:#C21F30; --line:#C8C3B2; --card:#FBFAF5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:Georgia,'Times New Roman',serif;
+    font-size:17px; line-height:1.55;
+  }
+  .mono{font-family:'Courier New',Courier,monospace}
+  .wrap{max-width:680px;margin:0 auto;padding:0 16px 60px}
+  header{border-bottom:3px double var(--navy);text-align:center;padding:30px 16px 20px}
+  header .eyebrow{font-size:11px;color:var(--rouge);letter-spacing:.3em}
+  header h1{
+    font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+    text-transform:uppercase;letter-spacing:.06em;font-size:34px;line-height:1.1;
+    color:var(--navy);margin:8px 0 4px}
+  header .sub{font-style:italic;color:var(--ink2);font-size:15px}
+  .card{
+    display:block;background:var(--card);border:1px solid var(--line);
+    border-left:4px solid var(--navy);padding:16px 18px;margin:16px 0;
+    text-decoration:none;color:inherit}
+  .card:hover{background:#fff}
+  .card.hunt{border-left-color:var(--rouge)}
+  .card-tag{font-size:10px;letter-spacing:.22em;color:var(--ink2);margin-bottom:6px}
+  .card-tag.hunt{color:var(--rouge)}
+  .card h2{
+    font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+    text-transform:uppercase;letter-spacing:.05em;font-size:22px;color:var(--navy);
+    line-height:1.15;margin:0 0 4px}
+  .card p{font-size:14px;color:var(--ink2);margin:0}
+  .group{font-size:11px;letter-spacing:.2em;color:var(--ink2);
+    margin:28px 0 4px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  footer{font-size:12px;color:var(--ink2);text-align:center;margin-top:36px}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow mono">ARCHIVES · APPRENTISSAGE HORS LIGNE</div>
+  <h1>Mission Packs</h1>
+  <div class="sub">Self-contained learning dossiers &amp; field hunts. Tap one to begin.</div>
+</header>
+
+<div class="wrap">
+
+  <div class="group mono">PROVENCE · LES BAUX-DE-PROVENCE</div>
+
+  <a class="card" href="les-baux.html">
+    <div class="card-tag mono">DOSSIER</div>
+    <h2>Les Baux-de-Provence</h2>
+    <p>The rock, the fortress, the demolition, and how a village gave its name to bauxite.</p>
+  </a>
+
+  <a class="card hunt" href="hunt-les-baux.html">
+    <div class="card-tag hunt mono">CHASSE · FIELD HUNT</div>
+    <h2>La Chasse du Rocher</h2>
+    <p>Fourteen photo targets on the rock — the companion hunt to the Les Baux dossier.</p>
+  </a>
+
+  <div class="group mono">FRANCE</div>
+
+  <a class="card" href="nuclear-france.html">
+    <div class="card-tag mono">DOSSIER</div>
+    <h2>La France Nucléaire</h2>
+    <p>How France came to run on the atom — the reactors, the politics, and the trade-offs.</p>
+  </a>
+
+</div>
+
+<footer class="mono">MISSION PACKS</footer>
+</body>
+</html>
