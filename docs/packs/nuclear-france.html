@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dossier: La France Nucléaire</title>
+<!--
+  MISSION PACKS — offline-first learning engine
+  Repo layout for later extraction (Claude Code handoff):
+    /engine/engine.js  = the script block tagged id=engine
+    /engine/style.css  = the style block
+    /packs/nuclear-france.json = the PACK constant
+  Build step: inline pack + engine + css into one distributable HTML.
+  AI endpoint: CONFIG.aiEndpoint — works keyless inside Claude.ai artifacts;
+  point it at your own proxy (Cloudflare Worker holding the API key) when
+  hosted on cjoaoyl.github.io.
+-->
+<style>
+:root{
+  --paper:#F4F2EA; --paper2:#ECE9DE; --ink:#22262E; --ink2:#5A5F6A;
+  --navy:#16345F; --bleu:#0B57A4; --rouge:#C21F30; --amber:#E39A1D;
+  --line:#C8C3B2; --ok:#2E7D46; --card:#FBFAF5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:17px; line-height:1.55;
+}
+.mono{font-family:'Courier New',Courier,monospace}
+.hdr-face{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase; letter-spacing:.14em; font-weight:700}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px 80px}
+
+/* ---------- header / gauge ---------- */
+header{
+  position:sticky;top:0;z-index:50;background:var(--paper);
+  border-bottom:3px double var(--navy);
+}
+.hd-in{max-width:680px;margin:0 auto;padding:10px 16px 8px}
+.hd-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.hd-rf{font-size:10px;letter-spacing:.22em;color:var(--ink2)}
+.hd-title{font-size:15px;color:var(--navy)}
+.hd-user{font-size:12px;color:var(--ink2);white-space:nowrap}
+.gauge{margin-top:7px}
+.gauge-label{display:flex;justify-content:space-between;font-size:10px;
+  color:var(--ink2);letter-spacing:.18em}
+.gauge-bar{position:relative;height:14px;border:1.5px solid var(--navy);
+  background:repeating-linear-gradient(90deg,transparent 0 9.8%,var(--line) 9.8% 10%);
+  margin-top:2px}
+.gauge-fill{position:absolute;left:0;top:0;bottom:0;background:var(--amber);
+  width:0%;transition:width .6s ease}
+.gauge-rank{position:absolute;right:4px;top:-1px;font-size:10px;color:var(--navy);font-weight:700}
+
+/* ---------- sommaire ---------- */
+.cover{padding:26px 0 8px;text-align:center;border-bottom:1px solid var(--line)}
+.cover .eyebrow{font-size:11px;color:var(--rouge);letter-spacing:.3em}
+.cover h1{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.06em;font-size:34px;line-height:1.1;
+  color:var(--navy);margin:8px 0 4px}
+.cover .sub{font-style:italic;color:var(--ink2);font-size:15px}
+.cover .classif{display:inline-block;margin-top:12px;padding:2px 12px;
+  border:2px solid var(--rouge);color:var(--rouge);font-size:11px;
+  letter-spacing:.25em;transform:rotate(-2deg)}
+.toc{padding:14px 0}
+.toc-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);
+  padding:12px 14px;margin:8px 0;cursor:pointer;font:inherit;color:inherit}
+.toc-item:active{background:var(--paper2)}
+.toc-num{font-size:10px;color:var(--ink2);letter-spacing:.15em;min-width:64px}
+.toc-t{flex:1}
+.toc-t b{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--navy);font-size:15px;display:block}
+.toc-t i{font-size:13px;color:var(--ink2)}
+.toc-st{font-size:18px}
+.toc-pts{font-size:11px;color:var(--ink2)}
+
+/* ---------- section view ---------- */
+.sec{display:none;padding-top:14px}
+.sec.active{display:block}
+.crumb{background:none;border:none;color:var(--bleu);font:inherit;font-size:14px;
+  cursor:pointer;padding:8px 0;text-decoration:underline}
+.piece-tag{font-size:11px;color:var(--rouge);letter-spacing:.25em;margin-top:4px}
+.sec h2{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.05em;font-size:27px;color:var(--navy);
+  line-height:1.15;margin:2px 0 2px}
+.sec .fr-sub{font-style:italic;color:var(--ink2);margin-bottom:14px;font-size:15px}
+.sec p{margin:0 0 14px}
+.sec .stamped{position:relative}
+.stamp{display:inline-block;border:3px solid var(--ok);color:var(--ok);
+  padding:2px 14px;font-size:15px;letter-spacing:.2em;transform:rotate(-6deg);
+  font-weight:700;margin:6px 0}
+@media (prefers-reduced-motion:no-preference){
+  .stamp{animation:slam .25s ease-out}
+  @keyframes slam{from{transform:rotate(-6deg) scale(2);opacity:0}
+    to{transform:rotate(-6deg) scale(1);opacity:1}}
+}
+
+/* vocab chips */
+.v{border-bottom:2px dotted var(--bleu);color:var(--navy);cursor:pointer;
+  font-style:italic}
+.v .en{color:var(--rouge);font-style:normal;font-size:.88em}
+.vocab-box{background:var(--paper2);border:1px dashed var(--ink2);padding:10px 12px;
+  margin:16px 0;font-size:14px}
+.vocab-box b{letter-spacing:.15em;font-size:11px;color:var(--ink2)}
+
+/* interactive + question cards */
+.card{background:var(--card);border:1px solid var(--line);padding:14px;margin:18px 0}
+.card-tag{font-size:10px;letter-spacing:.22em;color:var(--bleu);margin-bottom:8px}
+.card-tag.ai{color:var(--rouge)}
+.qtext{font-weight:700;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;background:var(--paper);
+  border:1.5px solid var(--line);padding:10px 12px;margin:6px 0;font:inherit;
+  font-size:15px;cursor:pointer;color:var(--ink)}
+.opt:not(:disabled):active{border-color:var(--bleu)}
+.opt.right{border-color:var(--ok);background:#EAF4EC}
+.opt.wrong{border-color:var(--rouge);background:#F8ECEC;opacity:.75}
+.opt:disabled{cursor:default}
+.expl{font-size:14px;color:var(--ink2);border-left:3px solid var(--ok);
+  padding:6px 10px;margin-top:8px;background:var(--paper2)}
+.pts-pop{color:var(--rouge);font-weight:700;font-size:14px;
+  font-family:'Courier New',monospace}
+textarea{width:100%;min-height:96px;font:inherit;font-size:15px;padding:10px;
+  border:1.5px solid var(--line);background:var(--paper);color:var(--ink)}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:none;
+  padding:10px 18px;font-family:'Arial Narrow',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.12em;font-size:14px;cursor:pointer;
+  margin-top:8px}
+.btn.alt{background:var(--paper);color:var(--navy);border:1.5px solid var(--navy)}
+.btn.red{background:var(--rouge)}
+.btn:disabled{opacity:.45;cursor:default}
+button:focus-visible,.opt:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--amber);outline-offset:2px}
+.note{font-size:13px;color:var(--ink2);font-style:italic}
+.model-ans{border:1px solid var(--ok);background:#EFF6F0;padding:10px;
+  font-size:14px;margin-top:8px}
+
+/* simulator */
+.sim-stats{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;margin:8px 0}
+.sim-stat{background:var(--paper2);padding:6px 10px;border:1px solid var(--line)}
+.sim-stat b{display:block;font-size:17px;color:var(--navy)}
+.sim-log{font-size:13px;max-height:120px;overflow-y:auto;border:1px solid var(--line);
+  padding:8px;margin-top:8px;background:var(--paper)}
+.rbar{display:flex;gap:3px;margin:8px 0;flex-wrap:wrap}
+.rblock{width:22px;height:30px;border:1.5px solid var(--navy);background:var(--paper)}
+.rblock.done{background:var(--amber)}
+.rblock.custom{background:var(--rouge)}
+
+/* sort game */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{border:1.5px solid var(--navy);background:var(--paper);padding:8px 12px;
+  font:inherit;font-size:14px;cursor:pointer}
+.chip:disabled{opacity:.35}
+.slots{min-height:44px;border:1.5px dashed var(--ink2);padding:8px;
+  display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;background:var(--paper2)}
+.slot-chip{border:1.5px solid var(--bleu);padding:8px 12px;font-size:14px;
+  background:#fff;cursor:pointer}
+.slot-chip.good{border-color:var(--ok);background:#EAF4EC}
+.slot-chip.bad{border-color:var(--rouge);background:#F8ECEC}
+
+/* bill comparator */
+.bill-row{margin:10px 0}
+.bill-name{font-size:12px;letter-spacing:.15em;color:var(--ink2)}
+.bill-bar{height:26px;background:var(--bleu);color:#fff;display:flex;
+  align-items:center;padding:0 8px;font-family:'Courier New',monospace;
+  font-size:14px;min-width:70px;transition:width .3s}
+.bill-bar.nj{background:var(--rouge)}
+input[type=range]{width:100%;accent-color:var(--navy)}
+
+/* outbox / footer bar */
+.dock{position:fixed;bottom:0;left:0;right:0;background:var(--navy);z-index:60}
+.dock-in{max-width:680px;margin:0 auto;display:flex}
+.dock button{flex:1;background:none;border:none;color:#fff;padding:11px 4px;
+  font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.1em;font-size:12px;cursor:pointer;border-right:1px solid rgba(255,255,255,.2)}
+.dock button:last-child{border-right:none}
+.badge{display:inline-block;background:var(--amber);color:var(--ink);
+  border-radius:9px;font-size:11px;padding:0 6px;margin-left:4px;font-weight:700}
+.net{font-size:10px;letter-spacing:.15em}
+.net .dot{display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--rouge);vertical-align:middle;margin-right:4px}
+.net.on .dot{background:var(--ok)}
+
+/* modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(20,24,32,.55);z-index:100}
+.modal.open{display:flex;align-items:flex-end;justify-content:center}
+.modal-in{background:var(--paper);width:100%;max-width:680px;max-height:86vh;
+  overflow-y:auto;padding:18px 16px 28px;border-top:4px solid var(--navy)}
+.modal-in h3{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--navy);margin-bottom:10px}
+.ob-item{border:1px solid var(--line);background:var(--card);padding:10px;margin:8px 0;
+  font-size:14px}
+.ob-q{font-weight:700}
+.ob-a{font-style:italic;color:var(--ink2);margin:4px 0}
+.ob-fb{border-left:3px solid var(--ok);padding:4px 8px;background:#EFF6F0;margin-top:6px}
+.ob-status{font-size:11px;letter-spacing:.15em}
+.setup input{width:100%;font:inherit;font-size:17px;padding:10px;
+  border:1.5px solid var(--line);background:#fff;margin:8px 0}
+.emoji-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.emoji-row button{font-size:26px;background:var(--paper2);border:2px solid transparent;
+  padding:6px 10px;cursor:pointer}
+.emoji-row button.sel{border-color:var(--navy);background:#fff}
+.phrase{border-bottom:1px solid var(--line);padding:8px 0;font-size:15px}
+.phrase i{color:var(--ink2);font-size:13px;display:block}
+hr.rule{border:none;border-top:1px solid var(--line);margin:20px 0}
+.toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);
+  background:var(--navy);color:#fff;padding:10px 16px;font-size:14px;z-index:200;
+  max-width:92%;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.3);
+  opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.saveflag{font-size:11px;letter-spacing:.12em;color:var(--ink2);margin-top:6px}
+
+.refline{font-size:14px;margin:10px 0;word-break:break-word}
+.refline a{color:var(--bleu)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd-in">
+    <div class="hd-top">
+      <span class="hd-rf mono">RÉPUBLIQUE FRANÇAISE · MINISTÈRE DE L'ÉNERGIE</span>
+      <span class="hd-user mono" id="hdUser"></span>
+    </div>
+    <div class="hd-top">
+      <span class="hd-title hdr-face">Dossier: La France Nucléaire</span>
+      <span class="net mono" id="netInd"><span class="dot"></span>HORS LIGNE</span>
+    </div>
+    <div class="gauge">
+      <div class="gauge-label mono"><span>PUISSANCE</span><span id="ptsLbl">0 pts</span></div>
+      <div class="gauge-bar"><div class="gauge-fill" id="gaugeFill"></div>
+        <span class="gauge-rank mono" id="rankLbl"></span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="home">
+    <div class="cover">
+      <div class="eyebrow mono">RÉGION: PROVENCE · MISSION 01</div>
+      <h1>La France Nucléaire</h1>
+      <div class="sub">You are France's new energy minister. The year is 1974. There is a crisis.</div>
+      <div class="classif mono">POUR LECTURE IMMÉDIATE</div>
+    </div>
+    <div class="toc" id="toc"></div>
+    <div class="vocab-box">
+      <b class="mono">PHRASES DU JOUR — say these out loud today</b>
+      <div id="phraseBox"></div>
+    </div>
+  </div>
+  <div id="secView"></div>
+</div>
+
+<div class="dock">
+  <div class="dock-in">
+    <button id="dockHome">Sommaire</button>
+    <button id="dockOutbox">À évaluer<span class="badge" id="obBadge" style="display:none">0</span></button>
+    <button id="dockSave">Sauvegarde</button>
+    <button id="dockReport">Rapport</button>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="modal-in" id="modalIn"></div></div>
+
+<script id="pack">
+/* ============ PACK: nuclear-france ============ */
+const PACK = {
+meta:{id:"nuclear-france",region:"Provence",title:"La France Nucléaire",
+  ranks:[[0,"STAGIAIRE"],[120,"INGÉNIEUR(E)"],[260,"DIRECTEUR/TRICE"],[400,"MINISTRE"]],
+  maxPts:565},
+phrases:[
+  ["Combien ça coûte ?","How much does it cost?"],
+  ["C'est encore loin ?","Is it still far?"],
+  ["On peut se baigner ici ?","Can we swim here?"],
+  ["Qu'est-ce que c'est, ça ?","What is that thing?"],
+  ["Je voudrais une glace, s'il vous plaît.","I'd like an ice cream, please."]
+],
+sections:[
+/* ---------- 1 ---------- */
+{id:"pari",num:"PIÈCE N°1",title:"Le Pari",en:"The Bet (1973–1974)",
+vocab:[["le pétrole","oil"],["le charbon","coal"],["la crise","the crisis"],["une idée","an idea"]],
+body:[
+"October 1973. Arab oil producers cut exports to punish countries that supported Israel in the Yom Kippur War. The price of {{le pétrole||oil}} quadruples in five months. France is in serious trouble: it has almost no oil of its own, little natural gas, and its {{le charbon||coal}} mines are nearly exhausted. About three-quarters of the energy France uses is imported. Lights, factories, jobs — all depend on tankers arriving from countries that just proved they could turn off the tap.",
+"In March 1974, Prime Minister Pierre Messmer announces one of the biggest industrial bets any country has ever made: France will build nuclear reactors — dozens of them, as fast as possible — so that its electricity no longer depends on anyone else. The government slogan becomes famous: <b>« En France, on n'a pas de pétrole, mais on a des idées. »</b> — <i>In France, we don't have oil, but we have ideas.</i>",
+"Notice what the bet was actually about. Not climate change — almost nobody was talking about CO₂ in 1974. It was about <b>energy security</b>: never again being at the mercy of an embargo. The climate benefits came later, by accident. Your first task, Minister: face the same choice they faced."
+],
+interactive:"decision",
+questions:[
+{t:"mcq",q:"Why was France hit especially hard by the 1973 oil shock?",
+ opts:["Its power plants were too old","It imported about 75% of its energy and had few fossil resources of its own","Its population was growing too fast","It had banned coal mining for environmental reasons"],
+ a:1,expl:"France had almost no domestic oil or gas and declining coal — roughly three-quarters of its energy arrived by tanker. The embargo exposed exactly that weakness."},
+{t:"mcq",q:"The Messmer Plan's real goal in 1974 was…",
+ opts:["Fighting climate change","Creating jobs in construction","Energy independence — security from embargoes","Selling reactors to other countries"],
+ a:2,expl:"It was a national-security decision. The low-carbon grid it produced was a side effect nobody was aiming for — arguably history's luckiest accident of energy policy."},
+{t:"mcq",q:"« On n'a pas de pétrole, mais on a des idées » literally means…",
+ opts:["We have no oil, but we have ideas","We need no oil, we have water","We have no money, but we have oil","No oil, no problem"],
+ a:0,expl:"Bonus French: « on » here means 'we' — you'll hear it constantly in spoken French instead of « nous »."}
+]},
+/* ---------- 2 ---------- */
+{id:"serie",num:"PIÈCE N°2",title:"La Série",en:"How they scaled it",
+vocab:[["une centrale nucléaire","a nuclear power plant"],["pareil","the same"],["le chantier","the construction site"],["la puissance","power/output"]],
+body:[
+"Here is the decision that made the whole thing work: <b>build the same reactor over and over</b>. France licensed one proven American design (from Westinghouse) and built it in standardized series — first 34 reactors of 900 MW, then 20 of 1300 MW, then 4 of 1450 MW. Fifty-plus reactors, essentially three models.",
+"Why does {{pareil||the same}} matter so much? Every copy shares spare parts. A technician trained at one {{une centrale nucléaire||nuclear plant}} can work at any other. The safety regulator masters one design instead of fifty. And every {{le chantier||construction site}} learns from the mistakes of the previous one, so each copy gets faster and cheaper to build. Engineers call this the <b>learning curve</b>. Compare the USA, where utilities built dozens of unique, customized designs — and costs went up instead of down.",
+"At its peak France connected four to six reactors per year. In about 15 years, a country of 55 million people replaced most of its fossil electricity. It remains the fastest large-scale decarbonization of a power grid ever achieved. Try to beat their record yourself below — you have a budget, a deadline, and two ways to build."
+],
+interactive:"simulator",
+questions:[
+{t:"mcq",q:"Why did building identical copies make each reactor cheaper?",
+ opts:["The government hid the real costs","Workers, factories and regulators repeat and improve the same tasks — the learning curve","Copies use less concrete","Uranium got cheaper over time"],
+ a:1,expl:"Repetition drives cost down: shared parts, transferable crews, one regulator learning one design, each site improving on the last."},
+{t:"mcq",q:"Roughly how much of France's electricity comes from nuclear today?",
+ opts:["About 20%","About 40%","About 70%","Nearly 100%"],
+ a:2,expl:"About 70% — the highest share of any country in the world. (Most of the rest is hydro and other renewables.)"},
+{t:"selfcheck",q:"In your own words: why did reactor costs FALL in France during the 1980s while they ROSE in the USA at the same time?",
+ model:"France built standardized series of one licensed design, so every plant benefited from shared parts, experienced crews, a regulator that knew the design, and lessons from the previous site (learning curve). US utilities each built bespoke, customized designs, so almost every plant was a first-of-a-kind — no repetition, no learning curve, plus changing regulations forced redesigns mid-construction."}
+]},
+/* ---------- 3 ---------- */
+{id:"economie",num:"PIÈCE N°3",title:"L'Économie",en:"The 19-cent mystery",
+vocab:[["la facture","the bill"],["les impôts","taxes"],["le réseau","the grid/network"],["ça coûte cher","that's expensive"],["le marché","the market"]],
+body:[
+"A puzzle, Minister — and this one is real. In 2026 the French energy regulator (the CRE) calculated exactly what it costs EDF to produce one kilowatt-hour from the existing reactor fleet. Everything counted: uranium, staff, repairs, waste storage, even the vast <i>Grand Carénage</i> programme to extend the reactors' lives. The answer: <b>€60.3 per MWh</b> — about <b>6.9 US cents per kWh</b>.",
+"Now open a French {{la facture||bill}}. A household pays roughly <b>26 cents</b> for that same kilowatt-hour. Something multiplied the price by nearly <b>four</b> between the reactor and the wall socket. Before you read on, take the cost stack below apart and find it.",
+"Here is where the money goes. {{les impôts||Taxes}} are the single biggest slice — about a third of the bill. There's an excise tax on every kWh, a small charge (the CTA) that funds pensions for energy workers, and then 20% VAT applied on top of everything, <i>including on the other taxes</i>. Next comes {{le réseau||the network}}: roughly a quarter of the bill pays RTE's 105,000 km of high-voltage lines and Enedis's 1.4 million km of local cables. Wires are expensive no matter what generates the power.",
+"That leaves the strangest slice: the gap between what the electricity <i>costs</i> (6.9¢) and what suppliers <i>charge</i> for it (about 11.4¢). Until 31 December 2025, a law called ARENH forced EDF to sell a large share of its nuclear output at a fixed low price. That law expired. Since 1 January 2026, EDF sells on {{le marché||the market}} instead — and European electricity markets are priced by the <b>most expensive plant needed at that moment</b>, which is usually a gas plant. So France now <b>produces electricity like a nuclear country and prices it like a gas country</b>. The profit — the 'nuclear rent' — flows to EDF and, through a claw-back tax, to the state. Not to your socket.",
+"The lesson is bigger than electricity, and it is the point of this whole Pièce: <b>a cheap way to make something does not automatically produce a cheap price.</b> Who captures the difference is decided by market rules, tax law and politics. Test it yourself with the buttons below — one of the results should genuinely surprise you."
+],
+interactive:"coststack",
+questions:[
+{t:"mcq",q:"Which is the SMALLEST slice of a French household electricity bill?",
+ opts:["Taxes","The network (grid)","The actual cost of producing the electricity","The supplier's market premium"],
+ a:2,expl:"Production — 6.9¢ of a ~26¢ bill. The thing everyone argues about is the cheapest part of it."},
+{t:"mcq",q:"Since ARENH ended on 1 January 2026, French suppliers buy their electricity…",
+ opts:["Directly from reactors at cost price","On the open market, where prices are set largely by gas plants","From the government at a fixed rate","From other countries only"],
+ a:1,expl:"On the market. Because European prices are set by the last (most expensive) plant needed, gas still shapes the price in a country running on nuclear."},
+{t:"mcq",q:"If French reactors produced electricity completely FREE, roughly how much would a household bill fall?",
+ opts:["About 90%","About 65%","About 39%","Almost nothing"],
+ a:2,expl:"Only ~39%. Nearly two-thirds of what you pay isn't the electricity — it's wires, margin and tax. Try it on the stack above."},
+{t:"selfcheck",q:"France produces electricity more cheaply than almost anyone, yet French households don't pay unusually low prices. Is that unfair, or is there a good argument for it? Give the best case for BOTH sides.",
+ model:"Against: consumers funded the reactors through decades of taxes and bills, so the cheap power arguably belongs to them; high energy prices hurt poorer households most. For: the money doesn't vanish — it funds EDF's €460bn investment programme, pays down debt, finances new EPR2 reactors and life-extension work that keeps the fleet running, and the tax revenue funds public services everyone uses. Charging below cost would also encourage waste and would leave nothing to rebuild the fleet when it retires. A strong answer notes that this is a distribution question — the same money, different pockets — not a question about nuclear technology at all."},
+{t:"ai",qid:"ai-econ",q:"⚡ MINISTER'S BRIEF: A journalist says: « If your nuclear power costs 6.9 cents to make, why am I paying 26? » Answer them (4–8 sentences). Name at least THREE things that sit between the reactor and the bill, and be honest about which ones are genuine costs and which are political choices.",
+ rubric:"Award up to 20 points. Strong answers (15-20) identify at least three of: taxes (~1/3 of the bill: excise + CTA + 20% VAT charged on top of other taxes); network/TURPE costs (~1/4, needed regardless of generation source); the supply premium created by market pricing since ARENH ended Jan 2026, where European prices are set by marginal gas plants; supplier margin and hedging; the standing charge. AND distinguish genuine physical costs (wires, maintenance, fuel) from policy choices (tax rates, market design, where the nuclear rent goes). 8-14: some correct components but no distinction between costs and choices, or fewer than three factors. Under 8: vague or factually wrong. Reward honesty and clear causal reasoning over any particular political conclusion."}
+]},
+/* ---------- 4 ---------- */
+{id:"environ",num:"PIÈCE N°4",title:"L'Environnement",en:"Climate, waste, and rivers",
+vocab:[["les déchets","waste"],["propre / sale","clean / dirty"],["le fleuve","the (large) river"],["la chaleur","heat"]],
+body:[
+"Judge every electricity source by one number: <b>grams of CO₂ per kilowatt-hour</b>, counted over the full life cycle — mining, building, running, dismantling. The results surprise almost everyone. Before reading further, try the sorting challenge below.",
+"Because of the 1974 bet, France's grid emits roughly <b>50 g CO₂/kWh</b> — among the lowest of any major economy. Germany, which spent enormous sums on renewables but also closed its nuclear plants, sits several times higher. Poland, still on coal, around 600+.",
+"Now the honest part: {{les déchets||waste}}. Nuclear waste is genuinely dangerous for a very long time — but the volumes are tiny. All of France's high-level waste from 60 years fits in a few large rooms. At <b>La Hague</b>, in Normandy, France recycles used fuel to extract reusable uranium and plutonium (made into 'MOX' fuel) — an approach most countries abandoned. What France still does NOT have: a final deep underground disposal site. The <b>Cigéo</b> project at Bure is licensed but decades from operating. The waste currently waits in secure storage — managed, but not solved.",
+"One more environmental link, and it flows right past you: reactors need cooling water, and many sit on {{le fleuve||rivers}} like the Rhône. During {{la chaleur||heat}} waves, rules protecting fish limit how much warm water plants may discharge, so output is sometimes reduced exactly when air conditioners run hardest. Climate change is now stressing the machine that was built before anyone worried about climate change."
+],
+interactive:"co2sort",
+questions:[
+{t:"mcq",q:"France's electricity grid emits roughly ___ g CO₂/kWh; a coal-heavy grid emits roughly ___.",
+ opts:["50 … 600+","300 … 900","150 … 300","5 … 100"],
+ a:0,expl:"≈50 vs 600+. The 1974 security bet accidentally built one of the cleanest large grids on Earth, decades early."},
+{t:"mcq",q:"France's biggest UNSOLVED nuclear-waste problem is…",
+ opts:["Waste volumes too large to store","No operating deep geological disposal site yet","Waste cannot be transported","Recycling is illegal in France"],
+ a:1,expl:"Volumes are small and recycling works at La Hague — but final deep disposal (Cigéo, at Bure) is licensed on paper and still decades away."},
+{t:"ai",qid:"ai-waste",q:"⚡ MINISTER'S BRIEF: Propose what France should do with its high-level nuclear waste for the next 100 years, and defend your choice against ONE serious objection. (4–8 sentences.)",
+ rubric:"Award up to 20 points. Any reasoned position is acceptable (deep disposal/Cigéo, continued surface storage + recycling, wait for new technology, export/shared repository). Strong answers (15–20) state a clear plan, give a real justification (small volumes, retrievability, safety over millennia, cost, public consent), AND honestly address one genuine counter-argument. 8–14: clear plan but weak or missing counter-argument. Under 8: vague or factually wrong. Reward intellectual honesty over any particular position."}
+]},
+/* ---------- 5 ---------- */
+{id:"echecs",num:"PIÈCE N°5",title:"Les Échecs",en:"The failures — read closely",
+vocab:[["en retard","late"],["une panne","a breakdown"],["hors service","out of service"],["une fissure","a crack"]],
+body:[
+"A dossier that hides failures is propaganda. Read these three carefully — the exam questions are here.",
+"<b>Flamanville 3.</b> In 2007 France began its first new reactor in years — the EPR, a new, more complex design. Planned: 5 years, €3.3 billion. Reality: connected to the grid in December 2024 — about <b>12 years {{en retard||late}}</b> and roughly <b>four times over budget</b>, after faulty welds, substandard steel, and endless rework. The deeper cause: after finishing the big series in the 1990s, France built almost nothing for 20 years. Welders retired, suppliers closed, know-how evaporated. The learning curve works in reverse too: <b>stop practicing and you forget</b>.",
+"<b>The 2022 corrosion crisis.</b> Inspectors found stress-corrosion {{une fissure||cracks}} in safety pipework — in the newer reactor models, not the old ones. Dozens of reactors went {{hors service||out of service}} for checks at the same time, just as Europe's gas crisis exploded. Output collapsed to a 30-year low and France, the great exporter, briefly had to <b>import</b> electricity through the winter. Lesson: a standardized fleet is efficient, but a fault in one design is a fault in every copy — the strength and the weakness are the same thing.",
+"<b>Superphénix.</b> An advanced 'fast breeder' reactor meant to consume waste and stretch fuel — technically ambitious, politically contested, plagued by {{une panne||breakdowns}}. Closed in 1998 after enormous cost. Being clever is not enough; you must also be reliable, on budget, and accepted by the public."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"Flamanville 3 went massively over time and budget mainly because…",
+ opts:["Uranium became too expensive","Protesters blocked the site","France had built nothing for ~20 years and industrial skills had faded — plus a complex new design","The site flooded"],
+ a:2,expl:"Skills atrophy + first-of-a-kind complexity. The learning curve runs both ways: the série of the 1980s was fast BECAUSE crews never stopped practicing."},
+{t:"mcq",q:"The 2022 crisis revealed the hidden risk of standardization:",
+ opts:["Identical reactors bore identical crews","A defect found in one design must be checked in every copy at once","Spare parts were too cheap","The regulator had too little work"],
+ a:1,expl:"The same sameness that cut costs meant one crack pattern shut down a large slice of the fleet simultaneously — during an energy crisis."},
+{t:"selfcheck",q:"State the single most important LESSON a country planning new reactors should draw from Flamanville 3.",
+ model:"Industrial skill is perishable: build continuously (series, steady drumbeat) or expect first-of-a-kind projects to run wildly late and over budget. Keeping supply chains, welders and project teams in constant practice matters as much as the reactor design itself — which is exactly why the new EPR2 program is planned as a series of identical pairs."}
+]},
+/* ---------- 6 ---------- */
+{id:"avenir",num:"PIÈCE N°6",title:"La Question 2026",en:"Reactors, AI, and you",
+vocab:[["l'avenir","the future"],["un centre de données","a data center"],["une décision","a decision"],["l'électricité","electricity"]],
+body:[
+"France has decided to bet again. The <b>EPR2 program</b>: six new reactors confirmed at a target of <b>€72.8 billion</b>, with an option for eight more — up to 14 total. First pair at Penly, in Normandy, aiming for 2035–2037. The design is deliberately simplified, and — learning from Pièce N°5 — built as a repeating series, with quarterly government audits to keep it honest. Not everything is smooth: a court cancelled planning approvals for the Bugey pair over an inadequate environmental study, and supply chains remain the biggest budget risk.",
+"Now the part that involves you personally. Every question you queue in this app for AI evaluation will be answered by a model running in {{un centre de données||a data center}} — a building of computers that consumes electricity every second, day and night. AI data centers need <b>firm power</b>: constant, 24/7, and increasingly required to be carbon-free. Solar stops at night; wind stops in calm weather; batteries at that scale are still very expensive. What runs 24/7, carbon-free, at gigawatt scale?",
+"France noticed. It is now openly marketing its nuclear grid to AI companies: gigawatts of clean, steady, state-backed {{l'électricité||electricity}}. The 1974 bet — made against an oil embargo, by people who never imagined the internet — turns out to be almost perfectly shaped for the age of AI. History rhymes. Your final brief awaits, Minister: it is a real {{une décision||decision}} that real companies are making this year."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"Why are AI data centers a natural match for nuclear power specifically?",
+ opts:["AI computers run on uranium","Data centers need constant 24/7 carbon-free power at large scale — exactly what nuclear provides","Nuclear plants have fast internet","Data centers must be built underground"],
+ a:1,expl:"Firm, always-on, low-carbon, gigawatt-scale supply. Solar and wind are cheap but intermittent; nuclear's steadiness is precisely the scarce commodity."},
+{t:"mcq",q:"The EPR2 program applies which lesson from the failures dossier?",
+ opts:["Build one experimental design at a time","Build identical reactors in a continuous series to rebuild the learning curve","Buy reactors from abroad","Make each region design its own plant"],
+ a:1,expl:"Série, again — plus a simplified design and standing audits, all direct answers to the Flamanville disaster."},
+{t:"ai",qid:"ai-siting",q:"⚡ FINAL BRIEF: A tech company must site a 1-gigawatt, 24/7 AI data center and asks your advice: France or New Jersey? Recommend one and justify it using at least THREE specific facts from this dossier (prices, grid mix, CO₂, reliability, risks…). Acknowledge one real weakness of your choice. (6–10 sentences.)",
+ rubric:"Award up to 20 points. Either recommendation can score full marks. Strong answers (15–20) deploy 3+ accurate dossier facts (e.g. ~70% nuclear share, ~50 gCO2/kWh grid, ~22c vs ~23.5c prices, tax structure, export capacity, 2022 corrosion/import episode, heatwave river-cooling limits, EPR2 timeline, NJ deregulated market/PJM volatility) AND concede a genuine weakness of the chosen side. 8–14: correct facts but thin reasoning or no weakness acknowledged. Under 8: generic answer that could have been written without the dossier. Reward specific numbers used correctly."}
+]},
+/* ---------- 7 ---------- */
+{id:"sources",num:"PIÈCE N°7",title:"Les Sources",en:"Dig deeper (when online)",
+vocab:[],
+body:[
+"A minister checks sources. These are the real ones behind this dossier — open them when you have a connection. Notice which are primary sources (the operator's own data, the regulator) and which are journalism or advocacy: knowing the difference is half of thinking clearly about energy.",
+"REFS"
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"Which of these is a PRIMARY source for French reactor output data?",
+ opts:["A newspaper article about EDF","EDF's own published output figures / RTE grid data","A YouTube documentary","This app"],
+ a:1,expl:"Primary = the original data or document itself. Everything else (including this dossier!) is someone's interpretation — always trace claims back."}
+]}
+],
+refs:[
+["World Nuclear Association — France profile (deep, regularly updated)","https://world-nuclear.org/information-library/country-profiles/countries-a-f/france"],
+["RTE éCO2mix — live French grid: watch the mix & CO₂ in real time","https://www.rte-france.com/en/eco2mix"],
+["EDF — official nuclear output & fleet data","https://www.edf.fr/en/the-edf-group/dedicated-sections/investors/financial-and-extra-financial-performance/operational-performance"],
+["IAEA PRIS — database of every reactor on Earth","https://pris.iaea.org/PRIS/CountryStatistics/CountryDetails.aspx?current=FR"],
+["Electricity Maps — compare live grid CO₂ by country","https://app.electricitymaps.com/"],
+["CRE — the official nuclear production-cost report (the €60.3/MWh number)","https://www.cre.fr/fileadmin/Documents/Rapports_et_etudes/2025/Rapport_CRE_Couts_du_nucleaire.pdf"],
+["ASNR — the French nuclear safety regulator","https://www.asnr.fr/"],
+["Andra / Cigéo — the waste disposal project","https://www.andra.fr/"]
+]
+};
+</script>
+<script id="engine">
+/* ============ ENGINE ============ */
+const CONFIG = {
+  aiEndpoint: "https://api.anthropic.com/v1/messages", // swap for your proxy when self-hosted
+  aiModel: "claude-sonnet-4-6"
+};
+const S = { profile:null, pts:0, done:{}, secDone:{}, outbox:[], simRuns:0 };
+
+/* ---- local persistence ---- */
+const STORE=(()=>{
+  let ok=false;
+  try{localStorage.setItem("__mp","1");localStorage.removeItem("__mp");ok=true;}catch(e){ok=false;}
+  const K="missionpack:"+PACK.meta.id;
+  return{ok,
+    save(o){if(!ok)return false;try{localStorage.setItem(K,JSON.stringify(o));return true;}catch(e){return false;}},
+    load(){if(!ok)return null;try{return JSON.parse(localStorage.getItem(K)||"null");}catch(e){return null;}},
+    clear(){if(!ok)return;try{localStorage.removeItem(K);}catch(e){}}};
+})();
+let persistTimer=null, wiped=false;
+function persist(){
+  if(!STORE.ok||wiped)return;
+  clearTimeout(persistTimer);
+  persistTimer=setTimeout(()=>STORE.save(S),250);
+}
+function persistNow(){if(STORE.ok&&!wiped)STORE.save(S);}
+addEventListener("visibilitychange",()=>{if(document.hidden)persistNow();});
+addEventListener("pagehide",persistNow);
+function toast(msg){
+  const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add("show"));
+  setTimeout(()=>{t.classList.remove("show");setTimeout(()=>t.remove(),350);},3200);
+}
+
+const $ = id => document.getElementById(id);
+const esc = t => t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ---- vocab markup: {{fr||en}} -> tap-to-reveal ---- */
+function fmt(t){
+  return t.replace(/\{\{(.+?)\|\|(.+?)\}\}/g,
+    (_,fr,en)=>`<span class="v" onclick="this.classList.add('revealed');this.querySelector('.en').style.display='inline'">${fr} <span class="en" style="display:none">(${en})</span></span>`);
+}
+
+/* ---- points ---- */
+function addPts(n, el){
+  S.pts += n;
+  renderGauge();
+  persist();
+  if(el){ const s=document.createElement("span"); s.className="pts-pop";
+    s.textContent=" +"+n+" pts"; el.appendChild(s); }
+}
+function rank(){
+  let r=PACK.meta.ranks[0][1];
+  for(const [min,name] of PACK.meta.ranks) if(S.pts>=min) r=name;
+  return r;
+}
+function renderGauge(){
+  $("ptsLbl").textContent = S.pts+" pts";
+  $("gaugeFill").style.width = Math.min(100, S.pts/PACK.meta.maxPts*100)+"%";
+  $("rankLbl").textContent = rank();
+}
+
+/* ---- navigation ---- */
+function showHome(){
+  $("home").style.display="block"; $("secView").innerHTML="";
+  renderTOC(); window.scrollTo(0,0);
+}
+function renderTOC(){
+  const toc=$("toc"); toc.innerHTML="";
+  PACK.sections.forEach((sec,i)=>{
+    const doneQ = sec.questions.filter(q=>S.done[qKey(sec,q)]).length;
+    const b=document.createElement("button"); b.className="toc-item";
+    b.innerHTML=`<span class="toc-num mono">${sec.num}</span>
+      <span class="toc-t"><b>${sec.title}</b><i>${sec.en}</i></span>
+      <span class="toc-pts mono">${doneQ}/${sec.questions.length}</span>
+      <span class="toc-st">${S.secDone[sec.id]?"✅":"📄"}</span>`;
+    b.onclick=()=>showSection(i);
+    toc.appendChild(b);
+  });
+  $("phraseBox").innerHTML = PACK.phrases.map(p=>
+    `<div class="phrase">« ${p[0]} »<i>${p[1]}</i></div>`).join("");
+}
+function qKey(sec,q){ return sec.id+"::"+(q.qid||q.q.slice(0,40)); }
+
+function showSection(i){
+  const sec=PACK.sections[i];
+  $("home").style.display="none";
+  const v=$("secView");
+  let bodyHtml = sec.body.map(p=>{
+    if(p==="REFS") return PACK.refs.map(r=>
+      `<div class="refline">▸ <a href="${r[1]}" target="_blank" rel="noopener">${r[0]}</a><br><span class="mono" style="font-size:11px;color:var(--ink2)">${r[1]}</span></div>`).join("");
+    return `<p>${fmt(p)}</p>`;
+  }).join("");
+  const vocabHtml = sec.vocab.length ?
+    `<div class="vocab-box"><b class="mono">VOCABULAIRE — tap the dotted words above, then test yourself:</b><br>`+
+    sec.vocab.map(v=>`<span class="v" onclick="this.querySelector('.en').style.display='inline'">${v[0]} <span class="en" style="display:none">= ${v[1]}</span></span>`).join(" · ")+`</div>`:"";
+  v.innerHTML = `<div class="sec active">
+    <button class="crumb" onclick="showHome()">← Sommaire</button>
+    <div class="piece-tag mono">${sec.num}</div>
+    <h2>${sec.title}</h2>
+    <div class="fr-sub">${sec.en}</div>
+    <div id="stampZone"></div>
+    ${bodyHtml}${vocabHtml}
+    <div id="inter"></div>
+    <hr class="rule">
+    <div id="qs"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:20px">
+      <button class="btn alt" onclick="showHome()">← Sommaire</button>
+      ${i<PACK.sections.length-1?`<button class="btn" onclick="showSection(${i+1})">Pièce suivante →</button>`:
+        `<button class="btn red" onclick="openReport()">Générer le rapport</button>`}
+    </div></div>`;
+  renderInteractive(sec, $("inter"));
+  renderQuestions(sec, $("qs"));
+  if(S.secDone[sec.id]) $("stampZone").innerHTML='<span class="stamp mono">VALIDÉ ✔</span>';
+  window.scrollTo(0,0);
+}
+
+/* ---- questions ---- */
+function renderQuestions(sec, host){
+  sec.questions.forEach(q=>{
+    const key=qKey(sec,q), card=document.createElement("div"); card.className="card";
+    if(q.t==="mcq"){
+      card.innerHTML=`<div class="card-tag mono">QUESTION · 10 PTS</div>
+        <div class="qtext">${esc(q.q)}</div>`;
+      const doneInfo = S.done[key];
+      q.opts.forEach((o,oi)=>{
+        const b=document.createElement("button"); b.className="opt"; b.textContent=o;
+        if(doneInfo){ b.disabled=true;
+          if(oi===q.a) b.classList.add("right");
+        } else b.onclick=()=>{
+          if(S.done[key]) return;
+          const first = !card.dataset.missed;
+          if(oi===q.a){
+            b.classList.add("right");
+            card.querySelectorAll(".opt").forEach(x=>x.disabled=true);
+            S.done[key]={pts:first?10:5};
+            addPts(first?10:5, b);
+            const e=document.createElement("div"); e.className="expl";
+            e.textContent=q.expl; card.appendChild(e);
+            checkSectionDone(sec);
+          } else { b.classList.add("wrong"); b.disabled=true; card.dataset.missed=1; }
+        };
+        card.appendChild(b);
+      });
+      if(doneInfo){ const e=document.createElement("div"); e.className="expl";
+        e.textContent=q.expl; card.appendChild(e); }
+    }
+    if(q.t==="selfcheck"){
+      card.innerHTML=`<div class="card-tag mono">RÉPONSE LIBRE · AUTO-ÉVALUATION · MAX 8 PTS</div>
+        <div class="qtext">${esc(q.q)}</div>
+        <textarea placeholder="Write your answer first — no peeking."></textarea>
+        <button class="btn alt">Reveal model answer</button><div class="sc-zone"></div>`;
+      const ta=card.querySelector("textarea"), zone=card.querySelector(".sc-zone");
+      card.querySelector("button").onclick=function(){
+        if(ta.value.trim().length<20){ zone.innerHTML='<p class="note">Write at least a couple of sentences first.</p>'; return;}
+        this.disabled=true; ta.disabled=true;
+        zone.innerHTML=`<div class="model-ans"><b>Model answer:</b> ${esc(q.model)}</div>
+          <p class="note">Honor system: how close were you?</p>`;
+        [["Nailed it",8],["Mostly",5],["Missed it",2]].forEach(([lbl,p])=>{
+          const b=document.createElement("button"); b.className="btn alt";
+          b.style.marginRight="8px"; b.textContent=lbl+" (+"+p+")";
+          b.onclick=()=>{ if(S.done[key])return;
+            S.done[key]={pts:p,ans:ta.value}; addPts(p,b);
+            zone.querySelectorAll(".btn").forEach(x=>x.disabled=true);
+            checkSectionDone(sec); };
+          zone.appendChild(b);
+        });
+      };
+      if(S.done[key]){ ta.value=S.done[key].ans||""; ta.disabled=true;
+        card.querySelector("button").disabled=true; }
+    }
+    if(q.t==="ai"){
+      card.innerHTML=`<div class="card-tag ai mono">⚡ ÉVALUATION PAR IA · MAX 20 PTS · QUEUED UNTIL ONLINE</div>
+        <div class="qtext">${esc(q.q)}</div>
+        <textarea placeholder="Your best thinking — a real AI will grade this against a rubric when you reconnect."></textarea>
+        <button class="btn">Queue for evaluation</button><div class="ai-zone"></div>`;
+      const ta=card.querySelector("textarea"), zone=card.querySelector(".ai-zone");
+      const existing = S.outbox.find(o=>o.qid===q.qid);
+      if(existing){ ta.value=existing.answer; ta.disabled=true;
+        card.querySelector("button").disabled=true;
+        zone.innerHTML = obStatusHtml(existing); }
+      card.querySelector("button").onclick=function(){
+        if(ta.value.trim().length<40){ zone.innerHTML='<p class="note">This one deserves a real answer — write more.</p>'; return; }
+        this.disabled=true; ta.disabled=true;
+        S.outbox.push({qid:q.qid,q:q.q,rubric:q.rubric,answer:ta.value,status:"queued"});
+        zone.innerHTML='<p class="note">✉ Queued. Open "À évaluer" when you have a connection.</p>';
+        renderBadge();
+      };
+      host.appendChild(card); return;
+    }
+    host.appendChild(card);
+  });
+}
+function checkSectionDone(sec){
+  const core = sec.questions.filter(q=>q.t!=="ai");
+  if(core.every(q=>S.done[qKey(sec,q)]) && !S.secDone[sec.id]){
+    S.secDone[sec.id]=true;
+    persist();
+    const z=$("stampZone"); if(z) z.innerHTML='<span class="stamp mono">VALIDÉ ✔</span>';
+  }
+}
+function obStatusHtml(o){
+  if(o.status==="done") return `<div class="ob-fb"><b>${o.score}/20</b> — ${esc(o.feedback)}</div>`;
+  if(o.status==="error") return `<p class="note">Evaluation failed — retry from the outbox.</p>`;
+  return '<p class="note">✉ Queued for evaluation.</p>';
+}
+/* ---- interactives ---- */
+function renderInteractive(sec, host){
+  if(sec.interactive==="decision") return interDecision(host);
+  if(sec.interactive==="simulator") return interSim(host, sec);
+  if(sec.interactive==="coststack") return interStack(host);
+  if(sec.interactive==="co2sort") return interCO2(host, sec);
+}
+
+function interDecision(host){
+  host.innerHTML=`<div class="card"><div class="card-tag mono">DÉCISION · 1974 · +5 PTS</div>
+  <div class="qtext">The oil is cut off. Choose France's strategy, Minister:</div>
+  <div id="decOpts"></div><div id="decOut"></div></div>`;
+  const outcomes={
+    coal:"<b>Coal:</b> France's mines are nearly empty — you'd be importing coal instead of oil, swapping one dependency for another, plus acid rain and smog. Several countries chose this. Their grids are still dirty today.",
+    nuke:"<b>Nuclear:</b> This is what France chose. Huge upfront cost, a 15-year construction marathon, and permanent waste responsibility — in exchange for independence and (accidentally) a nearly carbon-free grid.",
+    renew:"<b>Renewables:</b> A visionary answer — 30 years too early. In 1974 solar panels were spacecraft equipment costing ~100× today's price, and grid-scale wind barely existed. Physically impossible at scale then; a real option now.",
+    save:"<b>Efficiency & rationing:</b> France actually did this too (speed limits, heating rules, daylight saving). Necessary — but it shrinks the problem, it can't power a growing industrial country."};
+  const d=host.querySelector("#decOpts");
+  [["Dig for more coal","coal"],["Bet everything on nuclear","nuke"],
+   ["Bet on solar & wind","renew"],["Ration energy & save","save"]].forEach(([lbl,k])=>{
+    const b=document.createElement("button"); b.className="opt"; b.textContent=lbl;
+    b.onclick=()=>{
+      host.querySelector("#decOut").innerHTML=`<div class="expl">${outcomes[k]}</div>`;
+      if(!S.done["dec1974"]){ S.done["dec1974"]={pts:5}; addPts(5,b); }
+    };
+    d.appendChild(b);
+  });
+}
+
+function interSim(host, sec){
+  host.innerHTML=`<div class="card"><div class="card-tag mono">SIMULATEUR · LE CHANTIER · UP TO 15 PTS</div>
+  <div class="qtext">Build 10 reactors. Budget: 60 milliards de francs. Custom designs always cost 8; series copies start at 8 and get cheaper with practice.</div>
+  <div class="sim-stats">
+    <div class="sim-stat">BUDGET LEFT<b id="simBud">60</b></div>
+    <div class="sim-stat">REACTORS<b id="simN">0 / 10</b></div>
+    <div class="sim-stat">NEXT COPY COSTS<b id="simNext">8</b></div>
+  </div>
+  <div class="rbar" id="simBar"></div>
+  <button class="btn" id="simCopy">Build series copy</button>
+  <button class="btn alt" id="simCustom">Build custom design (8)</button>
+  <button class="btn alt" id="simReset">Restart</button>
+  <div class="sim-log mono" id="simLog"></div></div>`;
+  let bud, n, copyCost, over;
+  const log=m=>{const l=$("simLog");l.innerHTML=`<div>▸ ${m}</div>`+l.innerHTML};
+  function reset(){ bud=60;n=0;copyCost=8;over=false;$("simBar").innerHTML="";
+    for(let i=0;i<10;i++){const b=document.createElement("div");b.className="rblock";$("simBar").appendChild(b);}
+    upd(); $("simLog").innerHTML=""; log("1974. The nation is watching, Minister."); }
+  function upd(){ $("simBud").textContent=bud; $("simN").textContent=n+" / 10";
+    $("simNext").textContent=copyCost;
+    $("simCopy").disabled=$("simCustom").disabled=over||n>=10; }
+  function build(cost, custom){
+    if(over||n>=10) return;
+    if(bud<cost){ over=true; log("BUDGET EXHAUSTED. The Assemblée Nationale is furious. Restart."); upd(); return;}
+    bud-=cost; const blocks=$("simBar").children; blocks[n].classList.add("done");
+    if(custom){ blocks[n].classList.add("custom"); log(`Custom design built: −${cost}. First-of-a-kind: no learning carried over.`);}
+    else { log(`Series copy #${n+1} built: −${cost}. Crews got faster.`); copyCost=Math.max(4,copyCost-1); }
+    n++;
+    if(n===10){
+      const key="sim10";
+      log(`✔ FLEET COMPLETE with ${bud} left over. ${bud>=20?"Superb — you found the learning curve.":"Done — could you do it cheaper?"}`);
+      if(!S.done[key]){ const p = bud>=20?15:8; S.done[key]={pts:p}; addPts(p, $("simLog")); }
+      else if(bud>=20 && S.done[key].pts<15){ addPts(15-S.done[key].pts,$("simLog")); S.done[key].pts=15; }
+    }
+    upd();
+  }
+  $("simCopy").onclick=()=>build(copyCost,false);
+  $("simCustom").onclick=()=>build(8,true);
+  $("simReset").onclick=reset;
+  reset();
+}
+
+function interStack(host){
+  // ¢ USD/kWh. taxes recomputed proportionally to the pre-tax subtotal.
+  const BASE={gen:6.9,mrg:4.5,net:6.5}, TAXRATE=8.2/17.9, NJRATE=0.066;
+  const CATS=[["gen","Production cost","var(--ok)"],
+              ["mrg","Supply premium","var(--bleu)"],
+              ["net","Network (wires)","var(--amber)"],
+              ["tax","Taxes","var(--rouge)"]];
+  host.innerHTML=`<div class="card"><div class="card-tag mono">LA PILE DES COÛTS · UP TO 14 PTS</div>
+  <div class="qtext">One kilowatt-hour, from reactor to socket. Tap a change and watch what actually moves.</div>
+  <div style="display:flex;gap:14px;align-items:flex-end;margin:14px 0">
+    <div id="stkCol" style="width:66px;flex:none;display:flex;flex-direction:column-reverse;
+      border:1.5px solid var(--navy);background:var(--paper);position:relative"></div>
+    <div style="flex:1;min-width:0" id="stkKey"></div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <button class="btn alt" data-s="0">Reality (2026)</button>
+    <button class="btn alt" data-s="1">Free reactors</button>
+    <button class="btn alt" data-s="2">Tax like New Jersey</button>
+    <button class="btn alt" data-s="3">Both at once</button>
+  </div>
+  <div id="stkOut"></div></div>`;
+  const SC=[
+   {n:"Reality (2026)",gen:BASE.gen,rate:TAXRATE,
+    m:"6.9¢ to produce. 26.1¢ to buy. Everything above the green block is what happens on the way."},
+   {n:"Free reactors",gen:0,rate:TAXRATE,
+    m:"Here is the surprise. Even if the electricity were completely FREE, the bill only falls about 39%. Nearly two-thirds of what a household pays is not the electricity at all — it is wires, margin and tax."},
+   {n:"Tax like New Jersey",gen:BASE.gen,rate:NJRATE,
+    m:"Swapping France's ~32% tax load for a New Jersey-style 6.6% sales tax cuts the bill about 27% — nearly as much as making the reactors free. Fiscal policy is a bigger lever than physics."},
+   {n:"Both at once",gen:0,rate:NJRATE,
+    m:"Free electricity AND low taxes still leaves ~11.7¢, because the wires and the supplier remain. Something always has to pay for 1.4 million km of cable."}
+  ];
+  let seen={};
+  function draw(i){
+    const sc=SC[i];
+    const pre=sc.gen+BASE.mrg+BASE.net, tax=pre*sc.rate, tot=pre+tax;
+    const vals={gen:sc.gen,mrg:BASE.mrg,net:BASE.net,tax:tax};
+    const PX=8.4;
+    $("stkCol").innerHTML=CATS.map(([k,,c])=>
+      `<div style="background:${c};height:${vals[k]*PX}px;transition:height .45s ease"></div>`).join("")
+      +`<div class="mono" style="position:absolute;top:-22px;left:0;right:0;text-align:center;
+         font-weight:700;color:var(--navy)">${tot.toFixed(1)}¢</div>`;
+    $("stkKey").innerHTML=CATS.map(([k,lbl,c])=>
+      `<div style="display:flex;align-items:center;gap:7px;font-size:13px;margin:3px 0">
+        <span style="width:13px;height:13px;background:${c};border:1px solid var(--ink);flex:none"></span>
+        <span style="flex:1">${lbl}</span>
+        <span class="mono">${vals[k].toFixed(1)}¢</span></div>`).join("");
+    const base=BASE.gen+BASE.mrg+BASE.net; const baseTot=base+base*TAXRATE;
+    const pct=Math.round((tot-baseTot)/baseTot*100);
+    $("stkOut").innerHTML=`<div class="expl">${i?`<b class="mono">${pct}% vs reality.</b> `:""}${sc.m}</div>`;
+    host.querySelectorAll("[data-s]").forEach(b=>
+      b.style.borderWidth = b.dataset.s==String(i) ? "3px" : "1.5px");
+    seen[i]=1;
+    if(Object.keys(seen).length===4 && !S.done["coststack"]){
+      S.done["coststack"]={pts:14}; addPts(14,$("stkOut"));
+    }
+  }
+  host.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>draw(+b.dataset.s));
+  draw(0);
+}
+function interCO2(host, sec){
+  const items=[["Wind",11],["Nuclear",12],["Hydro",24],["Solar",45],["Natural gas",490],["Coal",820]];
+  const shuffled=[...items].sort(()=>Math.random()-.5);
+  host.innerHTML=`<div class="card"><div class="card-tag mono">DÉFI · G CO₂ / KWH · UP TO 12 PTS</div>
+  <div class="qtext">Tap the sources in order, CLEANEST first (lifecycle emissions):</div>
+  <div class="chips" id="coPool"></div>
+  <div class="slots" id="coSlots"></div>
+  <button class="btn" id="coCheck" disabled>Check order</button>
+  <button class="btn alt" id="coReset">Reset</button>
+  <div id="coOut"></div></div>`;
+  let picked=[];
+  function draw(){
+    const pool=$("coPool"); pool.innerHTML="";
+    shuffled.forEach(it=>{
+      const b=document.createElement("button"); b.className="chip"; b.textContent=it[0];
+      b.disabled=picked.some(p=>p[0]===it[0]);
+      b.onclick=()=>{picked.push(it);draw();};
+      pool.appendChild(b);
+    });
+    const slots=$("coSlots"); slots.innerHTML="";
+    picked.forEach((it,i)=>{
+      const c=document.createElement("button"); c.className="slot-chip";
+      c.textContent=(i+1)+". "+it[0];
+      c.onclick=()=>{picked.splice(i,1);draw();};
+      slots.appendChild(c);
+    });
+    $("coCheck").disabled = picked.length!==items.length;
+  }
+  $("coReset").onclick=()=>{picked=[];$("coOut").innerHTML="";draw();};
+  $("coCheck").onclick=()=>{
+    let correct=0;
+    const slots=$("coSlots").children;
+    picked.forEach((it,i)=>{
+      const ok = it[0]===items[i][0];
+      slots[i].classList.add(ok?"good":"bad");
+      slots[i].textContent=(i+1)+". "+it[0]+" ("+it[1]+"g)";
+      if(ok) correct++;
+    });
+    const key="co2sort";
+    const p=correct*2;
+    $("coOut").innerHTML=`<div class="expl">${correct}/6 in place. The shock for most people: <b>nuclear ≈ wind</b>, both far below solar, and fossil gas is ~40× dirtier than nuclear even before methane leaks. (IPCC lifecycle medians.)</div>`;
+    if(!S.done[key] || p>S.done[key].pts){
+      const prev=S.done[key]?S.done[key].pts:0;
+      S.done[key]={pts:p}; if(p>prev) addPts(p-prev,$("coOut"));
+    }
+  };
+  draw();
+}
+/* ---- outbox / AI evaluation ---- */
+function renderBadge(){
+  persist();
+  const q=S.outbox.filter(o=>o.status!=="done").length;
+  $("obBadge").style.display=q?"inline-block":"none";
+  $("obBadge").textContent=q;
+}
+function openOutbox(){
+  const m=$("modalIn");
+  let h=`<h3>À Évaluer — Answer Outbox</h3>`;
+  if(!S.outbox.length) h+=`<p class="note">Nothing queued yet. The ⚡ questions in the dossier land here.</p>`;
+  S.outbox.forEach(o=>{
+    h+=`<div class="ob-item"><div class="ob-status mono">${o.status==="done"?"✔ ÉVALUÉ":o.status==="error"?"✖ ERREUR":o.status==="sending"?"… ENVOI":"✉ EN ATTENTE"}</div>
+      <div class="ob-q">${esc(o.q)}</div><div class="ob-a">${esc(o.answer)}</div>
+      ${o.status==="done"?`<div class="ob-fb"><b>${o.score}/20</b> — ${esc(o.feedback)}</div>`:""}</div>`;
+  });
+  const pending=S.outbox.filter(o=>o.status==="queued"||o.status==="error").length;
+  h+=`<button class="btn" id="obSend" ${pending?"":"disabled"}>Evaluate ${pending} answer(s) now (needs connection)</button>
+      <button class="btn alt" onclick="closeModal()">Close</button>
+      <p class="note" id="obMsg"></p>`;
+  m.innerHTML=h; $("modal").classList.add("open");
+  const sb=$("obSend"); if(sb) sb.onclick=sendOutbox;
+}
+async function sendOutbox(){
+  $("obMsg").textContent="Contacting the evaluator…";
+  for(const o of S.outbox){
+    if(o.status==="done") continue;
+    o.status="sending";
+    try{
+      const resp=await fetch(CONFIG.aiEndpoint,{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:CONFIG.aiModel,max_tokens:1000,messages:[{role:"user",
+          content:`You are grading a bright 12-15 year old's answer in a learning game about French nuclear power. Question: "${o.q}"\nGrading rubric: ${o.rubric}\nStudent answer: "${o.answer}"\nRespond with ONLY a JSON object, no markdown fences, no preamble: {"score": <integer 0-20>, "feedback": "<2-4 encouraging but honest sentences: what was strong, what was missing, one thing to think about next>"}`}]})});
+      const data=await resp.json();
+      const txt=(data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("\n");
+      const parsed=JSON.parse(txt.replace(/```json|```/g,"").trim());
+      o.score=Math.max(0,Math.min(20,parseInt(parsed.score)||0));
+      o.feedback=parsed.feedback||"Evaluated.";
+      o.status="done";
+      const key="ai::"+o.qid;
+      if(!S.done[key]){ S.done[key]={pts:o.score}; S.pts+=o.score; renderGauge(); }
+    }catch(e){ o.status="error"; }
+  }
+  renderBadge(); openOutbox();
+  $("obMsg").textContent=S.outbox.some(o=>o.status==="error")?
+    "Some evaluations failed — check your connection and retry.":"All evaluated. Scores added to your PUISSANCE.";
+}
+function closeModal(){ $("modal").classList.remove("open"); }
+
+/* ---- save / restore ---- */
+function openSave(){
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+  $("modalIn").innerHTML=`<h3>Code de Sauvegarde</h3>
+  <p class="note">Copy this code somewhere safe (notes app / message it to a parent). Paste it back here to restore your progress on any device or after closing the app.</p>
+  <textarea id="saveCode" style="min-height:120px" class="mono">${code}</textarea>
+  <button class="btn" id="copyBtn">Copy code</button>
+  <hr class="rule">
+  <p class="note">Restore: paste a code above, then —</p>
+  <button class="btn alt" id="loadBtn">Load pasted code</button>
+  <button class="btn alt" onclick="closeModal()">Close</button>
+  <hr class="rule">
+  <p class="saveflag mono">${STORE.ok?"✔ AUTO-SAVE ACTIVE ON THIS DEVICE":"⚠ AUTO-SAVE UNAVAILABLE HERE — KEEP THE CODE ABOVE"}</p>
+  <p class="note">Progress saves automatically as you go. The code is only needed to move to another device or browser.</p>
+  <button class="btn red" id="resetBtn">Start over (erase progress)</button>
+  <p class="note" id="saveMsg"></p>`;
+  $("modal").classList.add("open");
+  $("copyBtn").onclick=async()=>{ try{ await navigator.clipboard.writeText($("saveCode").value);
+    $("saveMsg").textContent="Copied.";}catch(e){ $("saveCode").select();
+    $("saveMsg").textContent="Select-all and copy manually."; } };
+  $("resetBtn").onclick=()=>{
+    if(!confirm("Erase all progress on this device and start over?"))return;
+    wiped=true;clearTimeout(persistTimer);STORE.clear();location.reload();
+  };
+  $("loadBtn").onclick=()=>{ try{
+      const obj=JSON.parse(decodeURIComponent(escape(atob($("saveCode").value.trim()))));
+      Object.assign(S,obj); persistNow(); renderGauge(); renderBadge(); showHome(); closeModal();
+    }catch(e){ $("saveMsg").textContent="That code didn't parse — check it copied fully."; } };
+}
+
+/* ---- report export ---- */
+function openReport(){
+  const p=S.profile||{name:"Agent",emoji:"🕵️"};
+  const aiRows=S.outbox.map(o=>`<div style="border:1px solid #999;padding:10px;margin:10px 0">
+    <b>${esc(o.q)}</b><p><i>${esc(o.answer)}</i></p>
+    ${o.status==="done"?`<p><b>Score ${o.score}/20.</b> ${esc(o.feedback)}</p>`:"<p>(not yet evaluated)</p>"}</div>`).join("")||"<p>No written briefs submitted.</p>";
+  const vocabRows=PACK.sections.flatMap(s=>s.vocab).map(v=>`<tr><td style="padding:4px 12px 4px 0"><i>${v[0]}</i></td><td>${v[1]}</td></tr>`).join("");
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rapport — ${esc(p.name)}</title>
+  <style>body{font-family:Georgia,serif;max-width:640px;margin:24px auto;padding:0 16px;color:#22262E;background:#F4F2EA}
+  h1,h2{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;color:#16345F}
+  .stamp{border:3px solid #2E7D46;color:#2E7D46;display:inline-block;padding:2px 14px;transform:rotate(-4deg);font-weight:700}</style></head><body>
+  <p style="letter-spacing:.2em;font-size:11px">RÉPUBLIQUE FRANÇAISE · RAPPORT DE MISSION</p>
+  <h1>${p.emoji} ${esc(p.name)} — La France Nucléaire</h1>
+  <p><span class="stamp">GRADE FINAL: ${rank()} · ${S.pts} PTS</span></p>
+  <p>Sections validated: ${Object.keys(S.secDone).length} / ${PACK.sections.length-1}</p>
+  <h2>Ministerial briefs & AI feedback</h2>${aiRows}
+  <h2>Vocabulaire acquis</h2><table>${vocabRows}</table>
+  <p style="font-size:12px;color:#666">Generated ${new Date().toLocaleDateString()} · Mission Packs · Région Provence</p>
+  </body></html>`;
+  const blob=new Blob([html],{type:"text/html"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`rapport-${(p.name||"agent").toLowerCase().replace(/\s+/g,"-")}.html`;
+  a.click();
+}
+
+/* ---- network indicator ---- */
+function netUpdate(){
+  const on=navigator.onLine, el=$("netInd");
+  el.classList.toggle("on",on);
+  el.innerHTML=`<span class="dot"></span>${on?"EN LIGNE":"HORS LIGNE"}`;
+}
+addEventListener("online",netUpdate); addEventListener("offline",netUpdate);
+
+/* ---- profile setup ---- */
+function setup(){
+  $("modalIn").innerHTML=`<h3>Identification de l'agent</h3>
+  <div class="setup"><p>Your name, Minister:</p>
+  <input id="pname" maxlength="20" placeholder="Prénom">
+  <p>Choose your official seal:</p><div class="emoji-row" id="emos"></div>
+  <button class="btn" id="goBtn">Ouvrir le dossier</button></div>`;
+  let emoji="🕵️";
+  ["🕵️","⚡","🥖","🦖","🚀","🐸","👑","🔬"].forEach(e=>{
+    const b=document.createElement("button"); b.textContent=e;
+    if(e===emoji) b.classList.add("sel");
+    b.onclick=()=>{ emoji=e; $("emos").querySelectorAll("button").forEach(x=>x.classList.remove("sel")); b.classList.add("sel"); };
+    $("emos").appendChild(b);
+  });
+  $("modal").classList.add("open");
+  $("goBtn").onclick=()=>{
+    S.profile={name:$("pname").value.trim()||"Agent X",emoji};
+    $("hdUser").textContent=emoji+" "+S.profile.name;
+    persistNow(); closeModal(); showHome();
+  };
+}
+
+/* ---- boot ---- */
+$("dockHome").onclick=showHome;
+$("dockOutbox").onclick=openOutbox;
+$("dockSave").onclick=openSave;
+$("dockReport").onclick=openReport;
+$("modal").onclick=e=>{ if(e.target.id==="modal") closeModal(); };
+(function boot(){
+  const saved=STORE.load();
+  if(saved&&saved.profile){
+    Object.assign(S,saved);
+    $("hdUser").textContent=(S.profile.emoji||"")+" "+(S.profile.name||"");
+    renderGauge(); renderBadge(); netUpdate(); showHome();
+    toast("Bon retour, "+(S.profile.name||"")+" — progress restored ("+S.pts+" pts)");
+  } else {
+    renderGauge(); renderBadge(); netUpdate(); renderTOC(); setup();
+  }
+})();
+</script>
+</body>
+</html>
