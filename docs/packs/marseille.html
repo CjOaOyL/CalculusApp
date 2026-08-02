@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>Dossier: Marseille</title>
+<!--
+  MISSION PACKS — offline-first learning engine
+  Repo layout for later extraction (Claude Code handoff):
+    /engine/engine.js  = the script block tagged id=engine
+    /engine/style.css  = the style block
+    /packs/nuclear-france.json = the PACK constant
+  Build step: inline pack + engine + css into one distributable HTML.
+  AI endpoint: CONFIG.aiEndpoint — works keyless inside Claude.ai artifacts;
+  point it at your own proxy (Cloudflare Worker holding the API key) when
+  hosted on cjoaoyl.github.io.
+-->
+<style>
+:root{
+  --paper:#F4F2EA; --paper2:#ECE9DE; --ink:#22262E; --ink2:#5A5F6A;
+  --navy:#16345F; --bleu:#0B57A4; --rouge:#C21F30; --amber:#E39A1D;
+  --line:#C8C3B2; --ok:#2E7D46; --card:#FBFAF5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:17px; line-height:1.55;
+}
+.mono{font-family:'Courier New',Courier,monospace}
+.hdr-face{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase; letter-spacing:.14em; font-weight:700}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px 80px}
+
+/* ---------- header / gauge ---------- */
+header{
+  position:sticky;top:0;z-index:50;background:var(--paper);
+  border-bottom:3px double var(--navy);
+}
+.hd-in{max-width:680px;margin:0 auto;padding:10px 16px 8px}
+.hd-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.hd-rf{font-size:10px;letter-spacing:.22em;color:var(--ink2)}
+.hd-title{font-size:15px;color:var(--navy)}
+.hd-user{font-size:12px;color:var(--ink2);white-space:nowrap}
+.gauge{margin-top:7px}
+.gauge-label{display:flex;justify-content:space-between;font-size:10px;
+  color:var(--ink2);letter-spacing:.18em}
+.gauge-bar{position:relative;height:14px;border:1.5px solid var(--navy);
+  background:repeating-linear-gradient(90deg,transparent 0 9.8%,var(--line) 9.8% 10%);
+  margin-top:2px}
+.gauge-fill{position:absolute;left:0;top:0;bottom:0;background:var(--amber);
+  width:0%;transition:width .6s ease}
+.gauge-rank{position:absolute;right:4px;top:-1px;font-size:10px;color:var(--navy);font-weight:700}
+
+/* ---------- sommaire ---------- */
+.cover{padding:26px 0 8px;text-align:center;border-bottom:1px solid var(--line)}
+.cover .eyebrow{font-size:11px;color:var(--rouge);letter-spacing:.3em}
+.cover h1{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.06em;font-size:34px;line-height:1.1;
+  color:var(--navy);margin:8px 0 4px}
+.cover .sub{font-style:italic;color:var(--ink2);font-size:15px}
+.cover .classif{display:inline-block;margin-top:12px;padding:2px 12px;
+  border:2px solid var(--rouge);color:var(--rouge);font-size:11px;
+  letter-spacing:.25em;transform:rotate(-2deg)}
+.toc{padding:14px 0}
+.toc-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);
+  padding:12px 14px;margin:8px 0;cursor:pointer;font:inherit;color:inherit}
+.toc-item:active{background:var(--paper2)}
+.toc-num{font-size:10px;color:var(--ink2);letter-spacing:.15em;min-width:64px}
+.toc-t{flex:1}
+.toc-t b{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--navy);font-size:15px;display:block}
+.toc-t i{font-size:13px;color:var(--ink2)}
+.toc-st{font-size:18px}
+.toc-pts{font-size:11px;color:var(--ink2)}
+
+/* ---------- section view ---------- */
+.sec{display:none;padding-top:14px}
+.sec.active{display:block}
+.crumb{background:none;border:none;color:var(--bleu);font:inherit;font-size:14px;
+  cursor:pointer;padding:8px 0;text-decoration:underline}
+.piece-tag{font-size:11px;color:var(--rouge);letter-spacing:.25em;margin-top:4px}
+.sec h2{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.05em;font-size:27px;color:var(--navy);
+  line-height:1.15;margin:2px 0 2px}
+.sec .fr-sub{font-style:italic;color:var(--ink2);margin-bottom:14px;font-size:15px}
+.sec p{margin:0 0 14px}
+.sec .stamped{position:relative}
+.stamp{display:inline-block;border:3px solid var(--ok);color:var(--ok);
+  padding:2px 14px;font-size:15px;letter-spacing:.2em;transform:rotate(-6deg);
+  font-weight:700;margin:6px 0}
+@media (prefers-reduced-motion:no-preference){
+  .stamp{animation:slam .25s ease-out}
+  @keyframes slam{from{transform:rotate(-6deg) scale(2);opacity:0}
+    to{transform:rotate(-6deg) scale(1);opacity:1}}
+}
+
+/* vocab chips */
+.v{border-bottom:2px dotted var(--bleu);color:var(--navy);cursor:pointer;
+  font-style:italic}
+.v .en{color:var(--rouge);font-style:normal;font-size:.88em}
+.vocab-box{background:var(--paper2);border:1px dashed var(--ink2);padding:10px 12px;
+  margin:16px 0;font-size:14px}
+.vocab-box b{letter-spacing:.15em;font-size:11px;color:var(--ink2)}
+
+/* interactive + question cards */
+.card{background:var(--card);border:1px solid var(--line);padding:14px;margin:18px 0}
+.card-tag{font-size:10px;letter-spacing:.22em;color:var(--bleu);margin-bottom:8px}
+.card-tag.ai{color:var(--rouge)}
+.qtext{font-weight:700;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;background:var(--paper);
+  border:1.5px solid var(--line);padding:10px 12px;margin:6px 0;font:inherit;
+  font-size:15px;cursor:pointer;color:var(--ink)}
+.opt:not(:disabled):active{border-color:var(--bleu)}
+.opt.right{border-color:var(--ok);background:#EAF4EC}
+.opt.wrong{border-color:var(--rouge);background:#F8ECEC;opacity:.75}
+.opt:disabled{cursor:default}
+.expl{font-size:14px;color:var(--ink2);border-left:3px solid var(--ok);
+  padding:6px 10px;margin-top:8px;background:var(--paper2)}
+.pts-pop{color:var(--rouge);font-weight:700;font-size:14px;
+  font-family:'Courier New',monospace}
+textarea{width:100%;min-height:96px;font:inherit;font-size:15px;padding:10px;
+  border:1.5px solid var(--line);background:var(--paper);color:var(--ink)}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:none;
+  padding:10px 18px;font-family:'Arial Narrow',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.12em;font-size:14px;cursor:pointer;
+  margin-top:8px}
+.btn.alt{background:var(--paper);color:var(--navy);border:1.5px solid var(--navy)}
+.btn.red{background:var(--rouge)}
+.btn:disabled{opacity:.45;cursor:default}
+button:focus-visible,.opt:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--amber);outline-offset:2px}
+.note{font-size:13px;color:var(--ink2);font-style:italic}
+.model-ans{border:1px solid var(--ok);background:#EFF6F0;padding:10px;
+  font-size:14px;margin-top:8px}
+
+/* simulator */
+.sim-stats{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;margin:8px 0}
+.sim-stat{background:var(--paper2);padding:6px 10px;border:1px solid var(--line)}
+.sim-stat b{display:block;font-size:17px;color:var(--navy)}
+.sim-log{font-size:13px;max-height:120px;overflow-y:auto;border:1px solid var(--line);
+  padding:8px;margin-top:8px;background:var(--paper)}
+.rbar{display:flex;gap:3px;margin:8px 0;flex-wrap:wrap}
+.rblock{width:22px;height:30px;border:1.5px solid var(--navy);background:var(--paper)}
+.rblock.done{background:var(--amber)}
+.rblock.custom{background:var(--rouge)}
+
+/* sort game */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{border:1.5px solid var(--navy);background:var(--paper);padding:8px 12px;
+  font:inherit;font-size:14px;cursor:pointer}
+.chip:disabled{opacity:.35}
+.slots{min-height:44px;border:1.5px dashed var(--ink2);padding:8px;
+  display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;background:var(--paper2)}
+.slot-chip{border:1.5px solid var(--bleu);padding:8px 12px;font-size:14px;
+  background:#fff;cursor:pointer}
+.slot-chip.good{border-color:var(--ok);background:#EAF4EC}
+.slot-chip.bad{border-color:var(--rouge);background:#F8ECEC}
+
+/* bill comparator */
+.bill-row{margin:10px 0}
+.bill-name{font-size:12px;letter-spacing:.15em;color:var(--ink2)}
+.bill-bar{height:26px;background:var(--bleu);color:#fff;display:flex;
+  align-items:center;padding:0 8px;font-family:'Courier New',monospace;
+  font-size:14px;min-width:70px;transition:width .3s}
+.bill-bar.nj{background:var(--rouge)}
+input[type=range]{width:100%;accent-color:var(--navy)}
+
+/* outbox / footer bar */
+.dock{position:fixed;bottom:0;left:0;right:0;background:var(--navy);z-index:60}
+.dock-in{max-width:680px;margin:0 auto;display:flex}
+.dock button{flex:1;background:none;border:none;color:#fff;padding:11px 4px;
+  font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.1em;font-size:12px;cursor:pointer;border-right:1px solid rgba(255,255,255,.2)}
+.dock button:last-child{border-right:none}
+.badge{display:inline-block;background:var(--amber);color:var(--ink);
+  border-radius:9px;font-size:11px;padding:0 6px;margin-left:4px;font-weight:700}
+.net{font-size:10px;letter-spacing:.15em}
+.net .dot{display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--rouge);vertical-align:middle;margin-right:4px}
+.net.on .dot{background:var(--ok)}
+
+/* modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(20,24,32,.55);z-index:100}
+.modal.open{display:flex;align-items:flex-end;justify-content:center}
+.modal-in{background:var(--paper);width:100%;max-width:680px;max-height:86vh;
+  overflow-y:auto;padding:18px 16px 28px;border-top:4px solid var(--navy)}
+.modal-in h3{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--navy);margin-bottom:10px}
+.ob-item{border:1px solid var(--line);background:var(--card);padding:10px;margin:8px 0;
+  font-size:14px}
+.ob-q{font-weight:700}
+.ob-a{font-style:italic;color:var(--ink2);margin:4px 0}
+.ob-fb{border-left:3px solid var(--ok);padding:4px 8px;background:#EFF6F0;margin-top:6px}
+.ob-status{font-size:11px;letter-spacing:.15em}
+.setup input{width:100%;font:inherit;font-size:17px;padding:10px;
+  border:1.5px solid var(--line);background:#fff;margin:8px 0}
+.emoji-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.emoji-row button{font-size:26px;background:var(--paper2);border:2px solid transparent;
+  padding:6px 10px;cursor:pointer}
+.emoji-row button.sel{border-color:var(--navy);background:#fff}
+.phrase{border-bottom:1px solid var(--line);padding:8px 0;font-size:15px}
+.phrase i{color:var(--ink2);font-size:13px;display:block}
+hr.rule{border:none;border-top:1px solid var(--line);margin:20px 0}
+.toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);
+  background:var(--navy);color:#fff;padding:10px 16px;font-size:14px;z-index:200;
+  max-width:92%;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.3);
+  opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.saveflag{font-size:11px;letter-spacing:.12em;color:var(--ink2);margin-top:6px}
+
+.refline{font-size:14px;margin:10px 0;word-break:break-word}
+.refline a{color:var(--bleu)}
+
+/* ---- illustrations (inline SVG, offline) ---- */
+.pack-art{margin:16px 0 6px;padding:12px;background:var(--paper2);border:1px solid var(--line);text-align:center}
+.pack-art svg{width:100%;height:auto;max-height:230px;display:block;margin:0 auto}
+.art-cap{font-size:11px;letter-spacing:.08em;color:var(--ink2);margin-top:8px;font-family:'Courier New',monospace;text-transform:uppercase}
+.mascot-line{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--amber);padding:8px 12px;margin:12px 0;font-size:14px;color:var(--ink2);font-style:italic}
+.mascot-line svg{flex:none;width:42px;height:auto}
+.cover-art{margin:16px 0 4px;padding:10px;background:var(--paper2);border:1px solid var(--line)}
+.cover-art svg{width:100%;height:auto;max-height:210px;display:block}
+
+/* ---- colour pass (Avignon accent: papal gold + crimson) ---- */
+body{background:linear-gradient(180deg,#F7EEDB 0,#F4F2EA 360px) no-repeat, var(--paper);background-attachment:fixed}
+header{background:linear-gradient(180deg,#FCF5E6,#F1EBDA);border-top:4px solid var(--amber)}
+.cover{background:radial-gradient(135% 100% at 50% -12%,#FBE6C8 0,rgba(251,230,200,0) 64%)}
+.card{background:linear-gradient(180deg,#FFFDF6,#FBFAF5)}
+.sec h2{border-bottom:3px solid var(--amber);display:inline-block;padding-bottom:3px}
+.piece-tag{background:var(--rouge);color:#fff;display:inline-block;padding:2px 9px;letter-spacing:.2em}
+.toc-item{border-left-color:var(--amber)}
+.toc-item:nth-child(even){border-left-color:var(--rouge)}
+.vocab-box{background:linear-gradient(180deg,#F3EAD6,#ECE9DE)}
+.dock{background:linear-gradient(180deg,#1d4074,#16345F)}
+.gauge-fill{background:linear-gradient(90deg,#E39A1D,#C21F30)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd-in">
+    <div class="hd-top">
+      <span class="hd-rf mono">RÉPUBLIQUE FRANÇAISE · ARCHIVES DE PROVENCE</span>
+      <span class="hd-user mono" id="hdUser"></span>
+    </div>
+    <div class="hd-top">
+      <span class="hd-title hdr-face">Dossier: Marseille</span>
+      <span class="net mono" id="netInd"><span class="dot"></span>HORS LIGNE</span>
+    </div>
+    <div class="gauge">
+      <div class="gauge-label mono"><span>CARGAISON</span><span id="ptsLbl">0 pts</span></div>
+      <div class="gauge-bar"><div class="gauge-fill" id="gaugeFill"></div>
+        <span class="gauge-rank mono" id="rankLbl"></span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="home">
+    <div class="cover">
+      <div class="eyebrow mono">RÉGION: PROVENCE · MISSION 05</div>
+      <h1>Marseille</h1>
+      <div class="sub">France's oldest city — Greek before it was French. A port of plague and welcome, an anthem it never wrote, and a fish stew worth a fortune.</div>
+      <div class="cover-art"><svg viewBox="0 0 440 200" role="img" aria-label="Marseille: the Vieux-Port, Notre-Dame de la Garde, the sea and the Chateau d If"><g stroke="#16345F" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="392" cy="36" r="14" fill="#E39A1D" stroke="none"/><g stroke="#E39A1D" stroke-width="3"><path d="M392 14 v-6 M370 36 h-6 M376 20 l-5 -5"/></g><path d="M18 152 q42 -74 100 -74 q58 0 100 74 z" fill="#ECE9DE"/><rect x="52" y="86" width="26" height="36" fill="#ECE9DE" stroke="#16345F" stroke-width="2"/><rect x="60" y="62" width="10" height="24" fill="#ECE9DE" stroke="#16345F" stroke-width="2"/><circle cx="65" cy="54" r="6" fill="#E39A1D" stroke="#16345F" stroke-width="2"/><rect x="0" y="152" width="440" height="48" fill="#0B57A4" opacity="0.16" stroke="none"/><g stroke="#3B7CC0" stroke-width="3"><path d="M0 178 q40 -8 80 0 t80 0 t80 0 t80 0 t80 0 t80 0"/></g><g><path d="M150 160 v-54"/><path d="M150 110 l30 44 h-30 z" fill="#F4E4C3"/><path d="M130 160 q22 10 44 0 l-6 11 h-32 z" fill="#16345F" stroke="none"/></g><g><path d="M304 160 v-40"/><path d="M304 124 l22 32 h-22 z" fill="#C21F30" opacity="0.85"/><path d="M288 160 q18 8 36 0 l-5 10 h-26 z" fill="#16345F" stroke="none"/></g><path d="M350 170 q30 -12 64 0 z" fill="#C8C3B2" stroke="none"/><rect x="362" y="142" width="38" height="28" fill="#ECE9DE" stroke="#16345F" stroke-width="2"/><g fill="#16345F" stroke="none"><rect x="362" y="134" width="8" height="9"/><rect x="378" y="134" width="8" height="9"/><rect x="392" y="134" width="8" height="9"/></g><g transform="translate(196,86) scale(1.9)"><g stroke="#16345F" stroke-width="1.7" stroke-linejoin="round"><path d="M11 14 q13 -10 26 0 l-3 5 h-20 z" fill="#16345F"/><ellipse cx="24" cy="31" rx="15" ry="17" fill="#E39A1D"/><circle cx="18" cy="28" r="6" fill="#FBFAF5"/><circle cx="30" cy="28" r="6" fill="#FBFAF5"/><circle cx="18.5" cy="28.5" r="2.4" fill="#16345F" stroke="none"/><circle cx="30.5" cy="28.5" r="2.4" fill="#16345F" stroke="none"/><path d="M24 32 l-3.5 4.5 h7 z" fill="#C21F30" stroke="none"/><circle cx="41" cy="34" r="6" fill="none" stroke="#0B57A4" stroke-width="2"/><path d="M45 38 l5 5" stroke="#0B57A4" stroke-width="2.5"/></g></g></g></svg><div class="art-cap">Archives de Provence &middot; Dossier Marseille</div></div>
+      <div class="classif mono">POUR LECTURE IMMÉDIATE</div>
+    </div>
+    <div class="toc" id="toc"></div>
+    <div class="vocab-box">
+      <b class="mono">PHRASES DU JOUR — say these out loud today</b>
+      <div id="phraseBox"></div>
+    </div>
+  </div>
+  <div id="secView"></div>
+</div>
+
+<div class="dock">
+  <div class="dock-in">
+    <button id="dockHome">Sommaire</button>
+    <button id="dockOutbox">À évaluer<span class="badge" id="obBadge" style="display:none">0</span></button>
+    <button id="dockSave">Sauvegarde</button>
+    <button id="dockReport">Rapport</button>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="modal-in" id="modalIn"></div></div>
+
+<script id="pack">
+/* ============ PACK: marseille ============ */
+const PACK = {
+meta:{id:"marseille",region:"Provence",title:"Marseille",
+  ranks:[[0,"MOUSSE"],[80,"MARIN·E"],[160,"CAPITAINE"],[240,"AMIRAL·E DU VIEUX-PORT"]],
+  maxPts:268},
+phrases:[
+  ["On va au Vieux-Port ?","Shall we go to the Old Port?"],
+  ["C'est combien, le poisson ?","How much is the fish?"],
+  ["On prend le bateau pour le château d'If ?","Shall we take the boat to the Château d'If?"],
+  ["Il fait beau aujourd'hui !","It's lovely out today!"],
+  ["Bonne Mère !","Good grief! (lit. « Good Mother »)"]
+],
+sections:[
+/* ---------- 1 ---------- */
+{id:"massalia",num:"PIÈCE N°1",title:"Massalia",en:"Older than France itself",
+vocab:[["la mer","the sea"],["un bateau","a boat"],["une ville","a town"],["vieux / vieille","old"]],
+body:[
+"Log in, mousse — you are the newest clerk at the oldest port in France, and your job is to record what comes off the boats. Around <b>600 BC</b>, Greek sailors from Phocaea (in what is now Turkey) sailed west, found a perfect cove — the Lacydon, today's Vieux-Port — and founded <b>Massalia</b>. That is roughly <b>2,600 years</b> ago: Marseille is the {{vieux / vieille||oldest}} {{une ville||city}} in France, Greek before it was ever Roman, Roman long before it was ever French. Paris is a teenager next to it.",
+"How was it founded? By a marriage, says the legend. The Greek captain <b>Protis</b> was invited to a banquet where a local Ligurian princess, <b>Gyptis</b>, had to choose a husband. She walked past all the local suitors and handed the ceremonial cup of wine to the foreign sailor. The whole identity of Marseille is in that story: a city made by outsiders and locals mixing. (Keep your archivist's eyebrow up, though — a founding legend is a lovely story, not a record.)",
+"And the Greeks did more than build a town. Through this one port, the {{la mer||sea}} carried its gifts inland: the <b>olive</b>, the <b>grapevine</b>, and <b>writing</b> all entered Gaul here. The wine in every French cellar and the olive in Les Baux's oil trace back to Greek {{un bateau||boat}}s landing on this beach. Marseille is where « France » began importing the very things that would one day define it — centuries before France existed."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"Who founded Marseille, and roughly when?",
+ opts:["The Romans, around 100 BC","Greek sailors from Phocaea, around 600 BC","Napoleon, around 1800","Vikings, around 900 AD"],
+ a:1,expl:"Massalia, ~2,600 years ago — the oldest city in France, Greek long before it was French."},
+{t:"mcq",q:"The Gyptis-and-Protis legend explains Marseille as a city built by…",
+ opts:["A lone conqueror","Outsiders and locals mixing — a Greek sailor and a local princess","Escaped prisoners","Roman soldiers"],
+ a:1,expl:"A marriage between a newcomer and a local. Marseille has been a mixing-place from its first day — remember that for Pièce 5."},
+{t:"selfcheck",q:"The olive, the vine and writing entered Gaul through Marseille. Why does a PORT city so often become the doorway where new things enter a whole country?",
+ model:"A port is where the outside world physically arrives — ships bring goods, people, seeds and ideas from far away, and from the harbour they spread inland along rivers and roads. Whoever controls the doorway sees everything new first. That's why ports are usually a country's most mixed, most connected and most changed places."}
+]},
+/* ---------- 2 ---------- */
+{id:"port",num:"PIÈCE N°2",title:"Le Vieux-Port",en:"2,600 years of one harbour",
+vocab:[["le port","the harbour"],["vendre","to sell"],["le poisson","fish"],["l'huile","oil"],["loin","far"]],
+body:[
+"Everything in Marseille's story funnels through one narrow cove: the <b>Vieux-Port</b>. For twenty-six centuries the same water has held Greek galleys, Roman grain ships, medieval traders, soap barges, immigrant liners, and today's ferries and yachts. Every morning a {{le poisson||fish}} market still sells the night's catch on the quay — very nearly the oldest running business in France.",
+"A Massalian even redrew the map of the world. Around 325 BC the explorer <b>Pythéas</b> sailed OUT of this {{le port||harbour}}, past Gibraltar, north to Britain and beyond, and came home describing the midnight sun and a frozen sea — the first known account of northern Europe by anyone from the Mediterranean. This was a launch-pad, not just a marketplace.",
+"So how does a port grow rich with no mines and no great farmland? It doesn't grow things — it <b>moves</b> them. Buy {{loin||far}} away and cheap, {{vendre||sell}} dear, and tax whatever passes through: {{l'huile||oil}}, wine, fish, soap, and people. Take the harbour's helm below — import and export across the Mediterranean, and watch Massalia grow rich on the difference."
+],
+interactive:"trade",
+questions:[
+{t:"mcq",q:"What did Pythéas of Massalia do around 325 BC?",
+ opts:["Invent the compass","Sail from Marseille to Britain and the far north — the first Mediterranean account of northern Europe","Conquer Rome","Discover America"],
+ a:1,expl:"Out of this very port to the midnight sun and back. Marseille exported explorers as well as olive oil."},
+{t:"mcq",q:"How does a port city like Marseille mainly get rich?",
+ opts:["By growing its own food","By MOVING goods — buying far and cheap, selling dear, taxing what passes through","By mining gold","By printing money"],
+ a:1,expl:"Trade, not production. A port sells its position: the doorway itself is the business."},
+{t:"ai",qid:"ai-locresource",q:"⚡ RAPPORT DE PORT : Marseille never had gold mines or rich farmland, yet stayed prosperous for 2,600 years. What matters more for a place's fortune — its LOCATION or its RESOURCES? Use at least three facts from this file, argue it, and honestly address the other side. (5–8 sentences.)",
+ rubric:"Award up to 20 points. Strong answers (15-20) argue a clear position with specifics — for LOCATION: Marseille's cove, its role as the doorway to Gaul, trade/Pythéas, moving others' goods; for RESOURCES: places with oil/ore/farmland (or note Marseille DID have a resource: access to the sea) — and steelman the opposing view (e.g. location is worthless without goods to trade; resources can be squandered without trade routes). Then land. 8-14: a position but thin or one-sided. Under 8: vague. Any defensible position earns full marks; reward real engagement with the counter-argument."}
+]},
+/* ---------- 3 ---------- */
+{id:"argent",num:"PIÈCE N°3",title:"Le Savon et la Soupe",en:"How scrap becomes luxury",
+vocab:[["le savon","soap"],["la soupe","soup"],["pauvre","poor"],["cher / chère","expensive"],["cuisiner","to cook"]],
+body:[
+"Two Marseille things pull off the same magic trick: turning the cheap into the prized. First, {{le savon||soap}}. <b>Savon de Marseille</b> has been boiled from olive oil and sea-water since the Middle Ages — so valuable that a royal edict in 1688 set its recipe. The classic cube is stamped « <b>72% d'huile</b> » — 72% oil — a quality mark pressed straight into the block. A humble washing-brick became a protected luxury exported across the world.",
+"Second, {{la soupe||soup}}: <b>bouillabaisse</b>. It began as a {{pauvre||poor}} fisherman's supper — the ugly, spiny rockfish that nobody would buy (the <i>rascasse</i> and its friends), boiled in sea-water on the beach because it couldn't be sold. Today a « real » bouillabaisse in a Vieux-Port restaurant is one of the most {{cher / chère||expensive}} dishes in France, protected by a charter that says what may even be called the genuine article.",
+"See the pattern, clerk — it runs through your whole Provence file. Worthless red dirt became bauxite; a dead quarry became a hall of light; a painter no one would buy made Arles rich; unsellable fish became a delicacy. Value is not fixed. It is a story people agree to tell about a thing — and Marseille has always been brilliant at telling it. {{cuisiner||Cook}} the stew below and watch the price flip."
+],
+interactive:"bouillabaisse",
+questions:[
+{t:"mcq",q:"What does the « 72% » stamped into a savon de Marseille cube mean?",
+ opts:["It's 72% water","72% oil — a quality mark pressed into the soap","It costs 72 euros","It's 72 years old"],
+ a:1,expl:"A guarantee you can read with your thumb. The number is the brand — quality literally engraved."},
+{t:"mcq",q:"Bouillabaisse began as…",
+ opts:["A luxury dish invented for kings","A poor fishermen's stew of unsellable rockfish — now an expensive delicacy","A Greek temple offering","A kind of soap"],
+ a:1,expl:"Scrap fish nobody would buy, boiled on the beach. Same fish, new story, wildly higher price."},
+{t:"selfcheck",q:"« Value isn't fixed — it's a story people agree to tell. » Give one example from your OWN world where something cheap or ignored became prized, or the reverse.",
+ model:"Open answer — accept anything specific: a thrifted item or old sneaker that became collectible; a creator ignored then suddenly huge; a food or place that was 'poor' then trendy (or the reverse). Good answers name WHY the story changed — scarcity, fashion, someone respected endorsing it, nostalgia — not just that the price moved."}
+]},
+/* ---------- 4 ---------- */
+{id:"stories",num:"PIÈCE N°4",title:"Les Histoires Qui Filent",en:"The stories that got away",
+vocab:[["une chanson","a song"],["vrai / faux","true / false"],["un prisonnier","a prisoner"],["croire","to believe"]],
+body:[
+"Marseille loves a <b>galéjade</b> — a tall tale — so an archivist must move carefully here. Take the national anthem, « <b>La Marseillaise</b>. » Everyone assumes it was written in Marseille. It wasn't. It was written in <b>1792 in Strasbourg</b>, 800 km away, as a war {{une chanson||song}} for the Army of the Rhine. It got its name only because volunteers FROM Marseille sang it all the way to Paris and the tune stuck to them. The most French of anthems is named after a city that did not write it.",
+"Now the {{un prisonnier||prisoner}}. Out in the bay squats the <b>Château d'If</b>, a grim island fortress. Its most famous inmate is <b>Edmond Dantès</b> — the hero of Alexandre Dumas's novel « The Count of Monte Cristo. » Visitors cross the water specially to see his cell. One problem: <b>Dantès never existed.</b> He is fiction, and the château cheerfully shows a « cell of Monte Cristo » for a man who was never born. A novel became more real than the prison it borrowed.",
+"This is your media-literacy final, clerk, and it echoes the whole series: the song « sur le pont d'Avignon » (probably « sous »), the « antipope » millions {{croire||believed}} was real, the marble bust that is only MAYBE Caesar. A good story travels faster than the truth and wears the truth's clothes. Below, sort Marseille's famous claims into what is {{vrai / faux||true}} and what is a fine tall tale."
+],
+interactive:"galejade",
+questions:[
+{t:"mcq",q:"Where was « La Marseillaise » actually written?",
+ opts:["In Marseille, of course","In Strasbourg, in 1792 — named later after the Marseille volunteers who sang it","In Paris","In Corsica"],
+ a:1,expl:"A war song for the Army of the Rhine. The name is a souvenir of who carried it, not where it was born."},
+{t:"mcq",q:"The Château d'If's most famous prisoner, Edmond Dantès, was…",
+ opts:["A real pirate","A real duke","Fictional — the hero of Dumas's « Count of Monte Cristo »","A Greek sailor"],
+ a:2,expl:"Pure fiction — yet the château shows « his » cell. The story outgrew the building."},
+{t:"mcq",q:"What do the Marseillaise and the « Monte Cristo cell » share with Avignon's bridge song?",
+ opts:["Nothing at all","A good story spread and got mistaken for fact","They are all about kings","They were all written by Dumas"],
+ a:1,expl:"The series' running lesson: repetition isn't evidence. Catchy beats accurate, again and again."},
+{t:"ai",qid:"ai-mislead",q:"⚡ BRIEF : Why do catchy stories — a song's supposed birthplace, a fictional prisoner's « real » cell — so often beat the boring true version? Give at least three examples from across this series, explain the mechanism, and say how YOU would protect yourself from believing them. (5–8 sentences.)",
+ rubric:"Award up to 20 points. Strong answers (15-20) cite 3+ series examples (Marseillaise, Monte Cristo, « sur/sous le pont », « antipope », the maybe-Caesar bust) AND explain WHY myths win (simpler, more emotional, repeated, flatter what we already believe, tied to a place/souvenir) AND give a real defence (check primary sources, ask who benefits, notice 'everyone knows', distrust the too-perfect story). 8-14: examples but thin mechanism or no defence. Under 8: vague. Reward concrete method and cross-series thinking."}
+]},
+/* ---------- 5 ---------- */
+{id:"echecs",num:"PIÈCE N°5",title:"Les Échecs",en:"1720, and a city of outsiders",
+vocab:[["la peste","the plague"],["un bateau","a ship"],["mourir","to die"],["étranger / étrangère","foreign / foreigner"]],
+body:[
+"A file that only flatters its subject is a failed file. 1720: a merchant {{un bateau||ship}}, the <b>Grand-Saint-Antoine</b>, docks at Marseille loaded with silk and cotton — and {{la peste||plague}}. Under pressure from merchants who wanted the cargo sold, officials break the quarantine rules and unload it. Within months the <b>Great Plague of Marseille</b> kills perhaps <b>half the city</b> — around 50,000 people — and 50,000 more across Provence. They built a « mur de la peste, » a plague wall across the hills, to try to seal the disease off. The same open port that made Marseille rich let death walk straight up the gangplank.",
+"And the harder, honest thing. For centuries the Parisian cliché has painted Marseille as poor, dangerous, criminal, « not really France » — a reputation sharpened by the mid-20th-century heroin trade the films called the « French Connection. » Some of that history is real. But it hides the bigger truth: Marseille is France's great <b>arrival city</b>. Italians, Armenians, Spaniards, North Africans, Comorians and more stepped off the {{un bateau||boats}} here and became French. It is the most {{étranger / étrangère||foreigner}}-shaped — and, many would argue, the most alive — city in the country.",
+"So hold the two Marseilles together, clerk. A port is a wound and a welcome: the same open door lets in plague and people, poverty and music, danger and the whole Mediterranean. A city that {{mourir||dies}} and remakes itself every century out of whoever the sea brings next. Don't let the postcard OR the crime film be the only file on your desk."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"What caused the Great Plague of Marseille in 1720?",
+ opts:["Poisoned wells","A merchant ship whose plague-infected cargo was unloaded despite quarantine","An earthquake","Bad drinking water"],
+ a:1,expl:"The Grand-Saint-Antoine. Greed beat caution, and roughly half the city died for it."},
+{t:"mcq",q:"Beyond the « dangerous city » cliché, what is Marseille historically?",
+ opts:["A quiet farming town","France's great arrival city — a melting pot of immigrants who became French","A royal capital","A military base only"],
+ a:1,expl:"The same open port that risked plague also welcomed the world. Marseille keeps making 'French' bigger."},
+{t:"ai",qid:"ai-opendoor",q:"⚡ BRIEF : « A port is a wound and a welcome. » Argue whether a city being an OPEN DOOR — to trade, people and ideas, and therefore also to risks — is more a strength or a weakness. Use Marseille's plague AND its immigration, at least three facts, and steelman the side you don't pick. (6–10 sentences.)",
+ rubric:"Award up to 20 points. This is deliberately hard. Strong answers (15-20) use real specifics on BOTH sides — strength: trade wealth, cultural richness, the olive/vine/ideas entering through the port, becoming France's most alive city; weakness: the 1720 plague ship, vulnerability, poverty and the crime reputation — and genuinely steelman the side they reject before landing. 8-14: both sides attempted but one is a strawman, or no position. Under 8: one-sided or vague. State clearly that ANY reasoned position — strength, weakness, or 'depends' — earns full marks; grade the argument, not the conclusion."}
+]},
+/* ---------- 6 ---------- */
+{id:"aujourdhui",num:"PIÈCE N°6",title:"Aujourd'hui",en:"The rough port becomes a capital",
+vocab:[["la culture","culture"],["une église","a church"],["neuf / neuve","new"],["la falaise","the cliff"]],
+body:[
+"For a long time France looked down on Marseille. Then Marseille changed the story again. In <b>2013</b> it was <b>European Capital of Culture</b>, and it used the moment to remake its waterfront: the striking black lattice of the <b>MuCEM</b> (museum of Mediterranean civilisations) rose beside the old <b>Fort Saint-Jean</b>, the two linked by a slender footbridge — {{neuf / neuve||new}} and old holding hands. Over the Vieux-Port, the architect Norman Foster hung a giant mirror-roof that flips the crowd upside-down in its reflection.",
+"Watching over all of it from the highest hill stands <b>Notre-Dame de la Garde</b> — « la Bonne Mère, » the Good Mother — a 19th-century {{une église||church}} crowned with a golden Madonna that sailors still search for as they come home. And on the city's edge, Le Corbusier's <b>Cité Radieuse</b> (1952), a concrete ship of flats that reinvented modern housing, now a UNESCO monument. Marseille keeps doing the very thing Provence does best: folding the old and the new into one.",
+"Just beyond the city, the {{la falaise||cliff}}s plunge straight into the sea at the <b>Calanques</b> — white limestone fjords, the same stone as the Alpilles above Les Baux, now a national park. From Greek cove to plague port to heroin port to {{la culture||culture}} capital to natural wonder: Marseille has been written off a dozen times and is still, stubbornly, the beating Mediterranean heart of France. Your file's last lesson, clerk — never bet against a survivor."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"What did Marseille do as European Capital of Culture in 2013?",
+ opts:["Nothing much","Remade its waterfront — the MuCEM beside Fort Saint-Jean, the mirror canopy over the Vieux-Port","Built a Formula 1 track","Moved the port inland"],
+ a:1,expl:"A rough port re-cast as a Mediterranean culture capital. Reinvention, the Provençal house style."},
+{t:"mcq",q:"What links the Calanques to your Les Baux file?",
+ opts:["Nothing","The same white Alpilles limestone — here it forms sea-cliffs, now a national park","They share a castle","Both grow olives underwater"],
+ a:1,expl:"One stone, two landscapes: the quarries above Les Baux and the sea-fjords of the Calanques."},
+{t:"selfcheck",q:"Marseille has been « written off a dozen times and survived. » Name a place, team, or person you've seen written off that came back — and what let them do it.",
+ model:"Open answer — accept any real example (a struggling team that rebuilt, a neighbourhood that revived, a person who bounced back). Strong answers identify the MECHANISM of survival — an underlying strength that outlasted the bad patch (a great location, loyal people, a skill, adaptability) — which is exactly what carried Marseille: its harbour and its people never stopped being valuable."},
+{t:"ai",qid:"ai-remake",q:"⚡ BRIEF FINAL : Marseille reinvented itself from rough port to culture capital. Is it healthy for a city to lean into a shiny new image, or is something lost when a gritty, real place remakes itself for visitors? Use at least three specifics (the MuCEM, Capital of Culture 2013, the working old port), address the strongest opposing view, then land. (6–10 sentences.)",
+ rubric:"Award up to 20 points. Strong answers (15-20) use specifics (MuCEM/Fort Saint-Jean, 2013 Capital of Culture, the mirror canopy, the still-working fish port, the immigrant neighbourhoods) and weigh a real tension: reinvention brings jobs, pride and preservation VERSUS it can gentrify, push out locals, and turn a living city into a polished backdrop. They steelman the side they don't choose, then take a position. 8-14: ideas but the opposing view is weak or missing. Under 8: vague. Any reasoned position earns full marks; reward specificity and honest trade-offs."}
+]},
+/* ---------- 7 ---------- */
+{id:"sources",num:"PIÈCE N°7",title:"Les Sources",en:"Dig deeper (when online)",
+vocab:[],
+body:[
+"The archive behind your file. Sort them, clerk: which are <b>primary</b> (the port and forts themselves, excavated Greek ruins, Rouget de Lisle's own manuscript of the anthem) and which are <b>interpretation</b> (a blog, a film, this game)? Two Marseille habits to keep for life: a founding legend — Gyptis and Protis — is a beautiful story, not a document; and the most famous « prisoner » of the Château d'If lived only inside a novel. Trust the sea; check the story.",
+"REFS"
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"Which is the strongest PRIMARY evidence for how Marseille was really founded?",
+ opts:["The Gyptis-and-Protis legend","A scene from a Dumas novel","Greek pottery and building foundations excavated at the site","A tourism website's history page"],
+ a:2,expl:"Dug-up Greek pottery and walls were physically left by the founders. The charming legend is a much later story — evidence and story are different objects."}
+]}
+],
+refs:[
+["Marseille Tourisme — the Vieux-Port, forts and neighbourhoods","https://www.marseille-tourisme.com/en/"],
+["Musée d'Histoire de Marseille — Massalia and the ancient port","https://musee-histoire.marseille.fr/"],
+["MuCEM — Mediterranean civilisations","https://www.mucem.org/en"],
+["Château d'If — the real island behind the novel","https://www.chateau-if.fr/en"],
+["Parc national des Calanques","https://www.calanques-parc.fr/en"],
+["Élysée — the true history of « La Marseillaise »","https://www.elysee.fr/en/french-presidency/la-marseillaise-by-rouget-de-lisle"],
+["UNESCO — Le Corbusier's Cité Radieuse","https://whc.unesco.org/en/list/1321/"]
+]
+};
+
+const MASCOT_SM = `<svg viewBox="0 0 48 54" aria-hidden="true"><g stroke="#16345F" stroke-width="1.7" stroke-linejoin="round"><path d="M11 14 q13 -10 26 0 l-3 5 h-20 z" fill="#16345F"/><ellipse cx="24" cy="31" rx="15" ry="17" fill="#E39A1D"/><circle cx="18" cy="28" r="6" fill="#FBFAF5"/><circle cx="30" cy="28" r="6" fill="#FBFAF5"/><circle cx="18.5" cy="28.5" r="2.4" fill="#16345F" stroke="none"/><circle cx="30.5" cy="28.5" r="2.4" fill="#16345F" stroke="none"/><path d="M24 32 l-3.5 4.5 h7 z" fill="#C21F30" stroke="none"/><path d="M13 40 q-6 3 -9 -1 M35 40 q6 3 9 -1" fill="none"/><path d="M20 48 v3 M28 48 v3" fill="none"/></g></svg>`;
+
+const SAYS = {
+massalia:"Older than France, older than Paris. Greek before it was anything else.",
+port:"It never grew a thing. It moved everything — and got rich on the difference.",
+argent:"Ugly fish, cheap soap. Value is just a story people agree to tell.",
+stories:"The anthem wasn't written here. The famous prisoner never existed. Careful.",
+echecs:"A port is a wound and a welcome. Both come up the same gangplank.",
+aujourdhui:"Written off a dozen times. Still the beating heart of the Mediterranean.",
+sources:"A legend is not a document. Trust the sea; check the story."
+};
+
+const AV = '<g stroke="#16345F" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">';
+function acap(c){return '<div class="art-cap">'+c+'</div>';}
+const WAVES = '<rect x="0" y="140" width="400" height="50" fill="#0B57A4" opacity="0.14" stroke="none"/><g stroke="#3B7CC0" stroke-width="3" fill="none"><path d="M0 150 q40 -8 80 0 t80 0 t80 0 t80 0 t80 0"/></g>';
+
+const ART = {
+massalia:`<svg viewBox="0 0 400 190" role="img">${AV}<circle cx="336" cy="42" r="15" fill="#E39A1D" stroke="none"/>${WAVES}<path d="M118 130 q82 26 172 0 l-18 24 h-136 z" fill="#16345F" stroke="none"/><path d="M204 130 v-72"/><path d="M204 60 q42 6 46 46 l-46 8 z" fill="#F4E4C3"/><g stroke="#16345F" stroke-width="2"><path d="M150 150 l-14 16 M178 152 l-14 16 M206 152 l-14 16 M234 150 l-14 16"/></g><path d="M52 122 q34 -22 70 -14" stroke="#2E7D46" stroke-width="3"/><g fill="#2E7D46" stroke="none"><ellipse cx="72" cy="110" rx="5" ry="3"/><ellipse cx="90" cy="106" rx="5" ry="3"/><ellipse cx="108" cy="108" rx="5" ry="3"/></g></g></svg>${acap("Massalia, ~600 BC &mdash; the Greeks land")}`,
+
+port:`<svg viewBox="0 0 400 190" role="img">${AV}${WAVES}<rect x="30" y="70" width="34" height="66" fill="#ECE9DE"/><path d="M30 70 h34 v66"/><g fill="#16345F" stroke="none"><rect x="30" y="62" width="9" height="10"/><rect x="45" y="62" width="9" height="10"/><rect x="57" y="62" width="7" height="10"/></g><rect x="336" y="70" width="34" height="66" fill="#ECE9DE"/><path d="M336 70 h34 v66"/><g fill="#16345F" stroke="none"><rect x="336" y="62" width="9" height="10"/><rect x="351" y="62" width="9" height="10"/><rect x="363" y="62" width="7" height="10"/></g><g><path d="M150 136 v-64"/><path d="M150 74 l40 54 h-40 z" fill="#F4E4C3"/><path d="M120 136 q60 18 120 0 l-12 16 h-96 z" fill="#16345F" stroke="none"/></g><g><path d="M250 136 v-44"/><path d="M250 94 l26 38 h-26 z" fill="#C21F30" opacity="0.85"/></g><path d="M300 158 q6 -8 14 0 q-4 6 -14 0" fill="#0B57A4" stroke="none"/><circle cx="308" cy="156" r="1.6" fill="#16345F" stroke="none"/></g></svg>${acap("The Vieux-Port &mdash; 26 centuries of one cove")}`,
+
+argent:`<svg viewBox="0 0 400 190" role="img">${AV}<rect x="70" y="86" width="96" height="80" rx="6" fill="#EFE7D2" stroke="#16345F" stroke-width="3"/><circle cx="118" cy="126" r="26" fill="none" stroke="#16345F" stroke-width="2"/><text x="118" y="122" font-family="Arial Narrow, Arial, sans-serif" font-size="18" font-weight="700" fill="#16345F" text-anchor="middle" stroke="none">72%</text><text x="118" y="140" font-family="Courier New, monospace" font-size="9" fill="#5A5F6A" text-anchor="middle" stroke="none">HUILE</text><path d="M232 120 h108 a8 8 0 0 1 -8 30 h-92 a8 8 0 0 1 -8 -30 z" fill="#E39A1D" stroke="#16345F" stroke-width="3"/><path d="M228 120 h116" stroke="#16345F" stroke-width="3"/><g stroke="#C21F30" stroke-width="3" fill="none"><path d="M262 112 q-6 -12 4 -20 M286 112 q-6 -12 4 -20 M310 112 q-6 -12 4 -20"/></g><ellipse cx="286" cy="120" rx="10" ry="4" fill="#C21F30" stroke="none"/></g></svg>${acap("Cheap soap, scrap-fish soup &mdash; both turned precious")}`,
+
+stories:`<svg viewBox="0 0 400 190" role="img">${AV}<rect x="52" y="52" width="150" height="96" rx="4" fill="#FBFAF5"/><path d="M52 60 q-14 6 0 12 M202 60 q14 6 0 12"/><path d="M74 84 h100 M74 100 h100 M74 116 h72" stroke="#C8C3B2" stroke-width="3"/><g fill="#16345F" stroke="none"><circle cx="120" cy="78" r="6"/><circle cx="150" cy="72" r="6"/><rect x="124" y="58" width="3" height="22"/><rect x="154" y="52" width="3" height="22"/><path d="M124 58 h30 v6 h-30 z"/></g>${WAVES}<path d="M300 118 q46 -10 84 0 l0 22 h-84 z" fill="#16345F" stroke="none"/><g fill="#ECE9DE" stroke="#16345F" stroke-width="1.5"><rect x="318" y="104" width="14" height="16"/><rect x="352" y="104" width="14" height="16"/></g><text x="342" y="98" font-family="Arial Narrow, Arial, sans-serif" font-size="30" font-weight="700" fill="#C21F30" text-anchor="middle" stroke="none">?</text></g></svg>${acap("An anthem, an island prison &mdash; and two tall tales")}`,
+
+echecs:`<svg viewBox="0 0 400 190" role="img">${AV}${WAVES}<path d="M120 132 q70 22 150 0 l-16 22 h-118 z" fill="#16345F" stroke="none"/><path d="M195 132 v-78"/><path d="M195 54 h44 v30 h-44 z" fill="#4a4f57" stroke="none"/><g stroke="#FBFAF5" stroke-width="2"><path d="M205 64 l16 12 M221 64 l-16 12"/></g><path d="M320 150 v-46 a24 24 0 0 1 48 0 v46" fill="none" stroke="#16345F" stroke-width="3"/><g stroke="#16345F" stroke-width="3" fill="none"><g transform="translate(330,120)"><circle cx="0" cy="0" r="6" fill="#E39A1D"/><path d="M0 6 v14 M-7 12 h14"/></g><g transform="translate(358,120)"><circle cx="0" cy="0" r="6" fill="#0B57A4"/><path d="M0 6 v14 M-7 12 h14"/></g></g></g></svg>${acap("1720: a plague ship &mdash; and a city of arrivals")}`,
+
+aujourdhui:`<svg viewBox="0 0 400 190" role="img">${AV}${WAVES}<path d="M70 150 v-44 l26 -22 l26 22 v44 z" fill="#ECE9DE"/><path d="M64 106 l32 -26 l32 26"/><rect x="88" y="60" width="16" height="24" fill="#ECE9DE"/><circle cx="96" cy="52" r="7" fill="#E39A1D" stroke="#16345F" stroke-width="2"/><path d="M96 45 v-8" stroke="#16345F" stroke-width="2"/><rect x="250" y="96" width="90" height="70" fill="#2b2f36" stroke="#16345F" stroke-width="2"/><g stroke="#8a8f98" stroke-width="2"><path d="M262 96 v70 M278 96 v70 M296 96 v70 M312 96 v70 M328 96 v70 M250 112 h90 M250 130 h90 M250 148 h90"/></g></g></svg>${acap("La Bonne M&egrave;re watches the MuCEM rise")}`,
+
+sources:`<svg viewBox="0 0 400 190" role="img">${AV}<rect x="96" y="34" width="180" height="120" fill="#FBFAF5"/><path d="M116 60 h140 M116 76 h140 M116 92 h120 M116 108 h140 M116 124 h86" stroke="#C8C3B2" stroke-width="3"/><g transform="rotate(-8 210 58)"><rect x="176" y="46" width="72" height="24" rx="3" stroke="#C21F30" stroke-width="2.5"/><text x="212" y="63" font-family="Courier New, monospace" font-size="11" fill="#C21F30" text-anchor="middle" stroke="none">PRIMAIRE</text></g><circle cx="252" cy="128" r="34" fill="#0B57A4" opacity="0.08" stroke="none"/><circle cx="252" cy="128" r="34" stroke="#0B57A4" stroke-width="5"/><path d="M276 152 l24 24" stroke="#0B57A4" stroke-width="8"/></g></svg>${acap("A legend is not a document.")}`
+};
+</script>
+<script id="engine">
+/* ============ ENGINE ============ */
+const CONFIG = {
+  aiEndpoint: "https://api.anthropic.com/v1/messages", // swap for your proxy when self-hosted
+  aiModel: "claude-sonnet-4-6"
+};
+const S = { profile:null, pts:0, done:{}, secDone:{}, outbox:[], simRuns:0 };
+S.pack=PACK.meta.id;
+
+/* ---- local persistence ---- */
+const STORE=(()=>{
+  let ok=false;
+  try{localStorage.setItem("__mp","1");localStorage.removeItem("__mp");ok=true;}catch(e){ok=false;}
+  const K="missionpack:"+PACK.meta.id;
+  return{ok,
+    save(o){if(!ok)return false;try{localStorage.setItem(K,JSON.stringify(o));return true;}catch(e){return false;}},
+    load(){if(!ok)return null;try{return JSON.parse(localStorage.getItem(K)||"null");}catch(e){return null;}},
+    clear(){if(!ok)return;try{localStorage.removeItem(K);}catch(e){}}};
+})();
+let persistTimer=null, wiped=false;
+function persist(){
+  if(!STORE.ok||wiped)return;
+  clearTimeout(persistTimer);
+  persistTimer=setTimeout(()=>STORE.save(S),250);
+}
+function persistNow(){if(STORE.ok&&!wiped)STORE.save(S);}
+addEventListener("visibilitychange",()=>{if(document.hidden)persistNow();});
+addEventListener("pagehide",persistNow);
+function toast(msg){
+  const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add("show"));
+  setTimeout(()=>{t.classList.remove("show");setTimeout(()=>t.remove(),350);},3200);
+}
+
+const $ = id => document.getElementById(id);
+const esc = t => t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ---- vocab markup: {{fr||en}} -> tap-to-reveal ---- */
+function fmt(t){
+  return t.replace(/\{\{(.+?)\|\|(.+?)\}\}/g,
+    (_,fr,en)=>`<span class="v" onclick="this.classList.add('revealed');this.querySelector('.en').style.display='inline'">${fr} <span class="en" style="display:none">(${en})</span></span>`);
+}
+
+/* ---- points ---- */
+function addPts(n, el){
+  S.pts += n;
+  renderGauge();
+  persist();
+  if(el){ const s=document.createElement("span"); s.className="pts-pop";
+    s.textContent=" +"+n+" pts"; el.appendChild(s); }
+}
+function rank(){
+  let r=PACK.meta.ranks[0][1];
+  for(const [min,name] of PACK.meta.ranks) if(S.pts>=min) r=name;
+  return r;
+}
+function renderGauge(){
+  $("ptsLbl").textContent = S.pts+" pts";
+  $("gaugeFill").style.width = Math.min(100, S.pts/PACK.meta.maxPts*100)+"%";
+  $("rankLbl").textContent = rank();
+}
+
+/* ---- navigation ---- */
+function showHome(){
+  $("home").style.display="block"; $("secView").innerHTML="";
+  renderTOC(); window.scrollTo(0,0);
+}
+function renderTOC(){
+  const toc=$("toc"); toc.innerHTML="";
+  PACK.sections.forEach((sec,i)=>{
+    const doneQ = sec.questions.filter(q=>S.done[qKey(sec,q)]).length;
+    const b=document.createElement("button"); b.className="toc-item";
+    b.innerHTML=`<span class="toc-num mono">${sec.num}</span>
+      <span class="toc-t"><b>${sec.title}</b><i>${sec.en}</i></span>
+      <span class="toc-pts mono">${doneQ}/${sec.questions.length}</span>
+      <span class="toc-st">${S.secDone[sec.id]?"✅":"📄"}</span>`;
+    b.onclick=()=>showSection(i);
+    toc.appendChild(b);
+  });
+  $("phraseBox").innerHTML = PACK.phrases.map(p=>
+    `<div class="phrase">« ${p[0]} »<i>${p[1]}</i></div>`).join("");
+}
+function qKey(sec,q){ return sec.id+"::"+(q.qid||q.q.slice(0,40)); }
+
+function showSection(i){
+  const sec=PACK.sections[i];
+  $("home").style.display="none";
+  const v=$("secView");
+  let bodyHtml = sec.body.map(p=>{
+    if(p==="REFS") return PACK.refs.map(r=>
+      `<div class="refline">▸ <a href="${r[1]}" target="_blank" rel="noopener">${r[0]}</a><br><span class="mono" style="font-size:11px;color:var(--ink2)">${r[1]}</span></div>`).join("");
+    return `<p>${fmt(p)}</p>`;
+  }).join("");
+  const vocabHtml = sec.vocab.length ?
+    `<div class="vocab-box"><b class="mono">VOCABULAIRE — tap the dotted words above, then test yourself:</b><br>`+
+    sec.vocab.map(v=>`<span class="v" onclick="this.querySelector('.en').style.display='inline'">${v[0]} <span class="en" style="display:none">= ${v[1]}</span></span>`).join(" · ")+`</div>`:"";
+  v.innerHTML = `<div class="sec active">
+    <button class="crumb" onclick="showHome()">← Sommaire</button>
+    <div class="piece-tag mono">${sec.num}</div>
+    <h2>${sec.title}</h2>
+    <div class="fr-sub">${sec.en}</div>
+    ${SAYS[sec.id]?`<div class="mascot-line">${MASCOT_SM}<span>${SAYS[sec.id]}</span></div>`:""}
+    ${ART[sec.id]?`<div class="pack-art">${ART[sec.id]}</div>`:""}
+    <div id="stampZone"></div>
+    ${bodyHtml}${vocabHtml}
+    <div id="inter"></div>
+    <hr class="rule">
+    <div id="qs"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:20px">
+      <button class="btn alt" onclick="showHome()">← Sommaire</button>
+      ${i<PACK.sections.length-1?`<button class="btn" onclick="showSection(${i+1})">Pièce suivante →</button>`:
+        `<button class="btn red" onclick="openReport()">Générer le rapport</button>`}
+    </div></div>`;
+  renderInteractive(sec, $("inter"));
+  renderQuestions(sec, $("qs"));
+  if(S.secDone[sec.id]) $("stampZone").innerHTML='<span class="stamp mono">VALIDÉ ✔</span>';
+  window.scrollTo(0,0);
+}
+
+/* ---- questions ---- */
+function renderQuestions(sec, host){
+  sec.questions.forEach(q=>{
+    const key=qKey(sec,q), card=document.createElement("div"); card.className="card";
+    if(q.t==="mcq"){
+      card.innerHTML=`<div class="card-tag mono">QUESTION · 10 PTS</div>
+        <div class="qtext">${esc(q.q)}</div>`;
+      const doneInfo = S.done[key];
+      q.opts.forEach((o,oi)=>{
+        const b=document.createElement("button"); b.className="opt"; b.textContent=o;
+        if(doneInfo){ b.disabled=true;
+          if(oi===q.a) b.classList.add("right");
+        } else b.onclick=()=>{
+          if(S.done[key]) return;
+          const first = !card.dataset.missed;
+          if(oi===q.a){
+            b.classList.add("right");
+            card.querySelectorAll(".opt").forEach(x=>x.disabled=true);
+            S.done[key]={pts:first?10:5};
+            addPts(first?10:5, b);
+            const e=document.createElement("div"); e.className="expl";
+            e.textContent=q.expl; card.appendChild(e);
+            checkSectionDone(sec);
+          } else { b.classList.add("wrong"); b.disabled=true; card.dataset.missed=1; }
+        };
+        card.appendChild(b);
+      });
+      if(doneInfo){ const e=document.createElement("div"); e.className="expl";
+        e.textContent=q.expl; card.appendChild(e); }
+    }
+    if(q.t==="selfcheck"){
+      card.innerHTML=`<div class="card-tag mono">RÉPONSE LIBRE · AUTO-ÉVALUATION · MAX 8 PTS</div>
+        <div class="qtext">${esc(q.q)}</div>
+        <textarea placeholder="Write your answer first — no peeking."></textarea>
+        <button class="btn alt">Reveal model answer</button><div class="sc-zone"></div>`;
+      const ta=card.querySelector("textarea"), zone=card.querySelector(".sc-zone");
+      card.querySelector("button").onclick=function(){
+        if(ta.value.trim().length<20){ zone.innerHTML='<p class="note">Write at least a couple of sentences first.</p>'; return;}
+        this.disabled=true; ta.disabled=true;
+        zone.innerHTML=`<div class="model-ans"><b>Model answer:</b> ${esc(q.model)}</div>
+          <p class="note">Honor system: how close were you?</p>`;
+        [["Nailed it",8],["Mostly",5],["Missed it",2]].forEach(([lbl,p])=>{
+          const b=document.createElement("button"); b.className="btn alt";
+          b.style.marginRight="8px"; b.textContent=lbl+" (+"+p+")";
+          b.onclick=()=>{ if(S.done[key])return;
+            S.done[key]={pts:p,ans:ta.value}; addPts(p,b);
+            zone.querySelectorAll(".btn").forEach(x=>x.disabled=true);
+            checkSectionDone(sec); };
+          zone.appendChild(b);
+        });
+      };
+      if(S.done[key]){ ta.value=S.done[key].ans||""; ta.disabled=true;
+        card.querySelector("button").disabled=true; }
+    }
+    if(q.t==="ai"){
+      card.innerHTML=`<div class="card-tag ai mono">⚡ ÉVALUATION PAR IA · MAX 20 PTS · QUEUED UNTIL ONLINE</div>
+        <div class="qtext">${esc(q.q)}</div>
+        <textarea placeholder="Your best thinking — a real AI will grade this against a rubric when you reconnect."></textarea>
+        <button class="btn">Queue for evaluation</button><div class="ai-zone"></div>`;
+      const ta=card.querySelector("textarea"), zone=card.querySelector(".ai-zone");
+      const existing = S.outbox.find(o=>o.qid===q.qid);
+      if(existing){ ta.value=existing.answer; ta.disabled=true;
+        card.querySelector("button").disabled=true;
+        zone.innerHTML = obStatusHtml(existing); }
+      card.querySelector("button").onclick=function(){
+        if(ta.value.trim().length<40){ zone.innerHTML='<p class="note">This one deserves a real answer — write more.</p>'; return; }
+        this.disabled=true; ta.disabled=true;
+        S.outbox.push({qid:q.qid,q:q.q,rubric:q.rubric,answer:ta.value,status:"queued"});
+        zone.innerHTML='<p class="note">✉ Queued. Open "À évaluer" when you have a connection.</p>';
+        renderBadge();
+      };
+      host.appendChild(card); return;
+    }
+    host.appendChild(card);
+  });
+}
+function checkSectionDone(sec){
+  const core = sec.questions.filter(q=>q.t!=="ai");
+  if(core.every(q=>S.done[qKey(sec,q)]) && !S.secDone[sec.id]){
+    S.secDone[sec.id]=true;
+    persist();
+    const z=$("stampZone"); if(z) z.innerHTML='<span class="stamp mono">VALIDÉ ✔</span>';
+  }
+}
+function obStatusHtml(o){
+  if(o.status==="done") return `<div class="ob-fb"><b>${o.score}/20</b> — ${esc(o.feedback)}</div>`;
+  if(o.status==="error") return `<p class="note">Evaluation failed — retry from the outbox.</p>`;
+  return '<p class="note">✉ Queued for evaluation.</p>';
+}
+/* ---- interactives ---- */
+function renderInteractive(sec, host){
+  if(sec.interactive==="trade") return interTrade(host);
+  if(sec.interactive==="bouillabaisse") return interBouillabaisse(host);
+  if(sec.interactive==="galejade") return interGalejade(host);
+}
+
+/* Trade: send ships to Mediterranean ports, accumulate a treasury */
+function interTrade(host){
+  const DEST=[
+    ["Britannia","tin for bronze — Pythéas sailed here ~325 BC",14],
+    ["Aegyptus","grain to feed the whole west",16],
+    ["Gaule (inland)","wine & oil up the Rhône — new tastes for the Gauls",18],
+    ["Roma","luxuries, silver and allies",12]
+  ];
+  let treasury=0; const sent={};
+  host.innerHTML=`<div class="card"><div class="card-tag mono">SIMULATEUR · LE COMMERCE DE MASSALIA · +8 PTS</div>
+   <div class="qtext">Marseille grows no grain and mines no gold — it MOVES what others make. Send a ship to each port and watch the treasury fill.</div>
+   <div class="chips" id="trDest"></div>
+   <div id="trOut" class="mono" style="font-size:13px;margin-top:6px">Treasury: 0 talents.</div></div>`;
+  const d=host.querySelector("#trDest");
+  DEST.forEach(([name,fact,gain],i)=>{
+    const b=document.createElement("button");b.className="chip";b.textContent="⛵ "+name;
+    b.onclick=()=>{
+      if(sent[i])return; sent[i]=1; treasury+=gain; b.disabled=true; b.style.opacity=".55";
+      const done=Object.keys(sent).length;
+      host.querySelector("#trOut").innerHTML=`<b>${name}:</b> ${fact}. <b>+${gain}</b> &rarr; treasury ${treasury} talents.`;
+      if(done>=DEST.length && !S.done["trade"]){
+        S.done["trade"]={pts:8}; addPts(8,host.querySelector("#trOut"));
+        const extra=document.createElement("div");extra.className="expl";
+        extra.textContent="Massalia never grew any of it — it got rich on the difference between « buy far » and « sell dear ». The doorway itself was the business.";
+        host.querySelector("#trOut").after(extra);
+      }
+    };
+    d.appendChild(b);
+  });
+}
+
+/* Bouillabaisse: build the stew, then flip who serves it and watch the price */
+function interBouillabaisse(host){
+  const ING=["Rascasse (spiny rockfish)","Congre (eel)","Galinette","Crabe","Safran & rouille"];
+  const pot=[]; let flipped=false;
+  host.innerHTML=`<div class="card"><div class="card-tag mono">SIMULATEUR · LA BOUILLABAISSE · +8 PTS</div>
+   <div class="qtext">Add the « worthless » fish nobody would buy, then choose who serves it. Same pot — very different price.</div>
+   <div class="chips" id="bbIng"></div>
+   <div class="slots" id="bbPot">the empty pot…</div>
+   <div class="hi-actions"><button class="btn" id="bbShack">Cabane de pêcheur, 1800</button>
+     <button class="btn alt" id="bbResto">Restaurant du Vieux-Port, aujourd'hui</button></div>
+   <div id="bbOut"></div></div>`;
+  const ic=host.querySelector("#bbIng");
+  ING.forEach(name=>{
+    const b=document.createElement("button");b.className="chip";b.textContent="+ "+name;
+    b.onclick=()=>{ if(b.disabled)return; b.disabled=true; b.style.opacity=".5"; pot.push(name);
+      const s=host.querySelector("#bbPot"); s.textContent="";
+      pot.forEach(x=>{const c=document.createElement("span");c.className="slot-chip";c.textContent=x;s.appendChild(c);});
+      check();
+    };
+    ic.appendChild(b);
+  });
+  function price(who){
+    flipped=true;
+    const n=pot.length;
+    const txt = who==="shack"
+      ? `<div class="expl"><b>Fisherman's shack, 1800:</b> a few sous — in fact, often free. This was the catch too ugly and spiny to sell at market. « Poverty in a bowl. »</div>`
+      : `<div class="expl"><b>Vieux-Port restaurant, today:</b> around <b>60–80&nbsp;€ per person</b>, served in two courses with a charter proving it's the « real » bouillabaisse. Same fish. New story.</div>`;
+    host.querySelector("#bbOut").innerHTML=txt;
+    check();
+  }
+  host.querySelector("#bbShack").onclick=()=>price("shack");
+  host.querySelector("#bbResto").onclick=()=>price("resto");
+  function check(){
+    if(pot.length>=3 && flipped && !S.done["bouillabaisse"]){
+      S.done["bouillabaisse"]={pts:8}; addPts(8,host.querySelector("#bbOut"));
+    }
+  }
+}
+
+/* Galéjade: sort famous Marseille claims into true vs tall tale */
+function interGalejade(host){
+  const CLAIMS=[
+    ["Marseille is the oldest city in France","VRAI","Founded ~600 BC by Greeks — older than Paris, older than « France » itself."],
+    ["« La Marseillaise » was written in Marseille","GALÉJADE","Written in Strasbourg in 1792; it only took the name from the Marseille volunteers who sang it."],
+    ["A real prisoner, the Count of Monte Cristo, was locked in the Château d'If","GALÉJADE","He's a character in Dumas's novel — fiction. The château even shows his « cell »."],
+    ["Greek sailors brought the olive and the vine to France","VRAI","The olive, the grapevine and writing all entered Gaul through Massalia."],
+    ["Bouillabaisse was invented as a luxury dish for nobles","GALÉJADE","The opposite: a poor fishermen's stew of unsellable rockfish."]
+  ];
+  let answered=0, correct=0;
+  host.innerHTML=`<div class="card"><div class="card-tag mono">DÉFI · VRAI OU GALÉJADE ? · UP TO 8 PTS</div>
+   <div class="qtext">A galéjade is a Marseille tall tale. Judge each claim: true, or a fine story?</div>
+   <div id="gjRows"></div><div id="gjOut"></div></div>`;
+  const rows=host.querySelector("#gjRows");
+  CLAIMS.forEach(c=>{
+    const wrap=document.createElement("div");wrap.style.margin="10px 0";
+    wrap.innerHTML=`<div style="font-weight:700;margin-bottom:6px">${c[0]}</div>
+      <button class="btn alt" data-v="VRAI">Vrai</button>
+      <button class="btn alt" data-v="GALÉJADE" style="margin-left:6px">Galéjade</button>
+      <div class="gj-fb"></div>`;
+    const fb=wrap.querySelector(".gj-fb");
+    wrap.querySelectorAll("button").forEach(btn=>btn.onclick=()=>{
+      if(wrap.dataset.done)return; wrap.dataset.done=1;
+      const right=btn.dataset.v===c[1];
+      if(right)correct++;
+      answered++;
+      wrap.querySelectorAll("button").forEach(b=>{b.disabled=true;
+        if(b.dataset.v===c[1])b.classList.remove("alt");});
+      fb.innerHTML=`<div class="expl"><b>${right?"✔ Correct —":"✗ Not quite —"} ${c[1]}.</b> ${c[2]}</div>`;
+      if(answered>=CLAIMS.length && !S.done["galejade"]){
+        const pts=correct>=4?8:5;
+        S.done["galejade"]={pts}; addPts(pts,host.querySelector("#gjOut"));
+        host.querySelector("#gjOut").innerHTML=`<div class="expl">${correct}/5 sorted correctly. The lesson of the whole series: a story you've heard a hundred times still isn't evidence.</div>`;
+      }
+    });
+    rows.appendChild(wrap);
+  });
+}
+
+/* ---- outbox / AI evaluation ---- */
+function renderBadge(){
+  persist();
+  const q=S.outbox.filter(o=>o.status!=="done").length;
+  $("obBadge").style.display=q?"inline-block":"none";
+  $("obBadge").textContent=q;
+}
+function openOutbox(){
+  const m=$("modalIn");
+  let h=`<h3>À Évaluer — Answer Outbox</h3>`;
+  if(!S.outbox.length) h+=`<p class="note">Nothing queued yet. The ⚡ questions in the dossier land here.</p>`;
+  S.outbox.forEach(o=>{
+    h+=`<div class="ob-item"><div class="ob-status mono">${o.status==="done"?"✔ ÉVALUÉ":o.status==="error"?"✖ ERREUR":o.status==="sending"?"… ENVOI":"✉ EN ATTENTE"}</div>
+      <div class="ob-q">${esc(o.q)}</div><div class="ob-a">${esc(o.answer)}</div>
+      ${o.status==="done"?`<div class="ob-fb"><b>${o.score}/20</b> — ${esc(o.feedback)}</div>`:""}</div>`;
+  });
+  const pending=S.outbox.filter(o=>o.status==="queued"||o.status==="error").length;
+  h+=`<button class="btn" id="obSend" ${pending?"":"disabled"}>Evaluate ${pending} answer(s) now (needs connection)</button>
+      <button class="btn alt" onclick="closeModal()">Close</button>
+      <p class="note" id="obMsg"></p>`;
+  m.innerHTML=h; $("modal").classList.add("open");
+  const sb=$("obSend"); if(sb) sb.onclick=sendOutbox;
+}
+async function sendOutbox(){
+  $("obMsg").textContent="Contacting the evaluator…";
+  for(const o of S.outbox){
+    if(o.status==="done") continue;
+    o.status="sending";
+    try{
+      const resp=await fetch(CONFIG.aiEndpoint,{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:CONFIG.aiModel,max_tokens:1000,messages:[{role:"user",
+          content:`You are grading a bright 12-15 year old's answer in a learning game about the history of Marseille, France's oldest city. Question: "${o.q}"\nGrading rubric: ${o.rubric}\nStudent answer: "${o.answer}"\nRespond with ONLY a JSON object, no markdown fences, no preamble: {"score": <integer 0-20>, "feedback": "<2-4 encouraging but honest sentences: what was strong, what was missing, one thing to think about next>"}`}]})});
+      const data=await resp.json();
+      const txt=(data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("\n");
+      const parsed=JSON.parse(txt.replace(/```json|```/g,"").trim());
+      o.score=Math.max(0,Math.min(20,parseInt(parsed.score)||0));
+      o.feedback=parsed.feedback||"Evaluated.";
+      o.status="done";
+      const key="ai::"+o.qid;
+      if(!S.done[key]){ S.done[key]={pts:o.score}; S.pts+=o.score; renderGauge(); }
+    }catch(e){ o.status="error"; }
+  }
+  renderBadge(); openOutbox();
+  $("obMsg").textContent=S.outbox.some(o=>o.status==="error")?
+    "Some evaluations failed — check your connection and retry.":"All evaluated. Scores added to your PRESTIGE.";
+}
+function closeModal(){ $("modal").classList.remove("open"); }
+
+/* ---- save / restore ---- */
+function openSave(){
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+  $("modalIn").innerHTML=`<h3>Code de Sauvegarde</h3>
+  <p class="note">Copy this code somewhere safe (notes app / message it to a parent). Paste it back here to restore your progress on any device or after closing the app.</p>
+  <textarea id="saveCode" style="min-height:120px" class="mono">${code}</textarea>
+  <button class="btn" id="copyBtn">Copy code</button>
+  <hr class="rule">
+  <p class="note">Restore: paste a code above, then —</p>
+  <button class="btn alt" id="loadBtn">Load pasted code</button>
+  <button class="btn alt" onclick="closeModal()">Close</button>
+  <hr class="rule">
+  <p class="saveflag mono">${STORE.ok?"✔ AUTO-SAVE ACTIVE ON THIS DEVICE":"⚠ AUTO-SAVE UNAVAILABLE HERE — KEEP THE CODE ABOVE"}</p>
+  <p class="note">Progress saves automatically as you go. The code is only needed to move to another device or browser.</p>
+  <button class="btn red" id="resetBtn">Start over (erase progress)</button>
+  <p class="note" id="saveMsg"></p>`;
+  $("modal").classList.add("open");
+  $("copyBtn").onclick=async()=>{ try{ await navigator.clipboard.writeText($("saveCode").value);
+    $("saveMsg").textContent="Copied.";}catch(e){ $("saveCode").select();
+    $("saveMsg").textContent="Select-all and copy manually."; } };
+  $("resetBtn").onclick=()=>{
+    if(!confirm("Erase all progress on this device and start over?"))return;
+    wiped=true;clearTimeout(persistTimer);STORE.clear();location.reload();
+  };
+  $("loadBtn").onclick=()=>{ try{
+      const obj=JSON.parse(decodeURIComponent(escape(atob($("saveCode").value.trim()))));
+      Object.assign(S,obj); persistNow(); renderGauge(); renderBadge(); showHome(); closeModal();
+    }catch(e){ $("saveMsg").textContent="That code didn't parse — check it copied fully."; } };
+}
+
+/* ---- report export ---- */
+function openReport(){
+  const p=S.profile||{name:"Agent",emoji:"🕵️"};
+  const aiRows=S.outbox.map(o=>`<div style="border:1px solid #999;padding:10px;margin:10px 0">
+    <b>${esc(o.q)}</b><p><i>${esc(o.answer)}</i></p>
+    ${o.status==="done"?`<p><b>Score ${o.score}/20.</b> ${esc(o.feedback)}</p>`:"<p>(not yet evaluated)</p>"}</div>`).join("")||"<p>No written briefs submitted.</p>";
+  const vocabRows=PACK.sections.flatMap(s=>s.vocab).map(v=>`<tr><td style="padding:4px 12px 4px 0"><i>${v[0]}</i></td><td>${v[1]}</td></tr>`).join("");
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rapport — ${esc(p.name)}</title>
+  <style>body{font-family:Georgia,serif;max-width:640px;margin:24px auto;padding:0 16px;color:#22262E;background:#F4F2EA}
+  h1,h2{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;color:#16345F}
+  .stamp{border:3px solid #2E7D46;color:#2E7D46;display:inline-block;padding:2px 14px;transform:rotate(-4deg);font-weight:700}</style></head><body>
+  <p style="letter-spacing:.2em;font-size:11px">RÉPUBLIQUE FRANÇAISE · RAPPORT DE MISSION</p>
+  <h1>${p.emoji} ${esc(p.name)} — Marseille</h1>
+  <p><span class="stamp">GRADE FINAL: ${rank()} · ${S.pts} PTS</span></p>
+  <p>Sections validated: ${Object.keys(S.secDone).length} / ${PACK.sections.length-1}</p>
+  <h2>Ministerial briefs & AI feedback</h2>${aiRows}
+  <h2>Vocabulaire acquis</h2><table>${vocabRows}</table>
+  <p style="font-size:12px;color:#666">Generated ${new Date().toLocaleDateString()} · Mission Packs · Région Provence</p>
+  </body></html>`;
+  const blob=new Blob([html],{type:"text/html"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`rapport-${(p.name||"agent").toLowerCase().replace(/\s+/g,"-")}.html`;
+  a.click();
+}
+
+/* ---- network indicator ---- */
+function netUpdate(){
+  const on=navigator.onLine, el=$("netInd");
+  el.classList.toggle("on",on);
+  el.innerHTML=`<span class="dot"></span>${on?"EN LIGNE":"HORS LIGNE"}`;
+}
+addEventListener("online",netUpdate); addEventListener("offline",netUpdate);
+
+/* ---- profile setup ---- */
+function setup(){
+  $("modalIn").innerHTML=`<h3>Identification de l'agent</h3>
+  <div class="setup"><p>Your name, clerk:</p>
+  <input id="pname" maxlength="20" placeholder="Prénom">
+  <p>Choose your official seal:</p><div class="emoji-row" id="emos"></div>
+  <button class="btn" id="goBtn">Ouvrir le dossier</button></div>`;
+  let emoji="🕵️";
+  ["🕵️","⚡","🥖","🦖","🚀","🐸","👑","🔬"].forEach(e=>{
+    const b=document.createElement("button"); b.textContent=e;
+    if(e===emoji) b.classList.add("sel");
+    b.onclick=()=>{ emoji=e; $("emos").querySelectorAll("button").forEach(x=>x.classList.remove("sel")); b.classList.add("sel"); };
+    $("emos").appendChild(b);
+  });
+  $("modal").classList.add("open");
+  $("goBtn").onclick=()=>{
+    S.profile={name:$("pname").value.trim()||"Agent X",emoji};
+    $("hdUser").textContent=emoji+" "+S.profile.name;
+    persistNow(); closeModal(); showHome();
+  };
+}
+
+/* ---- boot ---- */
+$("dockHome").onclick=showHome;
+$("dockOutbox").onclick=openOutbox;
+$("dockSave").onclick=openSave;
+$("dockReport").onclick=openReport;
+$("modal").onclick=e=>{ if(e.target.id==="modal") closeModal(); };
+(function boot(){
+  const saved=STORE.load();
+  if(saved&&saved.profile){
+    Object.assign(S,saved);
+    $("hdUser").textContent=(S.profile.emoji||"")+" "+(S.profile.name||"");
+    renderGauge(); renderBadge(); netUpdate(); showHome();
+    toast("Bon retour, "+(S.profile.name||"")+" — progress restored ("+S.pts+" pts)");
+  } else {
+    renderGauge(); renderBadge(); netUpdate(); renderTOC(); setup();
+  }
+})();
+</script>
+</body>
+</html>
