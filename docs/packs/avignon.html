@@ -223,6 +223,19 @@ hr.rule{border:none;border-top:1px solid var(--line);margin:20px 0}
 .mascot-line svg{flex:none;width:42px;height:auto}
 .cover-art{margin:16px 0 4px;padding:10px;background:var(--paper2);border:1px solid var(--line)}
 .cover-art svg{width:100%;height:auto;max-height:210px;display:block}
+
+/* ---- colour pass (Avignon accent: papal gold + crimson) ---- */
+body{background:linear-gradient(180deg,#F7EEDB 0,#F4F2EA 360px) no-repeat, var(--paper);background-attachment:fixed}
+header{background:linear-gradient(180deg,#FCF5E6,#F1EBDA);border-top:4px solid var(--amber)}
+.cover{background:radial-gradient(135% 100% at 50% -12%,#FBE6C8 0,rgba(251,230,200,0) 64%)}
+.card{background:linear-gradient(180deg,#FFFDF6,#FBFAF5)}
+.sec h2{border-bottom:3px solid var(--amber);display:inline-block;padding-bottom:3px}
+.piece-tag{background:var(--rouge);color:#fff;display:inline-block;padding:2px 9px;letter-spacing:.2em}
+.toc-item{border-left-color:var(--amber)}
+.toc-item:nth-child(even){border-left-color:var(--rouge)}
+.vocab-box{background:linear-gradient(180deg,#F3EAD6,#ECE9DE)}
+.dock{background:linear-gradient(180deg,#1d4074,#16345F)}
+.gauge-fill{background:linear-gradient(90deg,#E39A1D,#C21F30)}
 </style>
 </head>
 <body>
@@ -492,6 +505,7 @@ const CONFIG = {
   aiModel: "claude-sonnet-4-6"
 };
 const S = { profile:null, pts:0, done:{}, secDone:{}, outbox:[], simRuns:0 };
+S.pack=PACK.meta.id;
 
 /* ---- local persistence ---- */
 const STORE=(()=>{

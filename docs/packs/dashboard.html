@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>Mission Packs — Tableau de Bord</title>
+<style>
+:root{
+  --paper:#F4F2EA; --paper2:#ECE9DE; --ink:#22262E; --ink2:#5A5F6A;
+  --navy:#16345F; --bleu:#0B57A4; --rouge:#C21F30; --amber:#E39A1D;
+  --line:#C8C3B2; --ok:#2E7D46; --card:#FBFAF5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:linear-gradient(180deg,#F7EEDB 0,#F4F2EA 360px) no-repeat, var(--paper);
+  background-attachment:fixed; color:var(--ink);
+  font-family:Georgia,'Times New Roman',serif; font-size:17px; line-height:1.55;
+}
+.mono{font-family:'Courier New',Courier,monospace}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px 60px}
+header{border-bottom:3px double var(--navy);border-top:4px solid var(--amber);
+  background:linear-gradient(180deg,#FCF5E6,#F1EBDA);text-align:center;padding:22px 16px 16px}
+header .eyebrow{font-size:11px;color:var(--rouge);letter-spacing:.3em}
+header h1{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.06em;font-size:32px;color:var(--navy);margin:6px 0 4px}
+header .sub{font-style:italic;color:var(--ink2);font-size:15px}
+
+.panel{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);
+  padding:14px;margin:18px 0}
+.panel h2{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--navy);font-size:18px;margin-bottom:8px}
+.note{font-size:13px;color:var(--ink2)}
+textarea{width:100%;min-height:88px;font-family:'Courier New',monospace;font-size:13px;padding:10px;
+  border:1.5px solid var(--line);background:#fff;color:var(--ink);margin-top:8px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:none;padding:10px 18px;
+  font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;letter-spacing:.12em;
+  font-size:14px;cursor:pointer;margin-top:8px;margin-right:8px}
+.btn.alt{background:var(--paper);color:var(--navy);border:1.5px solid var(--navy)}
+.btn.red{background:var(--rouge)}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.msg{font-size:13px;margin-top:8px;min-height:18px}
+.msg.ok{color:var(--ok)} .msg.err{color:var(--rouge)}
+
+.person{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--amber);
+  padding:12px 14px;margin:12px 0}
+.person.top{border-left-color:var(--rouge)}
+.p-top{display:flex;align-items:baseline;gap:10px}
+.p-rank{font-family:'Arial Narrow',Arial,sans-serif;font-size:22px;color:var(--rouge);font-weight:700;min-width:34px}
+.p-name{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;letter-spacing:.05em;
+  font-size:20px;color:var(--navy);flex:1}
+.p-emoji{font-size:22px}
+.p-pts{font-family:'Courier New',monospace;font-size:15px;color:var(--navy);font-weight:700;white-space:nowrap}
+.lessons{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.lchip{font-size:12px;border:1.5px solid var(--line);border-radius:2px;padding:4px 8px;
+  background:#fff;color:var(--ink2);line-height:1.2}
+.lchip b{color:var(--navy);font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.04em;display:block;font-size:11px}
+.lchip.on{border-color:var(--navy);background:#EAF0F7;color:var(--ink)}
+.lchip.on.hunt{border-color:var(--rouge);background:#F9ECEC}
+.lchip .sc{font-family:'Courier New',monospace;font-size:12px}
+.lchip.off{opacity:.55;border-style:dashed}
+.p-remove{background:none;border:none;color:var(--ink2);font-size:12px;cursor:pointer;
+  text-decoration:underline;margin-top:8px;padding:0}
+.empty{text-align:center;color:var(--ink2);font-style:italic;padding:24px 0}
+hr.rule{border:none;border-top:1px solid var(--line);margin:18px 0}
+a{color:var(--bleu)}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow mono">ARCHIVES DE PROVENCE · SUIVI DES ÉCLAIREURS</div>
+  <h1>Tableau de Bord</h1>
+  <div class="sub">Who's completing which lessons — paste everyone's codes to compare.</div>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <h2>Add progress</h2>
+    <p class="note">In any pack, tap <b>Sauvegarde</b> → <b>Copy</b> to get that person's code, then paste it here (you can paste several — one per line). Each new code updates that person's best score. Everything stays on this device; nothing is uploaded.</p>
+    <textarea id="codes" placeholder="Paste one or more save codes here, one per line…"></textarea>
+    <div>
+      <button class="btn" id="add">Add codes</button>
+      <button class="btn alt" id="demo">Load an example</button>
+      <button class="btn red" id="clear">Clear all</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div id="board"></div>
+</div>
+
+<script>
+const REG = [
+  {id:"les-baux",       t:"Les Baux",        k:"dossier", total:7},
+  {id:"arles",          t:"Arles",           k:"dossier", total:7},
+  {id:"avignon",        t:"Avignon",         k:"dossier", total:7},
+  {id:"nuclear-france", t:"France Nucléaire",k:"dossier", total:7},
+  {id:"hunt-les-baux",  t:"Chasse Les Baux", k:"hunt",    total:14},
+  {id:"hunt-arles",     t:"Chasse Arles",    k:"hunt",    total:14},
+  {id:"hunt-avignon",   t:"Chasse Avignon",  k:"hunt",    total:14}
+];
+const REGMAP = Object.fromEntries(REG.map(r=>[r.id,r]));
+const KEY = "missionpack:dashboard:v1";
+const $ = id => document.getElementById(id);
+const esc = t => (t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ return {}; } }
+function save(d){ try{ localStorage.setItem(KEY, JSON.stringify(d)); }catch(e){} }
+
+function decodeCode(raw){
+  const o = JSON.parse(decodeURIComponent(escape(atob(raw.trim()))));
+  const prof = o.profile || {};
+  const isHunt = !!o.items;
+  return {
+    name: (prof.name || "Inconnu").trim() || "Inconnu",
+    emoji: prof.emoji || "❓",
+    pack: o.pack || null,
+    kind: isHunt ? "hunt" : "dossier",
+    pts: (+o.pts) || 0,
+    done: isHunt ? Object.keys(o.items||{}).length : Object.keys(o.secDone||{}).length
+  };
+}
+
+function addCodes(text){
+  const parts = text.split(/[\s]+/).map(s=>s.trim()).filter(Boolean);
+  if(!parts.length){ return {added:0, bad:0}; }
+  const data = load(); let added=0, bad=0;
+  for(const raw of parts){
+    let e; try{ e = decodeCode(raw); }catch(err){ bad++; continue; }
+    if(!e.pack || !REGMAP[e.pack]){ bad++; continue; }
+    const key = e.name.toLowerCase();
+    data[key] = data[key] || {name:e.name, emoji:e.emoji, packs:{}};
+    data[key].emoji = e.emoji || data[key].emoji;
+    const prev = data[key].packs[e.pack];
+    if(!prev || e.pts >= prev.pts){ data[key].packs[e.pack] = {pts:e.pts, done:e.done}; }
+    added++;
+  }
+  save(data);
+  return {added, bad};
+}
+
+function render(){
+  const data = load();
+  const people = Object.values(data).map(p=>{
+    const total = Object.values(p.packs).reduce((a,x)=>a+(x.pts||0),0);
+    const started = Object.keys(p.packs).length;
+    return {...p, total, started};
+  }).sort((a,b)=> b.total-a.total || b.started-a.started);
+
+  const board = $("board");
+  if(!people.length){ board.innerHTML = '<div class="empty">No one added yet. Paste a code above to start the leaderboard.</div>'; return; }
+
+  board.innerHTML = people.map((p,i)=>{
+    const chips = REG.map(r=>{
+      const g = p.packs[r.id];
+      if(g){
+        return `<div class="lchip on ${r.k}"><b>${esc(r.t)}</b>
+          <span class="sc">${g.pts} pts · ${g.done}/${r.total}</span></div>`;
+      }
+      return `<div class="lchip off"><b>${esc(r.t)}</b><span class="sc">—</span></div>`;
+    }).join("");
+    return `<div class="person ${i===0?'top':''}">
+      <div class="p-top">
+        <span class="p-rank mono">#${i+1}</span>
+        <span class="p-emoji">${esc(p.emoji)}</span>
+        <span class="p-name">${esc(p.name)}</span>
+        <span class="p-pts">${p.total} pts</span>
+      </div>
+      <div class="lessons">${chips}</div>
+      <button class="p-remove" data-k="${esc(p.name.toLowerCase())}">remove</button>
+    </div>`;
+  }).join("");
+
+  board.querySelectorAll(".p-remove").forEach(b=>b.onclick=()=>{
+    const d=load(); delete d[b.dataset.k]; save(d); render();
+  });
+}
+
+$("add").onclick=()=>{
+  const {added,bad} = addCodes($("codes").value);
+  const m=$("msg");
+  if(added){ m.className="msg ok"; m.textContent=`Added ${added} code${added>1?"s":""}${bad?`, skipped ${bad} unreadable`:""}.`; $("codes").value=""; }
+  else { m.className="msg err"; m.textContent = bad? "Couldn't read those — are they full Sauvegarde codes?" : "Paste a code first."; }
+  render();
+};
+$("clear").onclick=()=>{ if(confirm("Clear the whole dashboard on this device?")){ save({}); render(); $("msg").textContent=""; } };
+$("demo").onclick=()=>{
+  const mk=(o)=>btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+  const ex=[
+    mk({profile:{name:"Camille",emoji:"🦅"},pack:"avignon",pts:186,secDone:{a:1,b:1,c:1,d:1,e:1}}),
+    mk({profile:{name:"Camille",emoji:"🦅"},pack:"arles",pts:120,secDone:{a:1,b:1,c:1}}),
+    mk({profile:{name:"Théo",emoji:"🚀"},pack:"avignon",pts:98,secDone:{a:1,b:1}}),
+    mk({profile:{name:"Théo",emoji:"🚀"},pack:"hunt-avignon",pts:75,items:{a:1,b:1,c:1,d:1,e:1}}),
+    mk({profile:{name:"Léa",emoji:"👑"},pack:"les-baux",pts:210,secDone:{a:1,b:1,c:1,d:1,e:1,f:1}})
+  ];
+  $("codes").value = ex.join("\n");
+  $("msg").className="msg"; $("msg").textContent="Example codes loaded — press “Add codes”.";
+};
+render();
+</script>
+</body>
+</html>
