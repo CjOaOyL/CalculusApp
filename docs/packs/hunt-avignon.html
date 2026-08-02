@@ -240,6 +240,16 @@ input[type=file]{display:none}
 .toast.show{opacity:1}
 .saveflag{font-size:11px;letter-spacing:.12em;color:var(--ink2);margin-top:6px}
 
+
+/* ---- colour pass ---- */
+body{background:linear-gradient(180deg,#F7EEDB 0,#F4F2EA 360px) no-repeat, var(--paper);background-attachment:fixed}
+header{background:linear-gradient(180deg,#FCF5E6,#F1EBDA);border-top:4px solid var(--amber)}
+.cover{background:radial-gradient(135% 100% at 50% -12%,#FBE6C8 0,rgba(251,230,200,0) 64%)}
+.vocab-box{background:linear-gradient(180deg,#F3EAD6,#ECE9DE)}
+.dock{background:linear-gradient(180deg,#1d4074,#16345F)}
+.gauge-fill{background:linear-gradient(90deg,#E39A1D,#C21F30)}
+.hunt-item{background:linear-gradient(180deg,#FFFDF6,#FBFAF5)}
+.filter-row button.on{background:#fff;border-color:var(--rouge)}
 </style>
 </head>
 <body>
@@ -360,6 +370,7 @@ let wiped=false;
 function persist(){
   if(!STORE.ok||wiped)return;
   const slim={profile:S.profile,pts:S.pts,items:{}};
+  slim.pack=HUNT.meta.id;
   for(const k in S.items){const{dataUrl,...rest}=S.items[k];slim.items[k]=rest;}
   STORE.save(slim);
 }
@@ -504,6 +515,7 @@ function complete(item,st){
 /* save code: excludes photo data (too large) — keeps checkmarks, points, captions */
 function openSave(){
   const slim={profile:S.profile,pts:S.pts,items:{}};
+  slim.pack=HUNT.meta.id;
   for(const k in S.items){const{dataUrl,...rest}=S.items[k];slim.items[k]=rest;}
   const code=btoa(unescape(encodeURIComponent(JSON.stringify(slim))));
   $("modalIn").innerHTML=`<h3>Code de Sauvegarde</h3>
