@@ -236,6 +236,9 @@ header{background:linear-gradient(180deg,#FCF5E6,#F1EBDA);border-top:4px solid v
 .vocab-box{background:linear-gradient(180deg,#F3EAD6,#ECE9DE)}
 .dock{background:linear-gradient(180deg,#1d4074,#16345F)}
 .gauge-fill{background:linear-gradient(90deg,#E39A1D,#C21F30)}
+
+.truth-box{background:#F4ECEC;border:1px solid var(--line);border-left:5px solid var(--rouge);padding:12px 14px;margin:18px 0;font-size:15px}
+.truth-box b:first-child{color:var(--rouge);letter-spacing:.02em}
 </style>
 </head>
 <body>
@@ -371,7 +374,8 @@ vocab:[["l'argent","money"],["vendre","to sell"],["un tableau","a painting"],["p
 body:[
 "Follow the {{l'argent||money}} and a city tells the truth about itself. Roman Arles got rich as a <b>river port</b>: grain, wine and olive oil moved through here on their way to feed the capital, and a powerful guild of boatmen ran the traffic. When you stand on the quay, you are standing on the reason the town existed — a {{un bateau||boat}} economy, the Rhône as a highway to Rome.",
 "Now jump 1,700 years, to the strangest entry in your file. In 1888 a poor Dutch painter arrived, rented a small yellow house, and in about fifteen months made roughly <b>200</b> pictures — the sunflowers, the café at night, the bedroom, the starry Rhône. His name was <b>Vincent van Gogh</b>. In his whole life he managed to {{vendre||sell}} essentially <i>one</i> {{un tableau||painting}}. He was {{pauvre||poor}}; his brother Theo paid his rent and sent him paint. The people of Arles did not buy his work — many thought he was frightening.",
-"Here is the surprise this whole dossier turns on. That penniless man is now the reason more than a million people a year come to Arles, filling its cafés and hotels and gift shops. The town that could not feed him now feeds itself on his name — exactly the way Les Baux, up the road, lives off 1.5 million visitors to a fortress it once had to pay Richelieu to blow up. Reputation is an economy too, and it often pays out to the wrong century. Run the numbers below."
+"Here is the surprise this whole dossier turns on. That penniless man is now the reason more than a million people a year come to Arles, filling its cafés and hotels and gift shops. The town that could not feed him now feeds itself on his name — exactly the way Les Baux, up the road, lives off 1.5 million visitors to a fortress it once had to pay Richelieu to blow up. Reputation is an economy too, and it often pays out to the wrong century. Run the numbers below.",
+"NOTE::<b>⚖ La traite négrière — l'entrée honnête.</b> Arles was not a slave-trading port, but it sat on the Rhône, the great highway that carried that trade's goods inland. Sugar, coffee and cotton grown by enslaved people in France's Caribbean colonies were landed at Marseille and moved up this river through Provence. Arles's part was small and indirect — a link in the chain, not a hand on it — but a careful archivist still names the chain, and asks where the money moving along it had really come from."
 ],
 interactive:"vangogh",
 questions:[
@@ -566,6 +570,7 @@ function showSection(i){
   let bodyHtml = sec.body.map(p=>{
     if(p==="REFS") return PACK.refs.map(r=>
       `<div class="refline">▸ <a href="${r[1]}" target="_blank" rel="noopener">${r[0]}</a><br><span class="mono" style="font-size:11px;color:var(--ink2)">${r[1]}</span></div>`).join("");
+    if(p.slice(0,6)==="NOTE::") return `<div class="truth-box">${fmt(p.slice(6))}</div>`;
     return `<p>${fmt(p)}</p>`;
   }).join("");
   const vocabHtml = sec.vocab.length ?

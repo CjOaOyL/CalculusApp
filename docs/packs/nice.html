@@ -236,6 +236,9 @@ header{background:linear-gradient(180deg,#FCF5E6,#F1EBDA);border-top:4px solid v
 .vocab-box{background:linear-gradient(180deg,#F3EAD6,#ECE9DE)}
 .dock{background:linear-gradient(180deg,#1d4074,#16345F)}
 .gauge-fill{background:linear-gradient(90deg,#E39A1D,#C21F30)}
+
+.truth-box{background:#F4ECEC;border:1px solid var(--line);border-left:5px solid var(--rouge);padding:12px 14px;margin:18px 0;font-size:15px}
+.truth-box b:first-child{color:var(--rouge);letter-spacing:.02em}
 </style>
 </head>
 <body>
@@ -366,7 +369,8 @@ vocab:[["l'hiver","winter"],["un étranger","a foreigner"],["bleu / bleue","blue
 body:[
 "Here is the twist that makes Nice perfect for your series. The most famous « French » things about Nice were mostly made by people who weren't French. In the early 1800s, wealthy <b>English</b> {{un étranger||foreigners}} began spending {{l'hiver||winter}} here to escape their grey northern cold. In 1820, after a hard winter, they funded a seafront {{une promenade||walkway}} — and the city named it, honestly enough, the <b>Promenade des Anglais</b>: « the walkway of the English. » Nice's signature landmark announces, in its own name, that it was a foreign gift.",
 "Then the {{riche||rich}} Russians arrived, and built the glittering Orthodox cathedral you can still visit. And the name « <b>Côte d'Azur</b> » itself — the « {{bleu / bleue||Azure}} Coast, » shorthand for the whole glamorous Riviera — was invented in <b>1887</b> as the <i>title of a book</i> by a French writer, <b>Stéphen Liégeard</b>, who lived far away in Burgundy. He coined a pretty phrase; tourism did the rest. The Riviera « dream » was, to a remarkable degree, marketing.",
-"This is the media-literacy lesson of the whole journey, one final time. « Sur le pont d'Avignon » (probably « sous »). The « antipope » millions believed in. The Marseillaise written in Strasbourg. The Château d'If's fictional prisoner. And now a world-famous coast, named by a man from Burgundy for a book. A good story doesn't need to be true to win — it only needs to be repeated. Below, meet the real inventors of « the French Riviera. »"
+"This is the media-literacy lesson of the whole journey, one final time. « Sur le pont d'Avignon » (probably « sous »). The « antipope » millions believed in. The Marseillaise written in Strasbourg. The Château d'If's fictional prisoner. And now a world-famous coast, named by a man from Burgundy for a book. A good story doesn't need to be true to win — it only needs to be repeated. Below, meet the real inventors of « the French Riviera. »",
+"NOTE::<b>⚖ La traite négrière — l'entrée honnête.</b> Two honest points. First: during the peak of the Atlantic slave trade, Nice wasn't French but Savoyard, and the Kingdom of Sardinia was a minor player — so Nice sent few if any slave ships. (The Mediterranean had its own older slavery, a different system from the Atlantic trade, and worth not confusing with it.) Second, and less comfortable: the glittering Riviera of the 1800s was partly paid for with money made far away — some of the wealthy foreigners who wintered and built here held fortunes rooted in slave plantations in the Americas. The sunshine was local; not all the money was clean."
 ],
 interactive:"riviera",
 questions:[
@@ -567,6 +571,7 @@ function showSection(i){
   let bodyHtml = sec.body.map(p=>{
     if(p==="REFS") return PACK.refs.map(r=>
       `<div class="refline">▸ <a href="${r[1]}" target="_blank" rel="noopener">${r[0]}</a><br><span class="mono" style="font-size:11px;color:var(--ink2)">${r[1]}</span></div>`).join("");
+    if(p.slice(0,6)==="NOTE::") return `<div class="truth-box">${fmt(p.slice(6))}</div>`;
     return `<p>${fmt(p)}</p>`;
   }).join("");
   const vocabHtml = sec.vocab.length ?
