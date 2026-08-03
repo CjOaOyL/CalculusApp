@@ -227,6 +227,9 @@ header{background:linear-gradient(180deg,#FCF5E6,#F1EBDA);border-top:4px solid v
 .vocab-box{background:linear-gradient(180deg,#F3EAD6,#ECE9DE)}
 .dock{background:linear-gradient(180deg,#1d4074,#16345F)}
 .gauge-fill{background:linear-gradient(90deg,#E39A1D,#C21F30)}
+
+.truth-box{background:#F4ECEC;border:1px solid var(--line);border-left:5px solid var(--rouge);padding:12px 14px;margin:18px 0;font-size:15px}
+.truth-box b:first-child{color:var(--rouge);letter-spacing:.02em}
 </style>
 </head>
 <body>
@@ -398,7 +401,8 @@ vocab:[["un village","a village"],["un touriste","a tourist"],["l'huile d'olive"
 body:[
 "The numbers today are absurd, and you will feel them in the main street. Les Baux is officially one of the <i>Plus Beaux Villages de France</i>; roughly <b>300 people {{vivre||live}} in the commune</b>, and something like <b>1.5 million visitors</b> walk through per year — around 5,000 {{un touriste||tourists}} per resident. The {{un village||village}} that Richelieu emptied is now, on an August afternoon, one of the fullest places in France.",
 "That success is also the modern problem, and it's the same one Venice, Barcelona and Mont-Saint-Michel face: when does tourism stop supporting a place and start replacing it? Nearly every building in the upper village is a shop, gallery or restaurant; almost no one sleeps there; housing prices push locals to the plain below. The economy is superb. The <i>community</i> is the open question.",
-"The valley floor tells a quieter, older story: the <b>AOP Vallée des Baux-de-Provence</b> olive groves, producing some of France's most protected {{l'huile d'olive||olive oil}} — an industry that predates the castle and will likely outlast the crowds. Van Gogh painted these same groves from Saint-Rémy, over the ridge. Your final brief, héritier, is the living one: the rock survived kings, gunpowder and geologists. Now it has to survive being loved."
+"The valley floor tells a quieter, older story: the <b>AOP Vallée des Baux-de-Provence</b> olive groves, producing some of France's most protected {{l'huile d'olive||olive oil}} — an industry that predates the castle and will likely outlast the crowds. Van Gogh painted these same groves from Saint-Rémy, over the ridge. Your final brief, héritier, is the living one: the rock survived kings, gunpowder and geologists. Now it has to survive being loved.",
+"NOTE::<b>⚖ La traite négrière — l'entrée honnête.</b> For the record — because a good archivist accounts for silence too — this ruined hilltop village had no part in the Atlantic slave trade. It had no port and no colonial commerce, and the thing that later made its name famous, bauxite and aluminium, belongs to the 1800s and 1900s, after France abolished slavery. Not every place carries this guilt; saying so plainly, and only where the evidence supports it, is exactly the habit this whole series is built to teach."
 ],
 interactive:"timeline",
 questions:[
@@ -526,6 +530,7 @@ function showSection(i){
   let bodyHtml = sec.body.map(p=>{
     if(p==="REFS") return PACK.refs.map(r=>
       `<div class="refline">▸ <a href="${r[1]}" target="_blank" rel="noopener">${r[0]}</a><br><span class="mono" style="font-size:11px;color:var(--ink2)">${r[1]}</span></div>`).join("");
+    if(p.slice(0,6)==="NOTE::") return `<div class="truth-box">${fmt(p.slice(6))}</div>`;
     return `<p>${fmt(p)}</p>`;
   }).join("");
   const vocabHtml = sec.vocab.length ?

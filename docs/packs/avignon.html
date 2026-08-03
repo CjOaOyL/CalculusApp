@@ -236,6 +236,9 @@ header{background:linear-gradient(180deg,#FCF5E6,#F1EBDA);border-top:4px solid v
 .vocab-box{background:linear-gradient(180deg,#F3EAD6,#ECE9DE)}
 .dock{background:linear-gradient(180deg,#1d4074,#16345F)}
 .gauge-fill{background:linear-gradient(90deg,#E39A1D,#C21F30)}
+
+.truth-box{background:#F4ECEC;border:1px solid var(--line);border-left:5px solid var(--rouge);padding:12px 14px;margin:18px 0;font-size:15px}
+.truth-box b:first-child{color:var(--rouge);letter-spacing:.02em}
 </style>
 </head>
 <body>
@@ -408,7 +411,8 @@ vocab:[["la peste","the plague"],["la mort","death"],["le feu","fire"],["protég
 body:[
 "A file that only flatters its subject is a failed file — so read this Pièce closely. 1348: the <b>Black Death</b> ({{la peste||plague}}) reaches Avignon and kills perhaps <b>two-thirds</b> of the city. There is no ground left to bury the dead, so bodies are thrown into the Rhône — and Pope <b>Clement VI</b> formally <i>consecrates the entire river</i> so the corpses can be carried away on holy water. Clement himself survives shut in his palace <b>between two roaring {{le feu||fires}}</b>, on his doctor Guy de Chauliac's theory that heat purifies poisoned air. The medicine was wrong — but Chauliac stayed, treated the sick, and wrote it all down.",
 "Now the part you will not expect. Across Europe, terrified mobs blamed <b>the Jews</b> — inventing a story that they had poisoned the wells — and massacred Jewish communities town by town. From Avignon, Clement VI did the opposite. In 1348 he issued papal bulls declaring the Jews <b>innocent</b> (they were dying of the plague too), condemning the killings as the work of « the liar, the Devil, » and offering Jews {{protéger||protection}} in the papal lands. The same papacy your file has been criticising for greed used its authority, here, to try to stop a slaughter.",
-"Hold both truths at once, notary — that is the entire point of this Pièce. Avignon was corrupt <i>and</i> it sheltered the hunted. Clement VI was a luxury-loving prince <i>and</i> the one powerful man in Europe who told the truth about the plague. {{la mort||Death}} did not sort people into clean heroes and villains, and neither should you. Anyone who offers you a history with only villains, or only saints, is selling something."
+"Hold both truths at once, notary — that is the entire point of this Pièce. Avignon was corrupt <i>and</i> it sheltered the hunted. Clement VI was a luxury-loving prince <i>and</i> the one powerful man in Europe who told the truth about the plague. {{la mort||Death}} did not sort people into clean heroes and villains, and neither should you. Anyone who offers you a history with only villains, or only saints, is selling something.",
+"NOTE::<b>⚖ La traite négrière — l'entrée honnête.</b> Avignon was an inland papal city, not a seaport, and it took no direct part in the Atlantic slave trade. But « not here » must not become « not our problem. » The Catholic Church's record on slavery was long and contradictory: in the 1400s popes in Rome actually authorised the enslavement of Africans, and only in 1839 did a pope formally condemn the trade. That story belongs to Rome and to later centuries, not to the Avignon popes of this file — and saying exactly where the line falls, instead of quietly skipping the subject, is the honest thing to do."
 ],
 interactive:null,
 questions:[
@@ -589,6 +593,7 @@ function showSection(i){
   let bodyHtml = sec.body.map(p=>{
     if(p==="REFS") return PACK.refs.map(r=>
       `<div class="refline">▸ <a href="${r[1]}" target="_blank" rel="noopener">${r[0]}</a><br><span class="mono" style="font-size:11px;color:var(--ink2)">${r[1]}</span></div>`).join("");
+    if(p.slice(0,6)==="NOTE::") return `<div class="truth-box">${fmt(p.slice(6))}</div>`;
     return `<p>${fmt(p)}</p>`;
   }).join("");
   const vocabHtml = sec.vocab.length ?

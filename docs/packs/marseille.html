@@ -236,6 +236,9 @@ header{background:linear-gradient(180deg,#FCF5E6,#F1EBDA);border-top:4px solid v
 .vocab-box{background:linear-gradient(180deg,#F3EAD6,#ECE9DE)}
 .dock{background:linear-gradient(180deg,#1d4074,#16345F)}
 .gauge-fill{background:linear-gradient(90deg,#E39A1D,#C21F30)}
+
+.truth-box{background:#F4ECEC;border:1px solid var(--line);border-left:5px solid var(--rouge);padding:12px 14px;margin:18px 0;font-size:15px}
+.truth-box b:first-child{color:var(--rouge);letter-spacing:.02em}
 </style>
 </head>
 <body>
@@ -385,7 +388,8 @@ vocab:[["la peste","the plague"],["un bateau","a ship"],["mourir","to die"],["é
 body:[
 "A file that only flatters its subject is a failed file. 1720: a merchant {{un bateau||ship}}, the <b>Grand-Saint-Antoine</b>, docks at Marseille loaded with silk and cotton — and {{la peste||plague}}. Under pressure from merchants who wanted the cargo sold, officials break the quarantine rules and unload it. Within months the <b>Great Plague of Marseille</b> kills perhaps <b>half the city</b> — around 50,000 people — and 50,000 more across Provence. They built a « mur de la peste, » a plague wall across the hills, to try to seal the disease off. The same open port that made Marseille rich let death walk straight up the gangplank.",
 "And the harder, honest thing. For centuries the Parisian cliché has painted Marseille as poor, dangerous, criminal, « not really France » — a reputation sharpened by the mid-20th-century heroin trade the films called the « French Connection. » Some of that history is real. But it hides the bigger truth: Marseille is France's great <b>arrival city</b>. Italians, Armenians, Spaniards, North Africans, Comorians and more stepped off the {{un bateau||boats}} here and became French. It is the most {{étranger / étrangère||foreigner}}-shaped — and, many would argue, the most alive — city in the country.",
-"So hold the two Marseilles together, clerk. A port is a wound and a welcome: the same open door lets in plague and people, poverty and music, danger and the whole Mediterranean. A city that {{mourir||dies}} and remakes itself every century out of whoever the sea brings next. Don't let the postcard OR the crime film be the only file on your desk."
+"So hold the two Marseilles together, clerk. A port is a wound and a welcome: the same open door lets in plague and people, poverty and music, danger and the whole Mediterranean. A city that {{mourir||dies}} and remakes itself every century out of whoever the sea brings next. Don't let the postcard OR the crime film be the only file on your desk.",
+"NOTE::<b>⚖ La traite négrière — l'entrée honnête.</b> A port this rich in the 1700s can't be separated from the slavery that helped fill it. Marseille was <b>not</b> one of France's great slave-shipping ports — Nantes, Bordeaux and La Rochelle sent far more ships carrying enslaved Africans across the Atlantic. But Marseille grew wealthy on the <i>fruits</i> of that system: its refineries and merchants handled the sugar and coffee grown by enslaved people in Saint-Domingue (today Haiti) and the Antilles, and re-sold them around the Mediterranean. The city took the profits while sending relatively few of the ships — an honest file records both, and neither fact excuses the other."
 ],
 interactive:null,
 questions:[
@@ -567,6 +571,7 @@ function showSection(i){
   let bodyHtml = sec.body.map(p=>{
     if(p==="REFS") return PACK.refs.map(r=>
       `<div class="refline">▸ <a href="${r[1]}" target="_blank" rel="noopener">${r[0]}</a><br><span class="mono" style="font-size:11px;color:var(--ink2)">${r[1]}</span></div>`).join("");
+    if(p.slice(0,6)==="NOTE::") return `<div class="truth-box">${fmt(p.slice(6))}</div>`;
     return `<p>${fmt(p)}</p>`;
   }).join("");
   const vocabHtml = sec.vocab.length ?
