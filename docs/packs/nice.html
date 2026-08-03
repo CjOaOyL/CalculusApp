@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>Dossier: Nice</title>
+<!--
+  MISSION PACKS — offline-first learning engine
+  Repo layout for later extraction (Claude Code handoff):
+    /engine/engine.js  = the script block tagged id=engine
+    /engine/style.css  = the style block
+    /packs/nuclear-france.json = the PACK constant
+  Build step: inline pack + engine + css into one distributable HTML.
+  AI endpoint: CONFIG.aiEndpoint — works keyless inside Claude.ai artifacts;
+  point it at your own proxy (Cloudflare Worker holding the API key) when
+  hosted on cjoaoyl.github.io.
+-->
+<style>
+:root{
+  --paper:#F4F2EA; --paper2:#ECE9DE; --ink:#22262E; --ink2:#5A5F6A;
+  --navy:#16345F; --bleu:#0B57A4; --rouge:#C21F30; --amber:#E39A1D;
+  --line:#C8C3B2; --ok:#2E7D46; --card:#FBFAF5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:17px; line-height:1.55;
+}
+.mono{font-family:'Courier New',Courier,monospace}
+.hdr-face{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase; letter-spacing:.14em; font-weight:700}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px 80px}
+
+/* ---------- header / gauge ---------- */
+header{
+  position:sticky;top:0;z-index:50;background:var(--paper);
+  border-bottom:3px double var(--navy);
+}
+.hd-in{max-width:680px;margin:0 auto;padding:10px 16px 8px}
+.hd-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.hd-rf{font-size:10px;letter-spacing:.22em;color:var(--ink2)}
+.hd-title{font-size:15px;color:var(--navy)}
+.hd-user{font-size:12px;color:var(--ink2);white-space:nowrap}
+.gauge{margin-top:7px}
+.gauge-label{display:flex;justify-content:space-between;font-size:10px;
+  color:var(--ink2);letter-spacing:.18em}
+.gauge-bar{position:relative;height:14px;border:1.5px solid var(--navy);
+  background:repeating-linear-gradient(90deg,transparent 0 9.8%,var(--line) 9.8% 10%);
+  margin-top:2px}
+.gauge-fill{position:absolute;left:0;top:0;bottom:0;background:var(--amber);
+  width:0%;transition:width .6s ease}
+.gauge-rank{position:absolute;right:4px;top:-1px;font-size:10px;color:var(--navy);font-weight:700}
+
+/* ---------- sommaire ---------- */
+.cover{padding:26px 0 8px;text-align:center;border-bottom:1px solid var(--line)}
+.cover .eyebrow{font-size:11px;color:var(--rouge);letter-spacing:.3em}
+.cover h1{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.06em;font-size:34px;line-height:1.1;
+  color:var(--navy);margin:8px 0 4px}
+.cover .sub{font-style:italic;color:var(--ink2);font-size:15px}
+.cover .classif{display:inline-block;margin-top:12px;padding:2px 12px;
+  border:2px solid var(--rouge);color:var(--rouge);font-size:11px;
+  letter-spacing:.25em;transform:rotate(-2deg)}
+.toc{padding:14px 0}
+.toc-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);
+  padding:12px 14px;margin:8px 0;cursor:pointer;font:inherit;color:inherit}
+.toc-item:active{background:var(--paper2)}
+.toc-num{font-size:10px;color:var(--ink2);letter-spacing:.15em;min-width:64px}
+.toc-t{flex:1}
+.toc-t b{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--navy);font-size:15px;display:block}
+.toc-t i{font-size:13px;color:var(--ink2)}
+.toc-st{font-size:18px}
+.toc-pts{font-size:11px;color:var(--ink2)}
+
+/* ---------- section view ---------- */
+.sec{display:none;padding-top:14px}
+.sec.active{display:block}
+.crumb{background:none;border:none;color:var(--bleu);font:inherit;font-size:14px;
+  cursor:pointer;padding:8px 0;text-decoration:underline}
+.piece-tag{font-size:11px;color:var(--rouge);letter-spacing:.25em;margin-top:4px}
+.sec h2{font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.05em;font-size:27px;color:var(--navy);
+  line-height:1.15;margin:2px 0 2px}
+.sec .fr-sub{font-style:italic;color:var(--ink2);margin-bottom:14px;font-size:15px}
+.sec p{margin:0 0 14px}
+.sec .stamped{position:relative}
+.stamp{display:inline-block;border:3px solid var(--ok);color:var(--ok);
+  padding:2px 14px;font-size:15px;letter-spacing:.2em;transform:rotate(-6deg);
+  font-weight:700;margin:6px 0}
+@media (prefers-reduced-motion:no-preference){
+  .stamp{animation:slam .25s ease-out}
+  @keyframes slam{from{transform:rotate(-6deg) scale(2);opacity:0}
+    to{transform:rotate(-6deg) scale(1);opacity:1}}
+}
+
+/* vocab chips */
+.v{border-bottom:2px dotted var(--bleu);color:var(--navy);cursor:pointer;
+  font-style:italic}
+.v .en{color:var(--rouge);font-style:normal;font-size:.88em}
+.vocab-box{background:var(--paper2);border:1px dashed var(--ink2);padding:10px 12px;
+  margin:16px 0;font-size:14px}
+.vocab-box b{letter-spacing:.15em;font-size:11px;color:var(--ink2)}
+
+/* interactive + question cards */
+.card{background:var(--card);border:1px solid var(--line);padding:14px;margin:18px 0}
+.card-tag{font-size:10px;letter-spacing:.22em;color:var(--bleu);margin-bottom:8px}
+.card-tag.ai{color:var(--rouge)}
+.qtext{font-weight:700;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;background:var(--paper);
+  border:1.5px solid var(--line);padding:10px 12px;margin:6px 0;font:inherit;
+  font-size:15px;cursor:pointer;color:var(--ink)}
+.opt:not(:disabled):active{border-color:var(--bleu)}
+.opt.right{border-color:var(--ok);background:#EAF4EC}
+.opt.wrong{border-color:var(--rouge);background:#F8ECEC;opacity:.75}
+.opt:disabled{cursor:default}
+.expl{font-size:14px;color:var(--ink2);border-left:3px solid var(--ok);
+  padding:6px 10px;margin-top:8px;background:var(--paper2)}
+.pts-pop{color:var(--rouge);font-weight:700;font-size:14px;
+  font-family:'Courier New',monospace}
+textarea{width:100%;min-height:96px;font:inherit;font-size:15px;padding:10px;
+  border:1.5px solid var(--line);background:var(--paper);color:var(--ink)}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:none;
+  padding:10px 18px;font-family:'Arial Narrow',Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.12em;font-size:14px;cursor:pointer;
+  margin-top:8px}
+.btn.alt{background:var(--paper);color:var(--navy);border:1.5px solid var(--navy)}
+.btn.red{background:var(--rouge)}
+.btn:disabled{opacity:.45;cursor:default}
+button:focus-visible,.opt:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--amber);outline-offset:2px}
+.note{font-size:13px;color:var(--ink2);font-style:italic}
+.model-ans{border:1px solid var(--ok);background:#EFF6F0;padding:10px;
+  font-size:14px;margin-top:8px}
+
+/* simulator */
+.sim-stats{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;margin:8px 0}
+.sim-stat{background:var(--paper2);padding:6px 10px;border:1px solid var(--line)}
+.sim-stat b{display:block;font-size:17px;color:var(--navy)}
+.sim-log{font-size:13px;max-height:120px;overflow-y:auto;border:1px solid var(--line);
+  padding:8px;margin-top:8px;background:var(--paper)}
+.rbar{display:flex;gap:3px;margin:8px 0;flex-wrap:wrap}
+.rblock{width:22px;height:30px;border:1.5px solid var(--navy);background:var(--paper)}
+.rblock.done{background:var(--amber)}
+.rblock.custom{background:var(--rouge)}
+
+/* sort game */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{border:1.5px solid var(--navy);background:var(--paper);padding:8px 12px;
+  font:inherit;font-size:14px;cursor:pointer}
+.chip:disabled{opacity:.35}
+.slots{min-height:44px;border:1.5px dashed var(--ink2);padding:8px;
+  display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;background:var(--paper2)}
+.slot-chip{border:1.5px solid var(--bleu);padding:8px 12px;font-size:14px;
+  background:#fff;cursor:pointer}
+.slot-chip.good{border-color:var(--ok);background:#EAF4EC}
+.slot-chip.bad{border-color:var(--rouge);background:#F8ECEC}
+
+/* bill comparator */
+.bill-row{margin:10px 0}
+.bill-name{font-size:12px;letter-spacing:.15em;color:var(--ink2)}
+.bill-bar{height:26px;background:var(--bleu);color:#fff;display:flex;
+  align-items:center;padding:0 8px;font-family:'Courier New',monospace;
+  font-size:14px;min-width:70px;transition:width .3s}
+.bill-bar.nj{background:var(--rouge)}
+input[type=range]{width:100%;accent-color:var(--navy)}
+
+/* outbox / footer bar */
+.dock{position:fixed;bottom:0;left:0;right:0;background:var(--navy);z-index:60}
+.dock-in{max-width:680px;margin:0 auto;display:flex}
+.dock button{flex:1;background:none;border:none;color:#fff;padding:11px 4px;
+  font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.1em;font-size:12px;cursor:pointer;border-right:1px solid rgba(255,255,255,.2)}
+.dock button:last-child{border-right:none}
+.badge{display:inline-block;background:var(--amber);color:var(--ink);
+  border-radius:9px;font-size:11px;padding:0 6px;margin-left:4px;font-weight:700}
+.net{font-size:10px;letter-spacing:.15em}
+.net .dot{display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--rouge);vertical-align:middle;margin-right:4px}
+.net.on .dot{background:var(--ok)}
+
+/* modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(20,24,32,.55);z-index:100}
+.modal.open{display:flex;align-items:flex-end;justify-content:center}
+.modal-in{background:var(--paper);width:100%;max-width:680px;max-height:86vh;
+  overflow-y:auto;padding:18px 16px 28px;border-top:4px solid var(--navy)}
+.modal-in h3{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--navy);margin-bottom:10px}
+.ob-item{border:1px solid var(--line);background:var(--card);padding:10px;margin:8px 0;
+  font-size:14px}
+.ob-q{font-weight:700}
+.ob-a{font-style:italic;color:var(--ink2);margin:4px 0}
+.ob-fb{border-left:3px solid var(--ok);padding:4px 8px;background:#EFF6F0;margin-top:6px}
+.ob-status{font-size:11px;letter-spacing:.15em}
+.setup input{width:100%;font:inherit;font-size:17px;padding:10px;
+  border:1.5px solid var(--line);background:#fff;margin:8px 0}
+.emoji-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.emoji-row button{font-size:26px;background:var(--paper2);border:2px solid transparent;
+  padding:6px 10px;cursor:pointer}
+.emoji-row button.sel{border-color:var(--navy);background:#fff}
+.phrase{border-bottom:1px solid var(--line);padding:8px 0;font-size:15px}
+.phrase i{color:var(--ink2);font-size:13px;display:block}
+hr.rule{border:none;border-top:1px solid var(--line);margin:20px 0}
+.toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);
+  background:var(--navy);color:#fff;padding:10px 16px;font-size:14px;z-index:200;
+  max-width:92%;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.3);
+  opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.saveflag{font-size:11px;letter-spacing:.12em;color:var(--ink2);margin-top:6px}
+
+.refline{font-size:14px;margin:10px 0;word-break:break-word}
+.refline a{color:var(--bleu)}
+
+/* ---- illustrations (inline SVG, offline) ---- */
+.pack-art{margin:16px 0 6px;padding:12px;background:var(--paper2);border:1px solid var(--line);text-align:center}
+.pack-art svg{width:100%;height:auto;max-height:230px;display:block;margin:0 auto}
+.art-cap{font-size:11px;letter-spacing:.08em;color:var(--ink2);margin-top:8px;font-family:'Courier New',monospace;text-transform:uppercase}
+.mascot-line{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--amber);padding:8px 12px;margin:12px 0;font-size:14px;color:var(--ink2);font-style:italic}
+.mascot-line svg{flex:none;width:42px;height:auto}
+.cover-art{margin:16px 0 4px;padding:10px;background:var(--paper2);border:1px solid var(--line)}
+.cover-art svg{width:100%;height:auto;max-height:210px;display:block}
+
+/* ---- colour pass (Avignon accent: papal gold + crimson) ---- */
+body{background:linear-gradient(180deg,#F7EEDB 0,#F4F2EA 360px) no-repeat, var(--paper);background-attachment:fixed}
+header{background:linear-gradient(180deg,#FCF5E6,#F1EBDA);border-top:4px solid var(--amber)}
+.cover{background:radial-gradient(135% 100% at 50% -12%,#FBE6C8 0,rgba(251,230,200,0) 64%)}
+.card{background:linear-gradient(180deg,#FFFDF6,#FBFAF5)}
+.sec h2{border-bottom:3px solid var(--amber);display:inline-block;padding-bottom:3px}
+.piece-tag{background:var(--rouge);color:#fff;display:inline-block;padding:2px 9px;letter-spacing:.2em}
+.toc-item{border-left-color:var(--amber)}
+.toc-item:nth-child(even){border-left-color:var(--rouge)}
+.vocab-box{background:linear-gradient(180deg,#F3EAD6,#ECE9DE)}
+.dock{background:linear-gradient(180deg,#1d4074,#16345F)}
+.gauge-fill{background:linear-gradient(90deg,#E39A1D,#C21F30)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd-in">
+    <div class="hd-top">
+      <span class="hd-rf mono">RÉPUBLIQUE FRANÇAISE · ARCHIVES DE PROVENCE</span>
+      <span class="hd-user mono" id="hdUser"></span>
+    </div>
+    <div class="hd-top">
+      <span class="hd-title hdr-face">Dossier: Nice</span>
+      <span class="net mono" id="netInd"><span class="dot"></span>HORS LIGNE</span>
+    </div>
+    <div class="gauge">
+      <div class="gauge-label mono"><span>FRONTIÈRE</span><span id="ptsLbl">0 pts</span></div>
+      <div class="gauge-bar"><div class="gauge-fill" id="gaugeFill"></div>
+        <span class="gauge-rank mono" id="rankLbl"></span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="home">
+    <div class="cover">
+      <div class="eyebrow mono">RÉGION: CÔTE D'AZUR · MISSION 06</div>
+      <h1>Nice</h1>
+      <div class="sub">Greek « Victory », Italian for 500 years, French only since 1860 — a glittering coast largely invented, and sold to the world, by foreigners.</div>
+      <div class="cover-art"><svg viewBox="0 0 440 200" role="img" aria-label="Nice: the bay, the palms, Castle Hill and the sea"><g stroke="#16345F" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="64" cy="40" r="14" fill="#E39A1D" stroke="none"/><g stroke="#E39A1D" stroke-width="3"><path d="M64 18 v-6 M40 40 h-6 M46 23 l-5 -5"/></g><path d="M300 154 q50 -74 104 -74 q36 0 36 74 z" fill="#7a8a5a" stroke="none"/><path d="M300 154 q50 -74 104 -74 q36 0 36 74" stroke="#16345F" stroke-width="3" fill="none"/><path d="M366 82 v-16" stroke="#16345F" stroke-width="2"/><path d="M366 66 h12 v8 h-12 z" fill="#C21F30" stroke="none"/><rect x="0" y="154" width="440" height="46" fill="#0B57A4" opacity="0.16" stroke="none"/><g stroke="#3B7CC0" stroke-width="3"><path d="M0 180 q40 -8 80 0 t80 0 t80 0 t80 0 t80 0 t80 0"/></g><path d="M0 154 h290" stroke="#16345F" stroke-width="2"/><path d="M96 156 v-54"/><path d="M96 102 q-22 -6 -34 6 M96 102 q22 -6 34 6 M96 104 q-16 4 -26 16 M96 104 q16 4 26 16"/><path d="M150 156 v-54"/><path d="M150 102 q-22 -6 -34 6 M150 102 q22 -6 34 6 M150 104 q-16 4 -26 16 M150 104 q16 4 26 16"/><g transform="translate(196,86) scale(1.9)"><g stroke="#16345F" stroke-width="1.7" stroke-linejoin="round"><path d="M11 14 q13 -10 26 0 l-3 5 h-20 z" fill="#16345F"/><ellipse cx="24" cy="31" rx="15" ry="17" fill="#E39A1D"/><circle cx="18" cy="28" r="6" fill="#FBFAF5"/><circle cx="30" cy="28" r="6" fill="#FBFAF5"/><circle cx="18.5" cy="28.5" r="2.4" fill="#16345F" stroke="none"/><circle cx="30.5" cy="28.5" r="2.4" fill="#16345F" stroke="none"/><path d="M24 32 l-3.5 4.5 h7 z" fill="#C21F30" stroke="none"/><circle cx="41" cy="34" r="6" fill="none" stroke="#0B57A4" stroke-width="2"/><path d="M45 38 l5 5" stroke="#0B57A4" stroke-width="2.5"/></g></g></g></svg><div class="art-cap">Archives de Provence &middot; Dossier Nice</div></div>
+      <div class="classif mono">POUR LECTURE IMMÉDIATE</div>
+    </div>
+    <div class="toc" id="toc"></div>
+    <div class="vocab-box">
+      <b class="mono">PHRASES DU JOUR — say these out loud today</b>
+      <div id="phraseBox"></div>
+    </div>
+  </div>
+  <div id="secView"></div>
+</div>
+
+<div class="dock">
+  <div class="dock-in">
+    <button id="dockHome">Sommaire</button>
+    <button id="dockOutbox">À évaluer<span class="badge" id="obBadge" style="display:none">0</span></button>
+    <button id="dockSave">Sauvegarde</button>
+    <button id="dockReport">Rapport</button>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="modal-in" id="modalIn"></div></div>
+
+<script id="pack">
+/* ============ PACK: nice ============ */
+const PACK = {
+meta:{id:"nice",region:"Côte d'Azur",title:"Nice",
+  ranks:[[0,"STAGIAIRE"],[80,"DOUANIER·ÈRE"],[160,"COMMISSAIRE"],[230,"GARDIEN·NE DE LA FRONTIÈRE"]],
+  maxPts:256},
+phrases:[
+  ["On va sur la Promenade ?","Shall we go on the Promenade?"],
+  ["C'est combien, la socca ?","How much is the socca?"],
+  ["On monte au château ?","Shall we go up to Castle Hill?"],
+  ["La mer est belle aujourd'hui.","The sea is beautiful today."],
+  ["Nissa la Bella !","Nice the Beautiful! (the city's Niçard anthem)"]
+],
+sections:[
+/* ---------- 1 ---------- */
+{id:"nikaia",num:"PIÈCE N°1",title:"Nikaia",en:"A Greek victory, a very late France",
+vocab:[["la victoire","victory"],["une frontière","a border"],["la mer","the sea"],["grec / grecque","Greek"]],
+body:[
+"Log in, stagiaire — you're the newest clerk at the frontier post of Nice, a city that has changed countries more often than most people change phones, and that became French astonishingly late. Start at the beginning. Around <b>350 BC</b>, {{grec / grecque||Greek}} sailors — not from Greece, but from <b>Massalia</b> (Marseille, your last file) — founded a trading town on this bay and named it <b>Nikaia</b>, after <b>Nike</b>, the goddess of {{la victoire||victory}}, to mark a win over the local Ligurians. The city's name literally means « Victory. »",
+"Then the layers pile up — and none of them is French. The Romans built a whole town up the hill at <b>Cemenelum</b> (today's Cimiez), with an amphitheatre and baths. The Middle Ages made it Provençal, and then — the fact that changes everything — a <b>Savoyard</b> town. For roughly <b>500 years</b> Nice belonged not to France but to the House of Savoy, its eyes on <b>Turin</b>, not Paris. Its {{la mer||sea}}-side people didn't even speak French; they spoke <b>Nissart</b>, a cousin of Italian.",
+"Here is the fact that reorganises the whole file, clerk: <b>Nice has only been French since 1860.</b> As a city it is ancient; as a piece of France, it is younger than the United States. Everything you picture as gloriously « French Riviera » — the palm-lined promenade, the glamour, the blue — was layered onto a town that spent almost its entire history being something else. Keep that {{une frontière||border}} in mind. This file is about who a place really belongs to, and who gets to write its story."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"Who founded Nice, and what does its name mean?",
+ opts:["The Romans; « new city »","Greeks from Massalia (Marseille); « Nikaia » means victory","The French; named after a king","Vikings; « harbour »"],
+ a:1,expl:"A daughter-town of Marseille, named for a victory over the Ligurians. Nice literally means « Victory »."},
+{t:"mcq",q:"For roughly 500 years before 1860, Nice belonged to…",
+ opts:["France","The House of Savoy / Kingdom of Sardinia — looking to Turin","Spain","The Pope"],
+ a:1,expl:"Its capital was Turin, not Paris; its language was Nissart, not French. Nice was, for centuries, part of the Italian world."},
+{t:"selfcheck",q:"Nice has been French only since 1860 — younger, as French land, than the USA is as a country. Why does that surprise most people who visit « the French Riviera »?",
+ model:"Because the Riviera is marketed as the essence of French glamour, so visitors assume it has always been deeply French. In fact the palm-lined, glamorous image is quite recent and was layered onto a Greek-then-Italian town. We tend to assume a place's current identity is its eternal one — Nice is a sharp reminder that identities are recent, made, and changeable."}
+]},
+/* ---------- 2 ---------- */
+{id:"savoie",num:"PIÈCE N°2",title:"Cinq Siècles Savoyards",en:"The city that wasn't France",
+vocab:[["un pays","a country"],["appartenir","to belong"],["une langue","a language"],["l'est / l'ouest","east / west"]],
+body:[
+"To understand Nice you have to unlearn the map. For most of the last thousand years, the border of France ran just WEST of here, at the <b>Var</b> river — and Nice sat on the far side of it, in another {{un pays||country}}. From 1388 the city placed itself under the <b>Counts of Savoy</b> (later the Kings of Sardinia), and there it stayed, on and off, until 1860. When the people of Nice looked toward their capital, they looked {{l'est / l'ouest||east}}, to <b>Turin</b> in Italy — not to Paris.",
+"You can still sense it everywhere. The old {{une langue||language}} of Nice, <b>Nissart</b>, is a Mediterranean tongue far closer to Italian and Ligurian than to French. The old town, Vieux Nice, looks like Genoa or Turin — narrow lanes, ochre walls, baroque churches — because culturally it was their cousin, not Paris's. Nice didn't « turn » Italian; for centuries it simply belonged to that world.",
+"So who did Nice {{appartenir||belong}} to? Honestly: many owners, in turn, and never for keeps — Greek, Roman, Provençal, Savoyard, briefly French under the Revolution, Savoyard again, and finally French. A city handed from ruler to ruler across 2,400 years. Step through its owners below, and watch how astonishingly recent the French chapter really is."
+],
+interactive:"whose",
+questions:[
+{t:"mcq",q:"Before 1860, when the people of Nice looked toward their capital, they looked to…",
+ opts:["Paris","Turin, in the Kingdom of Sardinia — east, not west","Rome","London"],
+ a:1,expl:"The border of France was the Var river, just west of the city. Nice's world was Savoyard and Italian-facing."},
+{t:"mcq",q:"Nissart, the old language of Nice, is closest to…",
+ opts:["French","Italian and Ligurian","German","Arabic"],
+ a:1,expl:"A Mediterranean tongue, not French. Language is a fingerprint of who a place really belonged to."},
+{t:"selfcheck",q:"The old town of Nice looks more like Genoa or Turin than like Paris. What can architecture tell you about who a place truly belonged to — that a modern flag or map might hide?",
+ model:"Buildings are slow and honest: they're built in the style of whoever held power and money when they went up, and they outlast governments. A baroque, Italian-looking old town shows that Nice's real cultural world was Savoyard/Italian, no matter what flag flies today. Maps show the current owner; architecture shows the accumulated past."}
+]},
+/* ---------- 3 ---------- */
+{id:"annexion",num:"PIÈCE N°3",title:"1860 : Devenir Français",en:"Bought, sold, and voted on",
+vocab:[["voter","to vote"],["un roi","a king"],["libre","free"],["échanger","to swap"],["né(e)","born"]],
+body:[
+"In 1860 Nice changed countries through a <b>deal between kings</b>. The Kingdom of Sardinia wanted French muscle to help drive Austria out of northern Italy; Napoléon III of France agreed — and his price was Savoy and Nice. So in the <b>Treaty of Turin</b>, Nice was {{échanger||traded}} to France, essentially as payment. A whole city and its people, handed over as the fee for a military alliance.",
+"To make it look proper, they held a <b>plébiscite</b> — a public {{voter||vote}}. The official result was almost comic: <b>25,743 « yes » to about 160 « no » — over 99%.</b> But raise an eyebrow, clerk, as a good archivist must: the {{libre||free}} vote was <b>open, not secret</b>; officials, the army and the clergy all pushed hard for « yes »; voting « no » took real courage. A 99% result is rarely the sound of a people agreeing — it is usually the sound of a thumb pressed on the scale.",
+"And not everyone cheered. <b>Giuseppe Garibaldi</b> — the great hero of Italian unification, {{né(e)||born}} right here in Nice in 1807 — was furious. He denounced the handover of his birthplace as a theft, a wound to Italy. To this day some Niçois feel as much Niçard or Italian as French. So: was 1860 a free choice, or a royal transaction dressed up as one? Run the vote below, both ways, and judge for yourself."
+],
+interactive:"vote",
+questions:[
+{t:"mcq",q:"How did Nice actually become part of France in 1860?",
+ opts:["It was conquered in a war","A deal — Sardinia handed Nice and Savoy to France as the price of a military alliance, then confirmed it with a plebiscite","The people petitioned to join France","It was bought by a bank"],
+ a:1,expl:"A trade between crowns. The public vote came AFTER the deal, to dress it up as a choice."},
+{t:"mcq",q:"The 1860 plebiscite recorded over 99% « yes. » A careful reader should treat that as…",
+ opts:["Proof the people freely agreed","Suspicious — the vote was open and pressured, so 99% signals a managed result","A normal election result","Evidence the vote was secret"],
+ a:1,expl:"Open ballots, official pressure, and 99% almost always mean the outcome was steered. Real free votes are messy."},
+{t:"mcq",q:"Who was Giuseppe Garibaldi, and how did he feel about 1860?",
+ opts:["A French general who welcomed it","A hero of Italian unification, born in Nice — he called the handover a theft","The mayor of Nice who signed it","A Russian prince"],
+ a:1,expl:"Nice's most famous son opposed its own annexation. His anger is a primary-source crack in the '99% happy' story."},
+{t:"ai",qid:"ai-vote99",q:"⚡ BRIEF : Is a 99% vote ever trustworthy? Using the 1860 Nice plébiscite, argue when a lopsided result is genuine and when it's a warning sign. Give at least three specifics and honestly address a counter-argument. (5–8 sentences.)",
+ rubric:"Award up to 20 points. Strong answers (15-20) use specifics (open vs secret ballot, army/clergy pressure, Garibaldi's dissent, the 25,743-to-160 tally) to argue that a 99% result under those conditions signals coercion — while acknowledging the counter-argument (sometimes a people really are near-unanimous, e.g. after liberation; or many Niçois may have genuinely preferred France for economic reasons). Then land on a clear test for telling real from managed. 8-14: a position but thin or one-sided. Under 8: vague. Any defensible position earns full marks; reward the counter-argument."}
+]},
+/* ---------- 4 ---------- */
+{id:"azur",num:"PIÈCE N°4",title:"L'Invention de la Côte d'Azur",en:"A dream sold by foreigners",
+vocab:[["l'hiver","winter"],["un étranger","a foreigner"],["bleu / bleue","blue"],["une promenade","a seafront walk"],["riche","rich"]],
+body:[
+"Here is the twist that makes Nice perfect for your series. The most famous « French » things about Nice were mostly made by people who weren't French. In the early 1800s, wealthy <b>English</b> {{un étranger||foreigners}} began spending {{l'hiver||winter}} here to escape their grey northern cold. In 1820, after a hard winter, they funded a seafront {{une promenade||walkway}} — and the city named it, honestly enough, the <b>Promenade des Anglais</b>: « the walkway of the English. » Nice's signature landmark announces, in its own name, that it was a foreign gift.",
+"Then the {{riche||rich}} Russians arrived, and built the glittering Orthodox cathedral you can still visit. And the name « <b>Côte d'Azur</b> » itself — the « {{bleu / bleue||Azure}} Coast, » shorthand for the whole glamorous Riviera — was invented in <b>1887</b> as the <i>title of a book</i> by a French writer, <b>Stéphen Liégeard</b>, who lived far away in Burgundy. He coined a pretty phrase; tourism did the rest. The Riviera « dream » was, to a remarkable degree, marketing.",
+"This is the media-literacy lesson of the whole journey, one final time. « Sur le pont d'Avignon » (probably « sous »). The « antipope » millions believed in. The Marseillaise written in Strasbourg. The Château d'If's fictional prisoner. And now a world-famous coast, named by a man from Burgundy for a book. A good story doesn't need to be true to win — it only needs to be repeated. Below, meet the real inventors of « the French Riviera. »"
+],
+interactive:"riviera",
+questions:[
+{t:"mcq",q:"Why is Nice's seafront called the « Promenade des Anglais »?",
+ opts:["A French king named it","It was funded by wealthy English winter visitors in the 1820s — « the walkway of the English »","It points toward England","English is spoken there"],
+ a:1,expl:"The name is an honest receipt: Nice's most famous landmark was a gift from foreign tourists."},
+{t:"mcq",q:"Where did the glamorous name « Côte d'Azur » come from?",
+ opts:["An ancient Greek word","A 1887 book title coined by the writer Stéphen Liégeard, who lived in Burgundy","A Roman emperor","A brand of sunscreen"],
+ a:1,expl:"A writer far from the coast invented the phrase for a book. Repetition turned marketing into 'fact.'"},
+{t:"selfcheck",q:"The « French Riviera » was largely invented and branded by foreigners and a writer. Does knowing that make it any less real or beautiful today? Argue your view.",
+ model:"Reasonable either way. One view: it's just as real — a place's meaning is made by people using and loving it, and 'invented' traditions become genuine over time. Another: knowing the glamour was marketing should make us a bit skeptical of the hype and curious about the older, realer Nice underneath. Strong answers separate the beauty (real) from the story sold about it (constructed) and hold both."}
+]},
+/* ---------- 5 ---------- */
+{id:"echecs",num:"PIÈCE N°5",title:"Les Échecs",en:"Read closely: a castle, and a cost",
+vocab:[["détruire","to destroy"],["un roi","a king"],["perdre","to lose"],["une langue","a language"]],
+body:[
+"A file that only flatters its subject is a failed file. Climb the <b>Colline du Château</b> — Castle Hill — for the famous view over the bay, and notice what's missing: <b>there is no castle.</b> In 1705 French troops besieged Nice, and in <b>1706</b>, by the order of {{un roi||King}} <b>Louis XIV</b> of France, the great fortress was packed with gunpowder and {{détruire||destroyed}}. Sit with the irony, clerk: <b>France demolished Nice's castle 154 years before Nice was French.</b> (Remember Les Baux, blown up by Richelieu? Kings hated fortresses they couldn't control — even in countries that weren't yet theirs.)",
+"And the quieter loss. When Nice became French in 1860, Paris did what capitals do: it pushed French in the schools and offices, and slowly the old {{une langue||Nissart language}} faded from daily life. Meanwhile the glamour that made Nice rich also turned parts of it into a stage set — a coast so busy selling its dream to visitors that locals get priced off their own seafront. A city can {{perdre||lose}} pieces of itself even as it « wins. »",
+"So hold the two Nices together. Becoming French brought peace, wealth and a world-famous name. It also meant a demolished castle, a fading language, and an identity partly repackaged for tourists. Was 1860 a rescue or a takeover — a gift or a sale? Don't let the sunshine be the only entry in the file. The best archivists read the shadows too."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"What happened to the castle on Nice's Castle Hill?",
+ opts:["It's still there, fully intact","French troops destroyed it in 1706 on the order of Louis XIV — 154 years before Nice became French","It fell into the sea","It became a hotel"],
+ a:1,expl:"A French king razed it a century and a half before the city was French — a neat lesson in how power ignores borders."},
+{t:"mcq",q:"What was one real COST of Nice becoming French in 1860?",
+ opts:["There were no costs","The slow fading of the Nissart language and a local identity repackaged for tourists","The sea turned grey","The palm trees died"],
+ a:1,expl:"Winning a country can mean losing a language. Every annexation has a bill, even a sunny one."},
+{t:"ai",qid:"ai-rescue",q:"⚡ BRIEF : Was Nice becoming French in 1860 more a RESCUE or a TAKEOVER? Use at least three facts (the royal deal, the 99% vote, Garibaldi, the fading language, the new wealth), steelman the side you don't choose, then land. (6–10 sentences.)",
+ rubric:"Award up to 20 points. This is deliberately hard, no official answer. Strong answers (15-20) marshal facts on BOTH sides — takeover: a deal between kings, a coerced 99% vote, Garibaldi's protest, language loss; rescue/benefit: peace, prosperity, world fame, and that many Niçois may genuinely have preferred stable, wealthy France — and steelman the rejected side before landing. 8-14: both sides but one is a strawman, or no position. Under 8: one-sided. State that ANY reasoned verdict earns full marks; grade the argument, not the conclusion."}
+]},
+/* ---------- 6 ---------- */
+{id:"aujourdhui",num:"PIÈCE N°6",title:"Aujourd'hui",en:"The light, the socca, the both-ness",
+vocab:[["la lumière","light"],["un peintre","a painter"],["manger","to eat"],["appartenir","to belong"]],
+body:[
+"For all that tangled history, modern Nice isn't confused about itself — it's <b>both</b>, cheerfully. The {{la lumière||light}} here is legendary: the {{un peintre||painter}} <b>Henri Matisse</b> moved to Nice for it and stayed for decades, and <b>Marc Chagall</b> too — both have museums in the city. That clear Mediterranean light is the same magnet that pulled Van Gogh to Arles, along your coast. Artists never needed a passport to know where the good light was.",
+"And the food tells the truth the politics tried to bury. Nice's signature street food is <b>socca</b> — a great pancake of chickpea flour and olive oil, cooked on a copper pan and {{manger||eaten}} hot with black pepper — a dish that is pure Ligurian-Italian, straight from Genoa. Add the market on the Cours Saleya, the baroque old town, the Nissart street signs: Nice is a Franco-Italian city that happens to fly a French flag. Its Italian-ness isn't a museum exhibit — it's lunch.",
+"So who does Nice {{appartenir||belong}} to, in the end? To the Greeks who named it, the Savoyards who held it, the English who paved it, the Russians who gilded it, the writer who branded it, the French who govern it — and most of all to the Niçois who live all of it at once. Your last lesson, clerk: some places don't have a single identity to uncover. They ARE the layering. Nice isn't French pretending to be Italian, or Italian trapped in France. It is simply Nice — victory, still."
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"Why did painters like Matisse and Chagall settle in Nice?",
+ opts:["It was cheap","Its famous clear Mediterranean light — the same draw as Van Gogh's Arles","They were exiled there","For the skiing"],
+ a:1,expl:"The light again — the invisible resource that pulled artists all along this coast."},
+{t:"mcq",q:"Nice's signature street food, socca, reveals its…",
+ opts:["Spanish roots","Italian / Ligurian roots — it's a Genoese chickpea pancake","British roots","Greek roots only"],
+ a:1,expl:"You can taste the border here: socca is Genoa on a copper pan. Identity you can eat."},
+{t:"selfcheck",q:"Nice is « both » French and Italian at once. Name a person or place you know that carries more than one identity — and explain why that mixture is a strength, not a confusion.",
+ model:"Open answer — accept any real example (a bilingual friend, a border town, a mixed-heritage family, a fusion cuisine, a city like New Orleans). Strong answers argue WHY mixing helps: more perspectives, more connections, more adaptability, richer culture — and note that a single 'pure' identity is often a myth anyway. The point is that layering, like Nice's, can be an asset."},
+{t:"ai",qid:"ai-layer",q:"⚡ BRIEF FINAL : « Some places don't have one identity to uncover; they ARE the layering. » Do you agree that a mixed, borrowed identity can be a place's greatest strength? Use Nice's Greek/Roman/Italian/English/French layers, at least three specifics, and address the opposing view. (6–10 sentences.)",
+ rubric:"Award up to 20 points. Strong answers (15-20) use specifics (Greek name, Roman Cimiez, Savoyard/Italian old town and Nissart, English promenade, Russian cathedral, French rule, socca) to argue that layering is a strength — richness, connection, adaptability — while genuinely engaging the opposing view (mixing can dilute identity, cause conflict over belonging, or be exploited as mere marketing). Then take a clear position. 8-14: some specifics but the counter-view is thin. Under 8: vague. Any reasoned position earns full marks; reward cross-series thinking and honest trade-offs."}
+]},
+/* ---------- 7 ---------- */
+{id:"sources",num:"PIÈCE N°7",title:"Les Sources",en:"Dig deeper (when online)",
+vocab:[],
+body:[
+"The archive behind your file. Sort them, clerk: which are <b>primary</b> (the text of the Treaty of Turin, the Roman ruins at Cimiez, Garibaldi's own words, Liégeard's 1887 book) and which are <b>interpretation</b> (a tourism site, a blog, this game)? Two habits to carry to any frontier: a 99% vote is a claim to <i>investigate</i>, not a fact to trust; and a gorgeous name like « Côte d'Azur » can be pure invention. Always ask who benefits from the story.",
+"REFS"
+],
+interactive:null,
+questions:[
+{t:"mcq",q:"The 1860 plebiscite's 99% result is best treated as…",
+ opts:["Settled proof the people freely chose France","A claim to investigate — the vote was public and pressured — not proof of free agreement","A fair, ordinary landslide","Irrelevant to history"],
+ a:1,expl:"Investigate, don't swallow. The conditions of a vote matter as much as its number — the core skill of this whole series."}
+]}
+],
+refs:[
+["Explore Nice Côte d'Azur — official tourism","https://www.explorenicecotedazur.com/en/"],
+["Musée Matisse, Nice","https://www.musee-matisse-nice.org/en/"],
+["Musée national Marc Chagall","https://www.musees-nationaux-alpesmaritimes.fr/chagall/en/"],
+["Cimiez — the Roman town of Cemenelum & its museum","https://www.nice.fr/fr/culture/musees-et-galeries/le-musee-d-archeologie-de-nice-cimiez"],
+["Treaty of Turin (1860) — how Nice became French","https://en.wikipedia.org/wiki/Treaty_of_Turin_(1860)"],
+["Promenade des Anglais — the English origin","https://en.wikipedia.org/wiki/Promenade_des_Anglais"],
+["Stéphen Liégeard — who coined « La Côte d'Azur » (1887)","https://en.wikipedia.org/wiki/St%C3%A9phen_Li%C3%A9geard"]
+]
+};
+
+const MASCOT_SM = `<svg viewBox="0 0 48 54" aria-hidden="true"><g stroke="#16345F" stroke-width="1.7" stroke-linejoin="round"><path d="M11 14 q13 -10 26 0 l-3 5 h-20 z" fill="#16345F"/><ellipse cx="24" cy="31" rx="15" ry="17" fill="#E39A1D"/><circle cx="18" cy="28" r="6" fill="#FBFAF5"/><circle cx="30" cy="28" r="6" fill="#FBFAF5"/><circle cx="18.5" cy="28.5" r="2.4" fill="#16345F" stroke="none"/><circle cx="30.5" cy="28.5" r="2.4" fill="#16345F" stroke="none"/><path d="M24 32 l-3.5 4.5 h7 z" fill="#C21F30" stroke="none"/><path d="M13 40 q-6 3 -9 -1 M35 40 q6 3 9 -1" fill="none"/><path d="M20 48 v3 M28 48 v3" fill="none"/></g></svg>`;
+
+const SAYS = {
+nikaia:"Greek « Victory », then Roman, Savoyard, Italian — French only since 1860.",
+savoie:"For 500 years its capital was Turin. Its language wasn't even French.",
+annexion:"Traded between kings, then a 99% vote. Ninety-nine percent should worry you.",
+azur:"The English paved it, the Russians gilded it, a writer named it. Very « French ».",
+echecs:"A French king blew up its castle 154 years before Nice was French.",
+aujourdhui:"Not French pretending to be Italian. Just Nice — the layering itself.",
+sources:"A 99% vote is a claim to investigate, not a fact to trust."
+};
+
+const AV = '<g stroke="#16345F" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">';
+function acap(c){return '<div class="art-cap">'+c+'</div>';}
+const WAVES = '<rect x="0" y="140" width="400" height="50" fill="#0B57A4" opacity="0.14" stroke="none"/><g stroke="#3B7CC0" stroke-width="3" fill="none"><path d="M0 150 q40 -8 80 0 t80 0 t80 0 t80 0 t80 0"/></g>';
+
+const ART = {
+nikaia:`<svg viewBox="0 0 400 190" role="img">${AV}<circle cx="336" cy="44" r="15" fill="#E39A1D" stroke="none"/>${WAVES}<g stroke="#16345F" stroke-width="3"><path d="M150 60 q50 -18 100 0" /><path d="M150 60 q50 18 100 0"/></g><g fill="#2E7D46" stroke="none"><ellipse cx="158" cy="58" rx="6" ry="3" transform="rotate(-30 158 58)"/><ellipse cx="176" cy="50" rx="6" ry="3" transform="rotate(-20 176 50)"/><ellipse cx="200" cy="46" rx="6" ry="3"/><ellipse cx="224" cy="50" rx="6" ry="3" transform="rotate(20 224 50)"/><ellipse cx="242" cy="58" rx="6" ry="3" transform="rotate(30 242 58)"/></g><g stroke="#16345F" stroke-width="3"><rect x="176" y="82" width="48" height="10" fill="#EFE7D2"/><rect x="182" y="92" width="10" height="40" fill="#EFE7D2"/><rect x="208" y="92" width="10" height="40" fill="#EFE7D2"/><rect x="172" y="132" width="56" height="10" fill="#EFE7D2"/></g><text x="200" y="118" font-family="Arial Narrow, Arial, sans-serif" font-size="13" fill="#16345F" text-anchor="middle" stroke="none">NIKAIA</text></g></svg>${acap("Nikaia, ~350 BC &mdash; « Victory »")}`,
+
+savoie:`<svg viewBox="0 0 400 190" role="img">${AV}<circle cx="200" cy="96" r="10" fill="#C21F30" stroke="none"/><text x="200" y="128" font-family="Arial Narrow, Arial, sans-serif" font-size="13" fill="#16345F" text-anchor="middle" stroke="none">NICE</text><path d="M188 96 h-120" stroke="#C8C3B2" stroke-width="3"/><path d="M212 96 h120" stroke="#16345F" stroke-width="4"/><path d="M332 96 l-12 -7 m12 7 l-12 7" stroke="#16345F" stroke-width="4"/><text x="60" y="88" font-family="Courier New, monospace" font-size="12" fill="#5A5F6A" text-anchor="start" stroke="none">PARIS</text><text x="340" y="88" font-family="Courier New, monospace" font-size="13" fill="#16345F" text-anchor="end" stroke="none">TURIN &rarr;</text><path d="M150 150 q10 -14 20 0 M150 150 v-40" stroke="#C8C3B2" stroke-width="2"/><text x="150" y="172" font-family="Courier New, monospace" font-size="10" fill="#5A5F6A" text-anchor="middle" stroke="none">Var (la frontière)</text></g></svg>${acap("For 500 years, the capital was east")}`,
+
+annexion:`<svg viewBox="0 0 400 190" role="img">${AV}<rect x="150" y="88" width="100" height="70" fill="#EFE7D2" stroke="#16345F" stroke-width="3"/><rect x="182" y="80" width="36" height="12" fill="#16345F" stroke="none"/><rect x="188" y="60" width="24" height="22" fill="#FBFAF5" stroke="#16345F" stroke-width="2"/><path d="M196 84 v-14 h8 v14" stroke="#16345F" stroke-width="2" fill="none"/><text x="200" y="134" font-family="Arial Narrow, Arial, sans-serif" font-size="22" font-weight="700" fill="#C21F30" text-anchor="middle" stroke="none">99%</text><g fill="#E39A1D" stroke="#16345F" stroke-width="2"><path d="M96 74 l10 -14 l10 14 l14 2 l-12 10 l4 16 l-16 -9 l-16 9 l4 -16 l-12 -10 z"/></g><g fill="#E39A1D" stroke="#16345F" stroke-width="2"><path d="M284 74 l10 -14 l10 14 l14 2 l-12 10 l4 16 l-16 -9 l-16 9 l4 -16 l-12 -10 z"/></g></g></svg>${acap("A deal between crowns, sealed with a 99% vote")}`,
+
+azur:`<svg viewBox="0 0 400 190" role="img">${AV}${WAVES}<g stroke="#16345F" stroke-width="3"><path d="M84 150 v-56" /><path d="M84 94 q-22 -6 -34 6 M84 94 q22 -6 34 6 M84 96 q-16 4 -26 16 M84 96 q16 4 26 16"/></g><g stroke="#16345F" stroke-width="3"><path d="M316 150 v-56"/><path d="M316 94 q-22 -6 -34 6 M316 94 q22 -6 34 6 M316 96 q-16 4 -26 16 M316 96 q16 4 26 16"/></g><path d="M120 150 h160" stroke="#16345F" stroke-width="3"/><g stroke="#16345F" stroke-width="2"><path d="M140 150 v-14 M170 150 v-14 M200 150 v-14 M230 150 v-14 M260 150 v-14"/></g><g transform="rotate(-6 200 96)"><rect x="168" y="74" width="64" height="44" fill="#0B57A4" stroke="#16345F" stroke-width="2"/><path d="M200 74 v44" stroke="#FBFAF5" stroke-width="2"/><text x="200" y="100" font-family="Arial Narrow, Arial, sans-serif" font-size="9" fill="#FBFAF5" text-anchor="middle" stroke="none">CÔTE</text><text x="200" y="112" font-family="Arial Narrow, Arial, sans-serif" font-size="9" fill="#FBFAF5" text-anchor="middle" stroke="none">D'AZUR</text></g></g></svg>${acap("Paved by the English, named by a book")}`,
+
+echecs:`<svg viewBox="0 0 400 190" role="img">${AV}${WAVES}<path d="M60 150 q90 -74 160 -74 q70 0 120 74 z" fill="#7a8a5a" stroke="none"/><path d="M60 150 q90 -74 160 -74 q70 0 120 74" stroke="#16345F" stroke-width="3" fill="none"/><g fill="#C8C3B2" stroke="#16345F" stroke-width="2"><rect x="150" y="70" width="14" height="16"/><rect x="176" y="78" width="12" height="12" transform="rotate(18 182 84)"/><rect x="196" y="72" width="12" height="12" transform="rotate(-12 202 78)"/></g><g stroke="#C21F30" stroke-width="3" fill="none"><path d="M182 66 l-8 -18 M192 62 l2 -20 M204 66 l10 -16 M172 70 l-14 -10 M214 72 l16 -8"/></g><circle cx="193" cy="60" r="5" fill="#E39A1D" stroke="none"/></g></svg>${acap("Castle Hill &mdash; and no castle (1706)")}`,
+
+aujourdhui:`<svg viewBox="0 0 400 190" role="img">${AV}<circle cx="330" cy="48" r="15" fill="#E39A1D" stroke="none"/><g stroke="#E39A1D" stroke-width="3"><path d="M330 22 v-6 M356 48 h6 M312 30 l-5 -5"/></g><path d="M96 150 a54 44 0 1 1 60 -8 a12 12 0 0 0 -18 -12 a10 10 0 0 1 -16 -8 a12 12 0 0 0 -18 -6 a10 10 0 0 1 -16 -4 z" fill="#EFE7D2" stroke="#16345F" stroke-width="3"/><g stroke="none"><circle cx="70" cy="118" r="6" fill="#C21F30"/><circle cx="92" cy="104" r="6" fill="#0B57A4"/><circle cx="116" cy="104" r="6" fill="#2E7D46"/><circle cx="132" cy="122" r="6" fill="#E39A1D"/></g><circle cx="150" cy="150" r="6" fill="none" stroke="#16345F" stroke-width="3"/><g><ellipse cx="290" cy="132" rx="60" ry="30" fill="#E7B04a" stroke="#16345F" stroke-width="3"/><ellipse cx="290" cy="132" rx="60" ry="30" fill="none" stroke="#16345F" stroke-width="1" stroke-dasharray="2 6"/><path d="M350 132 h22" stroke="#16345F" stroke-width="4"/></g></g></svg>${acap("Matisse's light, and socca on the pan")}`,
+
+sources:`<svg viewBox="0 0 400 190" role="img">${AV}<rect x="96" y="34" width="180" height="120" fill="#FBFAF5"/><path d="M116 60 h140 M116 76 h140 M116 92 h120 M116 108 h140 M116 124 h86" stroke="#C8C3B2" stroke-width="3"/><g transform="rotate(-8 210 58)"><rect x="176" y="46" width="72" height="24" rx="3" stroke="#C21F30" stroke-width="2.5"/><text x="212" y="63" font-family="Courier New, monospace" font-size="11" fill="#C21F30" text-anchor="middle" stroke="none">PRIMAIRE</text></g><circle cx="252" cy="128" r="34" fill="#0B57A4" opacity="0.08" stroke="none"/><circle cx="252" cy="128" r="34" stroke="#0B57A4" stroke-width="5"/><path d="M276 152 l24 24" stroke="#0B57A4" stroke-width="8"/></g></svg>${acap("A 99% vote is a claim, not a fact.")}`
+};
+</script>
+<script id="engine">
+/* ============ ENGINE ============ */
+const CONFIG = {
+  aiEndpoint: "https://api.anthropic.com/v1/messages", // swap for your proxy when self-hosted
+  aiModel: "claude-sonnet-4-6"
+};
+const S = { profile:null, pts:0, done:{}, secDone:{}, outbox:[], simRuns:0 };
+S.pack=PACK.meta.id;
+
+/* ---- local persistence ---- */
+const STORE=(()=>{
+  let ok=false;
+  try{localStorage.setItem("__mp","1");localStorage.removeItem("__mp");ok=true;}catch(e){ok=false;}
+  const K="missionpack:"+PACK.meta.id;
+  return{ok,
+    save(o){if(!ok)return false;try{localStorage.setItem(K,JSON.stringify(o));return true;}catch(e){return false;}},
+    load(){if(!ok)return null;try{return JSON.parse(localStorage.getItem(K)||"null");}catch(e){return null;}},
+    clear(){if(!ok)return;try{localStorage.removeItem(K);}catch(e){}}};
+})();
+let persistTimer=null, wiped=false;
+function persist(){
+  if(!STORE.ok||wiped)return;
+  clearTimeout(persistTimer);
+  persistTimer=setTimeout(()=>STORE.save(S),250);
+}
+function persistNow(){if(STORE.ok&&!wiped)STORE.save(S);}
+addEventListener("visibilitychange",()=>{if(document.hidden)persistNow();});
+addEventListener("pagehide",persistNow);
+function toast(msg){
+  const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add("show"));
+  setTimeout(()=>{t.classList.remove("show");setTimeout(()=>t.remove(),350);},3200);
+}
+
+const $ = id => document.getElementById(id);
+const esc = t => t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ---- vocab markup: {{fr||en}} -> tap-to-reveal ---- */
+function fmt(t){
+  return t.replace(/\{\{(.+?)\|\|(.+?)\}\}/g,
+    (_,fr,en)=>`<span class="v" onclick="this.classList.add('revealed');this.querySelector('.en').style.display='inline'">${fr} <span class="en" style="display:none">(${en})</span></span>`);
+}
+
+/* ---- points ---- */
+function addPts(n, el){
+  S.pts += n;
+  renderGauge();
+  persist();
+  if(el){ const s=document.createElement("span"); s.className="pts-pop";
+    s.textContent=" +"+n+" pts"; el.appendChild(s); }
+}
+function rank(){
+  let r=PACK.meta.ranks[0][1];
+  for(const [min,name] of PACK.meta.ranks) if(S.pts>=min) r=name;
+  return r;
+}
+function renderGauge(){
+  $("ptsLbl").textContent = S.pts+" pts";
+  $("gaugeFill").style.width = Math.min(100, S.pts/PACK.meta.maxPts*100)+"%";
+  $("rankLbl").textContent = rank();
+}
+
+/* ---- navigation ---- */
+function showHome(){
+  $("home").style.display="block"; $("secView").innerHTML="";
+  renderTOC(); window.scrollTo(0,0);
+}
+function renderTOC(){
+  const toc=$("toc"); toc.innerHTML="";
+  PACK.sections.forEach((sec,i)=>{
+    const doneQ = sec.questions.filter(q=>S.done[qKey(sec,q)]).length;
+    const b=document.createElement("button"); b.className="toc-item";
+    b.innerHTML=`<span class="toc-num mono">${sec.num}</span>
+      <span class="toc-t"><b>${sec.title}</b><i>${sec.en}</i></span>
+      <span class="toc-pts mono">${doneQ}/${sec.questions.length}</span>
+      <span class="toc-st">${S.secDone[sec.id]?"✅":"📄"}</span>`;
+    b.onclick=()=>showSection(i);
+    toc.appendChild(b);
+  });
+  $("phraseBox").innerHTML = PACK.phrases.map(p=>
+    `<div class="phrase">« ${p[0]} »<i>${p[1]}</i></div>`).join("");
+}
+function qKey(sec,q){ return sec.id+"::"+(q.qid||q.q.slice(0,40)); }
+
+function showSection(i){
+  const sec=PACK.sections[i];
+  $("home").style.display="none";
+  const v=$("secView");
+  let bodyHtml = sec.body.map(p=>{
+    if(p==="REFS") return PACK.refs.map(r=>
+      `<div class="refline">▸ <a href="${r[1]}" target="_blank" rel="noopener">${r[0]}</a><br><span class="mono" style="font-size:11px;color:var(--ink2)">${r[1]}</span></div>`).join("");
+    return `<p>${fmt(p)}</p>`;
+  }).join("");
+  const vocabHtml = sec.vocab.length ?
+    `<div class="vocab-box"><b class="mono">VOCABULAIRE — tap the dotted words above, then test yourself:</b><br>`+
+    sec.vocab.map(v=>`<span class="v" onclick="this.querySelector('.en').style.display='inline'">${v[0]} <span class="en" style="display:none">= ${v[1]}</span></span>`).join(" · ")+`</div>`:"";
+  v.innerHTML = `<div class="sec active">
+    <button class="crumb" onclick="showHome()">← Sommaire</button>
+    <div class="piece-tag mono">${sec.num}</div>
+    <h2>${sec.title}</h2>
+    <div class="fr-sub">${sec.en}</div>
+    ${SAYS[sec.id]?`<div class="mascot-line">${MASCOT_SM}<span>${SAYS[sec.id]}</span></div>`:""}
+    ${ART[sec.id]?`<div class="pack-art">${ART[sec.id]}</div>`:""}
+    <div id="stampZone"></div>
+    ${bodyHtml}${vocabHtml}
+    <div id="inter"></div>
+    <hr class="rule">
+    <div id="qs"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:20px">
+      <button class="btn alt" onclick="showHome()">← Sommaire</button>
+      ${i<PACK.sections.length-1?`<button class="btn" onclick="showSection(${i+1})">Pièce suivante →</button>`:
+        `<button class="btn red" onclick="openReport()">Générer le rapport</button>`}
+    </div></div>`;
+  renderInteractive(sec, $("inter"));
+  renderQuestions(sec, $("qs"));
+  if(S.secDone[sec.id]) $("stampZone").innerHTML='<span class="stamp mono">VALIDÉ ✔</span>';
+  window.scrollTo(0,0);
+}
+
+/* ---- questions ---- */
+function renderQuestions(sec, host){
+  sec.questions.forEach(q=>{
+    const key=qKey(sec,q), card=document.createElement("div"); card.className="card";
+    if(q.t==="mcq"){
+      card.innerHTML=`<div class="card-tag mono">QUESTION · 10 PTS</div>
+        <div class="qtext">${esc(q.q)}</div>`;
+      const doneInfo = S.done[key];
+      q.opts.forEach((o,oi)=>{
+        const b=document.createElement("button"); b.className="opt"; b.textContent=o;
+        if(doneInfo){ b.disabled=true;
+          if(oi===q.a) b.classList.add("right");
+        } else b.onclick=()=>{
+          if(S.done[key]) return;
+          const first = !card.dataset.missed;
+          if(oi===q.a){
+            b.classList.add("right");
+            card.querySelectorAll(".opt").forEach(x=>x.disabled=true);
+            S.done[key]={pts:first?10:5};
+            addPts(first?10:5, b);
+            const e=document.createElement("div"); e.className="expl";
+            e.textContent=q.expl; card.appendChild(e);
+            checkSectionDone(sec);
+          } else { b.classList.add("wrong"); b.disabled=true; card.dataset.missed=1; }
+        };
+        card.appendChild(b);
+      });
+      if(doneInfo){ const e=document.createElement("div"); e.className="expl";
+        e.textContent=q.expl; card.appendChild(e); }
+    }
+    if(q.t==="selfcheck"){
+      card.innerHTML=`<div class="card-tag mono">RÉPONSE LIBRE · AUTO-ÉVALUATION · MAX 8 PTS</div>
+        <div class="qtext">${esc(q.q)}</div>
+        <textarea placeholder="Write your answer first — no peeking."></textarea>
+        <button class="btn alt">Reveal model answer</button><div class="sc-zone"></div>`;
+      const ta=card.querySelector("textarea"), zone=card.querySelector(".sc-zone");
+      card.querySelector("button").onclick=function(){
+        if(ta.value.trim().length<20){ zone.innerHTML='<p class="note">Write at least a couple of sentences first.</p>'; return;}
+        this.disabled=true; ta.disabled=true;
+        zone.innerHTML=`<div class="model-ans"><b>Model answer:</b> ${esc(q.model)}</div>
+          <p class="note">Honor system: how close were you?</p>`;
+        [["Nailed it",8],["Mostly",5],["Missed it",2]].forEach(([lbl,p])=>{
+          const b=document.createElement("button"); b.className="btn alt";
+          b.style.marginRight="8px"; b.textContent=lbl+" (+"+p+")";
+          b.onclick=()=>{ if(S.done[key])return;
+            S.done[key]={pts:p,ans:ta.value}; addPts(p,b);
+            zone.querySelectorAll(".btn").forEach(x=>x.disabled=true);
+            checkSectionDone(sec); };
+          zone.appendChild(b);
+        });
+      };
+      if(S.done[key]){ ta.value=S.done[key].ans||""; ta.disabled=true;
+        card.querySelector("button").disabled=true; }
+    }
+    if(q.t==="ai"){
+      card.innerHTML=`<div class="card-tag ai mono">⚡ ÉVALUATION PAR IA · MAX 20 PTS · QUEUED UNTIL ONLINE</div>
+        <div class="qtext">${esc(q.q)}</div>
+        <textarea placeholder="Your best thinking — a real AI will grade this against a rubric when you reconnect."></textarea>
+        <button class="btn">Queue for evaluation</button><div class="ai-zone"></div>`;
+      const ta=card.querySelector("textarea"), zone=card.querySelector(".ai-zone");
+      const existing = S.outbox.find(o=>o.qid===q.qid);
+      if(existing){ ta.value=existing.answer; ta.disabled=true;
+        card.querySelector("button").disabled=true;
+        zone.innerHTML = obStatusHtml(existing); }
+      card.querySelector("button").onclick=function(){
+        if(ta.value.trim().length<40){ zone.innerHTML='<p class="note">This one deserves a real answer — write more.</p>'; return; }
+        this.disabled=true; ta.disabled=true;
+        S.outbox.push({qid:q.qid,q:q.q,rubric:q.rubric,answer:ta.value,status:"queued"});
+        zone.innerHTML='<p class="note">✉ Queued. Open "À évaluer" when you have a connection.</p>';
+        renderBadge();
+      };
+      host.appendChild(card); return;
+    }
+    host.appendChild(card);
+  });
+}
+function checkSectionDone(sec){
+  const core = sec.questions.filter(q=>q.t!=="ai");
+  if(core.every(q=>S.done[qKey(sec,q)]) && !S.secDone[sec.id]){
+    S.secDone[sec.id]=true;
+    persist();
+    const z=$("stampZone"); if(z) z.innerHTML='<span class="stamp mono">VALIDÉ ✔</span>';
+  }
+}
+function obStatusHtml(o){
+  if(o.status==="done") return `<div class="ob-fb"><b>${o.score}/20</b> — ${esc(o.feedback)}</div>`;
+  if(o.status==="error") return `<p class="note">Evaluation failed — retry from the outbox.</p>`;
+  return '<p class="note">✉ Queued for evaluation.</p>';
+}
+/* ---- interactives ---- */
+function renderInteractive(sec, host){
+  if(sec.interactive==="whose") return interWhose(host);
+  if(sec.interactive==="vote") return interVote(host);
+  if(sec.interactive==="riviera") return interRiviera(host);
+}
+
+/* Whose is Nice? step through the owners across 2,400 years */
+function interWhose(host){
+  const ERAS=[
+    ["~350 BC","GRECS","#2E7D46","Founded as Nikaia by Greeks from Massalia (Marseille)."],
+    ["~50 BC","ROME","#E39A1D","Roman Cemenelum on the hill of Cimiez — amphitheatre and baths."],
+    ["Moyen Âge","PROVENCE","#8a5a1e","A Provençal town of the Mediterranean world."],
+    ["1388–1792","SAVOIE","#C21F30","~400 years under Savoy / Sardinia, its capital Turin. Nissart, not French."],
+    ["1793–1814","FRANCE","#16345F","Seized during the Revolution and by Napoleon — then handed straight back."],
+    ["1815–1860","SAVOIE","#C21F30","Returned to Savoy the moment Napoleon fell."],
+    ["1860 →","FRANCE","#16345F","Traded to France in the Treaty of Turin — French ever since, and only since."]
+  ];
+  const seen={};
+  host.innerHTML=`<div class="card"><div class="card-tag mono">FRISE · À QUI APPARTIENT NICE ? · +8 PTS</div>
+   <div class="qtext">Nice changed hands again and again. Tap each era to see who held it — and how recent « French » really is.</div>
+   <div class="chips" id="whChips"></div>
+   <div id="whOut" style="margin-top:6px"></div></div>`;
+  const c=host.querySelector("#whChips");
+  ERAS.forEach((e,i)=>{
+    const b=document.createElement("button");b.className="chip";b.textContent=e[0];
+    b.onclick=()=>{
+      seen[i]=1;
+      [...c.children].forEach(x=>x.style.fontWeight="");b.style.fontWeight="700";
+      host.querySelector("#whOut").innerHTML=`<div class="expl"><b class="mono" style="color:${e[2]}">${e[1]}</b> &mdash; ${e[3]}</div>`;
+      if(Object.keys(seen).length>=ERAS.length && !S.done["whose"]){
+        S.done["whose"]={pts:8}; addPts(8,host.querySelector("#whOut"));
+        const x=document.createElement("div");x.className="expl";
+        x.innerHTML="<b>Seven owners in 2,400 years</b> — and « French » is the newest chapter of all. A place's flag is just its most recent layer.";
+        host.querySelector("#whOut").appendChild(x);
+      }
+    };
+    c.appendChild(b);
+  });
+}
+
+/* The 1860 vote: public (as it happened) vs a secret ballot */
+function interVote(host){
+  let tried={};
+  host.innerHTML=`<div class="card"><div class="card-tag mono">SIMULATEUR · LE VOTE DE 1860 · +8 PTS</div>
+   <div class="qtext">Nice was voted into France in 1860. Run the same vote two ways and watch the result change.</div>
+   <div class="hi-actions"><button class="btn" id="vPub">Vote public (comme en 1860)</button>
+     <button class="btn alt" id="vSec">Vote secret (imaginaire)</button></div>
+   <div style="height:22px;border:1.5px solid #16345F;margin:12px 0;position:relative;background:#F8ECEC">
+     <div id="vFill" style="position:absolute;left:0;top:0;bottom:0;width:0;background:#2E7D46;transition:width .5s"></div>
+     <span id="vPct" class="mono" style="position:absolute;right:6px;top:2px;font-size:12px;font-weight:700"></span></div>
+   <div id="vOut" class="mono" style="font-size:13px"></div></div>`;
+  function show(kind){
+    tried[kind]=1;
+    if(kind==="pub"){
+      host.querySelector("#vFill").style.width="99%";
+      host.querySelector("#vPct").textContent="99% OUI";
+      host.querySelector("#vOut").innerHTML="<b>Officially: 25,743 oui, ~160 non.</b> But the ballot was OPEN, with officials, army and clergy watching — voting « non » took real courage. A 99% result measures pressure, not opinion.";
+    } else {
+      host.querySelector("#vFill").style.width="60%";
+      host.querySelector("#vPct").textContent="? OUI";
+      host.querySelector("#vOut").innerHTML="<b>With a real secret ballot?</b> Historians think « oui » would still likely have won — Nice had real reasons to prefer wealthy France — but nowhere near 99%. The honest answer is: <b>we can never know.</b> That uncertainty IS the lesson.";
+    }
+    if(tried.pub && tried.sec && !S.done["vote"]){
+      S.done["vote"]={pts:8}; addPts(8,host.querySelector("#vOut"));
+    }
+  }
+  host.querySelector("#vPub").onclick=()=>show("pub");
+  host.querySelector("#vSec").onclick=()=>show("sec");
+}
+
+/* Who really invented the "French Riviera"? tap to reveal */
+function interRiviera(host){
+  const ITEMS=[
+    ["The Promenade des Anglais","LES ANGLAIS","Funded by wealthy English winter visitors in 1820 — literally « the walkway of the English »."],
+    ["The Orthodox cathedral","LES RUSSES","Built by and for the Russian aristocrats who wintered in Nice."],
+    ["The name « Côte d'Azur »","UN ÉCRIVAIN","Coined in 1887 as a book title by Stéphen Liégeard — who lived in Burgundy, not on the coast."],
+    ["« Winter in the sun » itself","LES TOURISTES","The whole idea of the Riviera as a glamour resort was largely invented by foreign visitors."]
+  ];
+  host.innerHTML=`<div class="card"><div class="card-tag mono">DOSSIER · QUI A INVENTÉ LA CÔTE D'AZUR ? · +8 PTS</div>
+   <div class="qtext">Tap each famous « French Riviera » icon to reveal who actually made it.</div>
+   <div id="rvRows"></div><div id="rvOut"></div></div>`;
+  const rows=host.querySelector("#rvRows");let seen=0;
+  ITEMS.forEach(it=>{
+    const b=document.createElement("button");b.className="opt";b.textContent=it[0];
+    b.onclick=()=>{
+      if(b.disabled)return; b.disabled=true; b.classList.add("right");
+      b.innerHTML=`${it[0]} &nbsp; <b class="mono" style="color:#C21F30">→ ${it[1]}</b>`;
+      const e=document.createElement("div");e.className="expl";e.textContent=it[2];b.after(e);
+      seen++;
+      if(seen>=ITEMS.length && !S.done["riviera"]){
+        S.done["riviera"]={pts:8}; addPts(8,host.querySelector("#rvOut"));
+        host.querySelector("#rvOut").innerHTML='<div class="expl"><b>The most « French » coast on Earth was largely built and branded by outsiders.</b> A story repeated often enough simply becomes « the truth ».</div>';
+      }
+    };
+    rows.appendChild(b);
+  });
+}
+
+/* ---- outbox / AI evaluation ---- */
+function renderBadge(){
+  persist();
+  const q=S.outbox.filter(o=>o.status!=="done").length;
+  $("obBadge").style.display=q?"inline-block":"none";
+  $("obBadge").textContent=q;
+}
+function openOutbox(){
+  const m=$("modalIn");
+  let h=`<h3>À Évaluer — Answer Outbox</h3>`;
+  if(!S.outbox.length) h+=`<p class="note">Nothing queued yet. The ⚡ questions in the dossier land here.</p>`;
+  S.outbox.forEach(o=>{
+    h+=`<div class="ob-item"><div class="ob-status mono">${o.status==="done"?"✔ ÉVALUÉ":o.status==="error"?"✖ ERREUR":o.status==="sending"?"… ENVOI":"✉ EN ATTENTE"}</div>
+      <div class="ob-q">${esc(o.q)}</div><div class="ob-a">${esc(o.answer)}</div>
+      ${o.status==="done"?`<div class="ob-fb"><b>${o.score}/20</b> — ${esc(o.feedback)}</div>`:""}</div>`;
+  });
+  const pending=S.outbox.filter(o=>o.status==="queued"||o.status==="error").length;
+  h+=`<button class="btn" id="obSend" ${pending?"":"disabled"}>Evaluate ${pending} answer(s) now (needs connection)</button>
+      <button class="btn alt" onclick="closeModal()">Close</button>
+      <p class="note" id="obMsg"></p>`;
+  m.innerHTML=h; $("modal").classList.add("open");
+  const sb=$("obSend"); if(sb) sb.onclick=sendOutbox;
+}
+async function sendOutbox(){
+  $("obMsg").textContent="Contacting the evaluator…";
+  for(const o of S.outbox){
+    if(o.status==="done") continue;
+    o.status="sending";
+    try{
+      const resp=await fetch(CONFIG.aiEndpoint,{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:CONFIG.aiModel,max_tokens:1000,messages:[{role:"user",
+          content:`You are grading a bright 12-15 year old's answer in a learning game about the history of Nice on the Côte d'Azur. Question: "${o.q}"\nGrading rubric: ${o.rubric}\nStudent answer: "${o.answer}"\nRespond with ONLY a JSON object, no markdown fences, no preamble: {"score": <integer 0-20>, "feedback": "<2-4 encouraging but honest sentences: what was strong, what was missing, one thing to think about next>"}`}]})});
+      const data=await resp.json();
+      const txt=(data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("\n");
+      const parsed=JSON.parse(txt.replace(/```json|```/g,"").trim());
+      o.score=Math.max(0,Math.min(20,parseInt(parsed.score)||0));
+      o.feedback=parsed.feedback||"Evaluated.";
+      o.status="done";
+      const key="ai::"+o.qid;
+      if(!S.done[key]){ S.done[key]={pts:o.score}; S.pts+=o.score; renderGauge(); }
+    }catch(e){ o.status="error"; }
+  }
+  renderBadge(); openOutbox();
+  $("obMsg").textContent=S.outbox.some(o=>o.status==="error")?
+    "Some evaluations failed — check your connection and retry.":"All evaluated. Scores added to your PRESTIGE.";
+}
+function closeModal(){ $("modal").classList.remove("open"); }
+
+/* ---- save / restore ---- */
+function openSave(){
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+  $("modalIn").innerHTML=`<h3>Code de Sauvegarde</h3>
+  <p class="note">Copy this code somewhere safe (notes app / message it to a parent). Paste it back here to restore your progress on any device or after closing the app.</p>
+  <textarea id="saveCode" style="min-height:120px" class="mono">${code}</textarea>
+  <button class="btn" id="copyBtn">Copy code</button>
+  <hr class="rule">
+  <p class="note">Restore: paste a code above, then —</p>
+  <button class="btn alt" id="loadBtn">Load pasted code</button>
+  <button class="btn alt" onclick="closeModal()">Close</button>
+  <hr class="rule">
+  <p class="saveflag mono">${STORE.ok?"✔ AUTO-SAVE ACTIVE ON THIS DEVICE":"⚠ AUTO-SAVE UNAVAILABLE HERE — KEEP THE CODE ABOVE"}</p>
+  <p class="note">Progress saves automatically as you go. The code is only needed to move to another device or browser.</p>
+  <button class="btn red" id="resetBtn">Start over (erase progress)</button>
+  <p class="note" id="saveMsg"></p>`;
+  $("modal").classList.add("open");
+  $("copyBtn").onclick=async()=>{ try{ await navigator.clipboard.writeText($("saveCode").value);
+    $("saveMsg").textContent="Copied.";}catch(e){ $("saveCode").select();
+    $("saveMsg").textContent="Select-all and copy manually."; } };
+  $("resetBtn").onclick=()=>{
+    if(!confirm("Erase all progress on this device and start over?"))return;
+    wiped=true;clearTimeout(persistTimer);STORE.clear();location.reload();
+  };
+  $("loadBtn").onclick=()=>{ try{
+      const obj=JSON.parse(decodeURIComponent(escape(atob($("saveCode").value.trim()))));
+      Object.assign(S,obj); persistNow(); renderGauge(); renderBadge(); showHome(); closeModal();
+    }catch(e){ $("saveMsg").textContent="That code didn't parse — check it copied fully."; } };
+}
+
+/* ---- report export ---- */
+function openReport(){
+  const p=S.profile||{name:"Agent",emoji:"🕵️"};
+  const aiRows=S.outbox.map(o=>`<div style="border:1px solid #999;padding:10px;margin:10px 0">
+    <b>${esc(o.q)}</b><p><i>${esc(o.answer)}</i></p>
+    ${o.status==="done"?`<p><b>Score ${o.score}/20.</b> ${esc(o.feedback)}</p>`:"<p>(not yet evaluated)</p>"}</div>`).join("")||"<p>No written briefs submitted.</p>";
+  const vocabRows=PACK.sections.flatMap(s=>s.vocab).map(v=>`<tr><td style="padding:4px 12px 4px 0"><i>${v[0]}</i></td><td>${v[1]}</td></tr>`).join("");
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rapport — ${esc(p.name)}</title>
+  <style>body{font-family:Georgia,serif;max-width:640px;margin:24px auto;padding:0 16px;color:#22262E;background:#F4F2EA}
+  h1,h2{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;color:#16345F}
+  .stamp{border:3px solid #2E7D46;color:#2E7D46;display:inline-block;padding:2px 14px;transform:rotate(-4deg);font-weight:700}</style></head><body>
+  <p style="letter-spacing:.2em;font-size:11px">RÉPUBLIQUE FRANÇAISE · RAPPORT DE MISSION</p>
+  <h1>${p.emoji} ${esc(p.name)} — Nice</h1>
+  <p><span class="stamp">GRADE FINAL: ${rank()} · ${S.pts} PTS</span></p>
+  <p>Sections validated: ${Object.keys(S.secDone).length} / ${PACK.sections.length-1}</p>
+  <h2>Ministerial briefs & AI feedback</h2>${aiRows}
+  <h2>Vocabulaire acquis</h2><table>${vocabRows}</table>
+  <p style="font-size:12px;color:#666">Generated ${new Date().toLocaleDateString()} · Mission Packs · Région Provence</p>
+  </body></html>`;
+  const blob=new Blob([html],{type:"text/html"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`rapport-${(p.name||"agent").toLowerCase().replace(/\s+/g,"-")}.html`;
+  a.click();
+}
+
+/* ---- network indicator ---- */
+function netUpdate(){
+  const on=navigator.onLine, el=$("netInd");
+  el.classList.toggle("on",on);
+  el.innerHTML=`<span class="dot"></span>${on?"EN LIGNE":"HORS LIGNE"}`;
+}
+addEventListener("online",netUpdate); addEventListener("offline",netUpdate);
+
+/* ---- profile setup ---- */
+function setup(){
+  $("modalIn").innerHTML=`<h3>Identification de l'agent</h3>
+  <div class="setup"><p>Your name, clerk:</p>
+  <input id="pname" maxlength="20" placeholder="Prénom">
+  <p>Choose your official seal:</p><div class="emoji-row" id="emos"></div>
+  <button class="btn" id="goBtn">Ouvrir le dossier</button></div>`;
+  let emoji="🕵️";
+  ["🕵️","⚡","🥖","🦖","🚀","🐸","👑","🔬"].forEach(e=>{
+    const b=document.createElement("button"); b.textContent=e;
+    if(e===emoji) b.classList.add("sel");
+    b.onclick=()=>{ emoji=e; $("emos").querySelectorAll("button").forEach(x=>x.classList.remove("sel")); b.classList.add("sel"); };
+    $("emos").appendChild(b);
+  });
+  $("modal").classList.add("open");
+  $("goBtn").onclick=()=>{
+    S.profile={name:$("pname").value.trim()||"Agent X",emoji};
+    $("hdUser").textContent=emoji+" "+S.profile.name;
+    persistNow(); closeModal(); showHome();
+  };
+}
+
+/* ---- boot ---- */
+$("dockHome").onclick=showHome;
+$("dockOutbox").onclick=openOutbox;
+$("dockSave").onclick=openSave;
+$("dockReport").onclick=openReport;
+$("modal").onclick=e=>{ if(e.target.id==="modal") closeModal(); };
+(function boot(){
+  const saved=STORE.load();
+  if(saved&&saved.profile){
+    Object.assign(S,saved);
+    $("hdUser").textContent=(S.profile.emoji||"")+" "+(S.profile.name||"");
+    renderGauge(); renderBadge(); netUpdate(); showHome();
+    toast("Bon retour, "+(S.profile.name||"")+" — progress restored ("+S.pts+" pts)");
+  } else {
+    renderGauge(); renderBadge(); netUpdate(); renderTOC(); setup();
+  }
+})();
+</script>
+</body>
+</html>
