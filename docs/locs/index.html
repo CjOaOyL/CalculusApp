@@ -156,6 +156,13 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 .attrs th,.attrs td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 .attrs th{color:var(--muted);font-weight:500;width:38%}
 .attrs td{font-family:var(--mono);font-size:.8rem}
+.profile-dl{display:grid;grid-template-columns:minmax(120px,30%) minmax(0,1fr);gap:6px 12px;margin:0;font-size:.88rem}
+.profile-dl dt{color:var(--muted);padding-top:1px}
+.profile-dl dd{margin:0}
+.profile-dl ul{margin:0;padding-left:16px}
+.profile-dl li{margin:1px 0}
+.cmp td.txt{font-family:var(--body);font-size:.82rem;line-height:1.4;max-width:34ch}
+.cmp td.txt ul{margin:0;padding-left:14px}
 .photos{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .photos a{font-size:.82rem;border:1px solid var(--line);border-radius:999px;padding:4px 10px;text-decoration:none;color:var(--fg)}
 .photos a:hover{border-color:var(--accent)}
@@ -206,7 +213,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 <body>
 <header class="top">
   <div class="wrap">
-    <div class="brand"><h1>Loc Style Finder</h1><span class="sub">38 men's loc styles, scored on 17 attributes</span></div>
+    <div class="brand"><h1>Loc Style Finder</h1><span class="sub">38 men's loc styles, scored on 21 attributes</span></div>
     <nav class="tabs" role="tablist" id="tabs">
       <button class="tab" role="tab" data-view="browse" aria-selected="true">Browse</button>
       <button class="tab" role="tab" data-view="duel">Head-to-head</button>
@@ -221,7 +228,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 <main class="wrap">
   <!-- BROWSE -->
   <section class="view on" id="view-browse">
-    <p class="lede">Every style is reduced to the same 17 attributes (thickness, length, how the sides are cut, how tidy the roots are, how it is worn, colour, upkeep, what the crown and the nape look like, and so on). Similarity is computed from those attributes only, never from a photo or the person wearing it. Open a style to see the closest matches and the furthest contrasts.</p>
+    <p class="lede">Every style is reduced to the same 21 attributes (thickness, length, how the sides are cut, how the loc body is constructed, section size, ends, maturity needed, how tidy the roots are, how it is worn, colour, upkeep, what the crown and the nape look like, and so on), plus a written construction profile. Similarity is computed from those attributes only, never from a photo or the person wearing it. Open a style to see the closest matches and the furthest contrasts.</p>
     <div class="browse">
       <aside class="rail" id="rail"></aside>
       <div>
@@ -286,7 +293,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
   <!-- ABOUT -->
   <section class="view" id="view-about">
     <h2 style="font-size:1.5rem">How similarity is scored</h2>
-    <p class="lede">Each style is a point in a 17-attribute space. Distance between two styles is a weighted average of per-attribute differences: numeric attributes contribute how far apart they are on their scale, categorical ones contribute 0 (same) or 1 (different). Similarity is 1 minus that distance. Heavier weights go to the attributes a barber or loctician would name first: thickness, length and how the sides are cut.</p>
+    <p class="lede">Each style is a point in a 21-attribute space. Distance between two styles is a weighted average of per-attribute differences: numeric attributes contribute how far apart they are on their scale, categorical ones contribute 0 (same) or 1 (different). Similarity is 1 minus that distance. Heavier weights go to the attributes a barber or loctician would name first: thickness, length and how the sides are cut.</p>
     <div class="about" id="about"></div>
   </section>
 </main>
@@ -554,13 +561,23 @@ function swatchSVG(s){
     else {
       o.push(`<rect x="${x0}" y="${f1(yTop-1)}" width="${x1-x0}" height="${f1(h+2)}" rx="${f1(h/2+1)}" fill="var(--hair-dk)"/><rect x="${x0+1}" y="${f1(yTop)}" width="${x1-x0-2}" height="${f1(h)}" rx="${f1(h/2)}" fill="url(#${gid})"/>`);
       o.push(`<rect x="${x0+6}" y="${f1(yTop+h*0.12)}" width="${x1-x0-12}" height="${f1(Math.max(1.2,h*0.16))}" rx="1" fill="var(--hair-hi)" fill-opacity=".6"/>`);
-      const step=s.surface==='Coiled'?Math.max(4,h*0.35):Math.max(7,h*0.75);
-      for(let x=x0+step;x<x1-2;x+=step){
-        if(s.surface==='Twisted rope') o.push(`<line x1="${f1(x-h*0.35)}" y1="${f1(yTop+h*0.15)}" x2="${f1(x+h*0.35)}" y2="${f1(yTop+h*0.85)}" stroke="var(--hair-hi)" stroke-width="${f1(Math.max(1.2,h*0.12))}" stroke-linecap="round"/>`);
-        if(s.surface==='Braided imprint') o.push(`<path d="M${f1(x-h*0.35)} ${f1(yTop+h*0.15)} L${f1(x)} ${f1(yTop+h*0.8)} L${f1(x+h*0.35)} ${f1(yTop+h*0.15)}" stroke="var(--hair-hi)" stroke-width="${f1(Math.max(1.2,h*0.11))}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
-        if(s.surface==='Coiled') o.push(`<line x1="${f1(x)}" y1="${f1(yTop+h*0.1)}" x2="${f1(x)}" y2="${f1(yTop+h*0.9)}" stroke="var(--hair-hi)" stroke-width="1.2" stroke-linecap="round"/>`);
-        if(s.surface==='Woven'&&Math.round((x-x0)/step)%2) o.push(`<rect x="${f1(x-step*0.45)}" y="${f1(yTop+2)}" width="${f1(step*0.9)}" height="${f1(h-4)}" fill="var(--hair-hi)" fill-opacity=".35"/>`);
-      }
+      // structure: real strands for twisted and braided locs, a spring for coils
+      const wave=(amp,period,phase,yc)=>{ let d=''; for(let x=x0+2;x<=x1-2;x+=2){ const y=yc+amp*Math.sin((x-x0)/period*Math.PI*2+phase); d+=(d?' L':'M')+f1(x)+' '+f1(y);} return d; };
+      if(s.surface==='Twisted rope'){ // two strands wrapping each other: each strand is a sine, half a turn apart
+        const period=Math.max(12,h*2.2), sw2=h*0.5;
+        for(const [ph,col] of [[0,'var(--hair)'],[Math.PI,'var(--hair-hi)']]){ const d=wave(h*0.26,period,ph,ym); o.push(`<path d="${d}" stroke="var(--hair-dk)" stroke-width="${f1(sw2+1.6)}" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${col}" stroke-width="${f1(sw2)}" fill="none" stroke-linecap="round"/>`); }
+        // front strand passes over the back one every half turn: redraw the dark strand's crossings on top
+        for(let x=x0+period*0.25;x<x1;x+=period){ const seg=wave(h*0.26,period,0,ym).split(' L').filter(pt=>{const px=+pt.replace('M','').split(' ')[0];return px>x-period*0.22&&px<x+period*0.22;}); if(seg.length>2) o.push(`<path d="M${seg.map(t=>t.replace('M','')).join(' L')}" stroke="var(--hair-dk)" stroke-width="${f1(sw2+1.6)}" fill="none" stroke-linecap="round"/><path d="M${seg.map(t=>t.replace('M','')).join(' L')}" stroke="var(--hair)" stroke-width="${f1(sw2)}" fill="none" stroke-linecap="round"/>`); }
+        o.push(`<text x="${x1}" y="27" text-anchor="end" font-family="var(--mono)" font-size="7.5" fill="var(--guide-ink)" stroke="var(--pic)" stroke-width="3" paint-order="stroke">two strands, each wrapping the other</text>`);
+      } else if(s.surface==='Braided imprint'){ // three strands a third of a turn apart
+        const period=Math.max(12,h*1.9), sw3=h*0.4;
+        [[0,'var(--hair)'],[2*Math.PI/3,'var(--hair-hi)'],[4*Math.PI/3,'var(--hair)']].forEach(([ph,col],i)=>{ const d=wave(h*0.3,period,ph,ym); o.push(`<path d="${d}" stroke="var(--hair-dk)" stroke-width="${f1(sw3+1.6)}" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${col}" stroke-width="${f1(sw3)}" fill="none" stroke-linecap="round" stroke-opacity="${i===2?'.85':'1'}"/>`); });
+        o.push(`<text x="${x1}" y="27" text-anchor="end" font-family="var(--mono)" font-size="7.5" fill="var(--guide-ink)" stroke="var(--pic)" stroke-width="3" paint-order="stroke">three strands plaited</text>`);
+      } else if(s.surface==='Coiled'){ // spring: rings around the body
+        const step=Math.max(4,h*0.42);
+        for(let x=x0+step;x<x1-2;x+=step){ o.push(`<path d="M${f1(x-step*0.3)} ${f1(yTop+h*0.08)} Q${f1(x+step*0.35)} ${f1(ym)} ${f1(x-step*0.3)} ${f1(yTop+h*0.92)}" stroke="var(--hair-hi)" stroke-width="${f1(Math.max(1.2,h*0.1))}" fill="none" stroke-linecap="round"/>`); }
+        o.push(`<text x="${x1}" y="27" text-anchor="end" font-family="var(--mono)" font-size="7.5" fill="var(--guide-ink)" stroke="var(--pic)" stroke-width="3" paint-order="stroke">one strand wound into a spring</text>`);
+      } else if(s.surface==='Woven'){ const step=Math.max(7,h*0.75); for(let x=x0+step;x<x1-2;x+=step) if(Math.round((x-x0)/step)%2) o.push(`<rect x="${f1(x-step*0.45)}" y="${f1(yTop+2)}" width="${f1(step*0.9)}" height="${f1(h-4)}" fill="var(--hair-hi)" fill-opacity=".35"/>`); }
     }
   }
   o.push(`<text x="${x0}" y="14" font-family="var(--mono)" font-size="9" fill="var(--guide-ink)" stroke="var(--pic)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">≈ ${mm} mm wide · ${s.surface.toLowerCase()}</text>`);
@@ -779,15 +796,16 @@ function card(s,opts={}){
 const FILTERS=[
   {key:'thickness',label:'Thickness'},{key:'length',label:'Length'},{key:'sides',label:'Sides'},
   {key:'neatness',label:'Root discipline'},{key:'arrange',label:'Worn'},{key:'color',label:'Colour'},
-  {key:'maint',label:'Upkeep'},{key:'permanent',label:'Permanence',cat:true},{key:'group',label:'Family',cat:true},
+  {key:'maint',label:'Upkeep'},{key:'method',label:'Construction',cat:true},{key:'stage',label:'Maturity needed'},
+  {key:'ends',label:'Ends',cat:true},{key:'permanent',label:'Permanence',cat:true},{key:'group',label:'Family',cat:true},
 ];
 function renderRail(){
   const rail=$('#rail');
   rail.innerHTML=FILTERS.map((f,i)=>{
     const a=AT[f.key];
     let opts;
-    if(f.key==='group') opts=[...new Set(STYLES.map(s=>s.group))].map(g=>({v:g,l:g}));
-    else if(f.key==='permanent') opts=[{v:true,l:'Permanent'},{v:false,l:'Temporary'}];
+    if(f.key==='permanent') opts=[{v:true,l:'Permanent'},{v:false,l:'Temporary'}];
+    else if(f.cat) opts=[...new Set(STYLES.map(s=>s[f.key]))].map(g=>({v:g,l:g}));
     else opts=a.levels.map((l,v)=>l?{v,l}:null).filter(Boolean);
     const sel=filters[f.key]||[];
     return `<details ${i<3||sel.length?'open':''}><summary>${f.label}${sel.length?` <span class="sim-pct">(${sel.length})</span>`:''}</summary>
@@ -854,6 +872,8 @@ function openDetail(id,view){
           <tr><th>Retwist / restyle</th><td>${esc(s.retwist)}</td></tr>
           <tr><th>Hair it suits</th><td>${esc(s.hair)}</td></tr>
         </tbody></table>
+        <h3 style="font-size:1.1rem;margin:18px 0 6px">Construction profile</h3>
+        <dl class="profile-dl">${DETAIL_FIELDS.map(f=>s[f.key]?`<dt>${f.label}</dt><dd>${f.list?`<ul>${s[f.key].map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:esc(s[f.key])}</dd>`:'').join('')}</dl>
       </div>
     </div>
     <div class="rel">
@@ -954,10 +974,13 @@ function renderCompare(){
   const rows=[...ATTRS.map(a=>({label:a.label,vals:cs.map(s=>fmtAttr(s,a)),diff:cs.some((s,i)=>i&&attrDist(s,cs[0],a)>(a.type==='cat'?0:0.13))})),
     {label:'Retwist / restyle',vals:cs.map(s=>s.retwist),diff:new Set(cs.map(s=>s.retwist)).size>1},
     {label:'Hair it suits',vals:cs.map(s=>s.hair),diff:new Set(cs.map(s=>s.hair)).size>1}];
+  const prof=DETAIL_FIELDS.map(f=>({label:f.label,list:f.list,vals:cs.map(s=>s[f.key]||'')}));
   el.innerHTML=`<div class="pairs">${pairs.join('')}</div>
   <div class="cmpwrap"><table class="cmp"><thead><tr><th></th>${cs.map(s=>`<th><div class="pic">${vis(s,'front',true)}</div>${esc(s.name)}<div style="margin-top:6px;display:flex;gap:4px"><button class="btn sm" data-open="${s.id}">Open</button><button class="btn sm" data-cmp="${s.id}" title="Remove">✕</button></div></th>`).join('')}</tr></thead>
   <tbody>${['side','back','top'].map(v=>`<tr><th>${VIEW_LABEL[v]} view</th>${cs.map(s=>`<td class="vis"><div class="pic ${v}" style="width:120px;${v==="top"?"aspect-ratio:1/1":"aspect-ratio:200/310"}">${vis(s,v)}</div></td>`).join('')}</tr>`).join('')}<tr><th>One loc, true scale</th>${cs.map(s=>`<td class="vis">${swatch(s)}</td>`).join('')}</tr>
-  ${rows.map(r=>`<tr class="${r.diff?'diff':''}"><th>${r.label}</th>${r.vals.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+  ${rows.map(r=>`<tr class="${r.diff?'diff':''}"><th>${r.label}</th>${r.vals.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}
+  <tr><th colspan="${cs.length+1}" style="background:var(--surface-2);font-weight:700;color:var(--fg)">Construction profile</th></tr>
+  ${prof.map(r=>`<tr><th>${r.label}</th>${r.vals.map(v=>`<td class="txt">${r.list?`<ul>${(v||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
   <p class="note" style="margin-top:10px">Highlighted rows differ from the first column. ${cs.length<4?'Up to four styles can be compared.':''}</p>`;
 }
 
