@@ -40,6 +40,10 @@ const ATTRS = [
    why:'The method that forms the locs.'},
   {key:'parting', label:'Parting pattern', type:'cat', w:0.4,
    why:'Shape of the sections on the scalp.'},
+  {key:'crown', label:'Crown, seen from above', type:'cat', w:0.6,
+   why:'What the top of the head shows: a grid of loc bases, a knot, rows, or an unparted mat.'},
+  {key:'nape', label:'Nape, seen from behind', type:'cat', w:0.6,
+   why:'What the back of the neck shows: locs falling down the back, a tail, a bare faded nape, or a hard shaved edge.'},
 ];
 const AT = Object.fromEntries(ATTRS.map(a=>[a.key,a]));
 
@@ -200,6 +204,35 @@ const STYLES = [
    thickness:4,length:3,sides:0,neatness:2,roots:0,arrange:0,color:0,maint:2,count:50,surface:'Matted / organic',formality:2,months:0,permanent:false,start:'Crochet-wrapped over braids',parting:'Square grid',
    retwist:'none; remove at 6–8 weeks', hair:'any texture, 3+ inches'}),
 ];
+/* crown and nape are what the top and back vantage points show; derived from the other attributes unless a style sets them */
+function deriveCrown(s){
+  if(s.id==='wicks') return 'Few thick upright stalks';
+  if(s.id==='bantu') return 'Cluster of coiled knots';
+  if(s.arrange===2) return 'Knot on the crown, bases hidden';
+  if(s.arrange===1) return 'Knot at the back of the crown, bases visible in front';
+  if(s.roots===1) return 'Thick rope twists running front to back';
+  if(s.roots===2) return 'Cornrow lines running front to back';
+  if(/lattice/i.test(s.parting)) return 'Woven lattice across the crown';
+  if(s.neatness===1) return 'Unparted, merged mat';
+  if(s.neatness===2) return 'Loosely separated, uneven bases';
+  if(/spider/i.test(s.parting)) return 'Radiating spider-web parts';
+  if(s.sides===4) return 'Narrow strip of bases down the centre';
+  if(s.thickness<=2) return 'Dense fine grid of small bases';
+  if(s.thickness>=4) return 'Coarse grid of large bases';
+  return 'Even grid of bases';
+}
+function deriveNape(s){
+  if(s.id==='ponytail'||s.id==='fishtail') return 'Single tail down the back, nape covered';
+  if(s.arrange===2) return 'Bare nape, locs lifted into the knot';
+  if(s.sides>=3) return 'Shaved nape with a hard edge';
+  if(s.sides===2) return 'Faded to skin at the nape';
+  if(s.sides===1) return 'Tapered into the neckline';
+  if(s.arrange===3) return 'Natural hairline, locs stand away from the neck';
+  if(s.length<=2) return 'Natural hairline, locs end above the collar';
+  if(s.length>=4) return 'Locs cover the back to below the shoulder blades';
+  return 'Locs fall over the nape to the shoulders';
+}
+for(const s of STYLES){ s.crown=s.crown||deriveCrown(s); s.nape=s.nape||deriveNape(s); }
 const BY = Object.fromEntries(STYLES.map(s=>[s.id,s]));
 
 /* ---------------- sources ---------------- */
@@ -223,11 +256,20 @@ const SOURCES = [
 ];
 
 
-/* ---------------- photo prompt ----------------
-   One fixed template for every style: same man, same framing, same light, same backdrop.
-   Only the hair sentences change, so generated photos can be compared on the hairstyle alone. */
-const PROMPT_SUBJECT = 'Photorealistic studio portrait photograph of an adult Black man in his early thirties with medium-dark skin, neutral calm expression, looking straight into the camera, head and shoulders, front view, centred, wearing a plain black crew-neck t-shirt, plain charcoal grey seamless backdrop, soft even key light with gentle fill, 85 mm lens, f/5.6, tack-sharp focus on the hair texture, natural colour, no accessories, no jewellery, no hat.';
-const PROMPT_NEGATIVE = 'cartoon, illustration, painting, 3d render, anime, blurry, low resolution, extra people, hands, hat, glasses, text, watermark, logo, deformed face, uneven eyes, cropped head, side profile, back view';
+/* ---------------- photo prompts, one per vantage point ----------------
+   One fixed template for every style and angle: same man, same light, same backdrop.
+   Only the camera sentence and the hair sentences change, so generated photos can be
+   compared on the hairstyle alone. */
+const VIEWS=['front','side','back','top'];
+const VIEW_LABEL={front:'Front',side:'Side',back:'Back',top:'Top'};
+const SUBJECT_BASE='Photorealistic studio photograph of an adult Black man in his early thirties with medium-dark skin, neutral calm expression, wearing a plain black crew-neck t-shirt, plain charcoal grey seamless backdrop, soft even key light with gentle fill, 85 mm lens, f/5.6, tack-sharp focus on the hair texture, natural colour, no accessories, no jewellery, no hat.';
+const VIEW_CAMERA={
+  front:'Head and shoulders, front view, looking straight into the camera, head centred, camera at eye level.',
+  side:'Head and shoulders in strict left profile, the subject faces the left edge of the frame, camera at eye level, the ear, temple and hairline above the ear clearly visible.',
+  back:'Head and shoulders seen from directly behind, the back of the head centred, camera at eye level, no face visible, the nape of the neck and the collar of the t-shirt visible.',
+  top:'Photographed from directly above the head looking straight down at the crown, the top of the head fills the frame, forehead toward the bottom edge, shoulders just visible, showing the parting pattern and the base of every loc.'
+};
+const PROMPT_NEGATIVE='cartoon, illustration, painting, 3d render, anime, blurry, low resolution, extra people, hands, hat, glasses, text, watermark, logo, deformed face, uneven eyes, cropped head, wrong camera angle';
 const LENGTH_WORDS=['','very short starter locs about 2 to 4 inches long that barely move','short locs ending around the ears','medium locs falling between the chin and the shoulders','long locs reaching the chest','very long locs reaching the waist'];
 const SIDES_WORDS=['a full head of locs with no shaved areas','locs on top with the sides and back tapered shorter toward the neckline','locs on top with the sides and back cut in a clean skin fade','locs on top with the sides and back buzzed to a short undercut with a hard edge','a mohawk strip of locs down the centre with the sides faded almost to the skin'];
 const NEAT_WORDS=['','freeform locs that formed on their own with no parting, uneven widths and some merged together','semi-freeform locs with loosely separated roots but naturally uneven, rugged bodies','neatly manicured locs with clean, freshly retwisted roots and even parts','locs installed on a precise, perfectly uniform grid with tightly retightened roots'];
@@ -236,19 +278,26 @@ const WORN_WORDS=['the locs hang freely','the top half of the locs is gathered i
 const COLOR_WORDS=['natural near-black hair colour throughout','natural near-black locs with the last few inches dyed honey blonde','natural near-black roots blending gradually into honey blonde ends in an ombre','the locs are fully bleached to a warm honey blonde from root to tip'];
 const SURFACE_WORDS={'Smooth round':'each loc is a smooth, cylindrical rope with a tidy surface','Twisted rope':'each loc shows a visible spiral two-strand twist pattern along its length','Braided imprint':'each loc shows a faint three-strand braid pattern along its length','Matted / organic':'the locs have a matted, organic, slightly fuzzy surface with irregular width','Coiled':'the locs are tight springy coils with ring-like texture','Curled':'the locs are set into loose spiral curls','Woven':'the locs are woven over and under each other across the crown in a basket pattern'};
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
-function promptFor(s){
+function hairSentences(s,view){
   const mm=[0,3,5.5,10,16,26][s.thickness];
-  const parts=[
+  const out=[
     `Hairstyle: ${s.name.toLowerCase()}${s.aka.length?` (also called ${s.aka[0]})`:''}.`,
     `About ${s.count} individual locs, each roughly ${mm} mm thick${s.thickness>=5?', as thick as a broom handle':s.thickness===1?', as fine as a shoelace':''}.`,
-    LENGTH_WORDS[s.length].charAt(0).toUpperCase()+LENGTH_WORDS[s.length].slice(1)+', '+SIDES_WORDS[s.sides]+'.',
-    NEAT_WORDS[s.neatness].charAt(0).toUpperCase()+NEAT_WORDS[s.neatness].slice(1)+(s.parting&&!/none/i.test(s.parting)?`, parted in a ${s.parting.toLowerCase()} pattern`:'')+'.',
+    cap(LENGTH_WORDS[s.length])+', '+SIDES_WORDS[s.sides]+'.',
+    cap(NEAT_WORDS[s.neatness])+(s.parting&&!/none/i.test(s.parting)?`, parted in a ${s.parting.toLowerCase()} pattern`:'')+'.',
     cap((s.roots?ROOT_WORDS[s.roots]+'; ':'')+WORN_WORDS[s.arrange])+'.',
-    SURFACE_WORDS[s.surface].charAt(0).toUpperCase()+SURFACE_WORDS[s.surface].slice(1)+'.',
-    COLOR_WORDS[s.color].charAt(0).toUpperCase()+COLOR_WORDS[s.color].slice(1)+'.',
-    s.permanent?'':'These are temporary installed extensions imitating locs.',
-    'Reference description: '+s.blurb
-  ].filter(Boolean);
-  return {positive: PROMPT_SUBJECT+' '+parts.join(' '), negative: PROMPT_NEGATIVE};
+    cap(SURFACE_WORDS[s.surface])+'.',
+    cap(COLOR_WORDS[s.color])+'.',
+  ];
+  if(view==='side') out.push(`In profile the ${s.sides?'line where the cut meets the locs above the ear is clearly visible':'locs cover the side of the head down to the hairline'}, and the length is read against the jaw and shoulder.`);
+  if(view==='back') out.push(`From behind: ${s.nape.toLowerCase()}.`);
+  if(view==='top') out.push(`From above: ${s.crown.toLowerCase()}.`);
+  if(!s.permanent) out.push('These are temporary installed extensions imitating locs.');
+  out.push('Reference description: '+s.blurb);
+  return out;
 }
-if(typeof module!=='undefined') module.exports={ATTRS,STYLES,SOURCES,promptFor,PROMPT_SUBJECT,PROMPT_NEGATIVE};
+function promptFor(s,view='front'){
+  return {view, positive:[SUBJECT_BASE,VIEW_CAMERA[view],...hairSentences(s,view)].join(' '), negative:PROMPT_NEGATIVE};
+}
+const PROMPT_SUBJECT=SUBJECT_BASE+' '+VIEW_CAMERA.front;
+if(typeof module!=='undefined') module.exports={ATTRS,STYLES,SOURCES,VIEWS,VIEW_LABEL,promptFor,PROMPT_SUBJECT,PROMPT_NEGATIVE};

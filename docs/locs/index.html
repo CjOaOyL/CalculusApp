@@ -95,8 +95,17 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 .card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
 .card .pic{background:var(--pic);border-radius:var(--r);aspect-ratio:200/310;max-width:100%;display:grid;place-items:center;overflow:hidden;cursor:pointer}
 .card .pic svg{width:100%;height:100%}
+.card .pic.top svg{height:100%}
 .pic{position:relative}
 .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.pic .badge.dim{background:rgba(20,12,6,.35)}
+.angles{display:flex;gap:4px;margin-bottom:8px}
+.angles .btn{flex:1}
+.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.strip .pic{aspect-ratio:200/310;cursor:pointer;border-radius:4px;overflow:hidden}
+.strip .pic svg{width:100%;height:100%}
+.card .pic.top,.strip .pic.top,.detail .pic.top,.cmp .pic.top{aspect-ratio:1/1}
+.strip .pic.top svg{height:100%}
 .pic .badge{position:absolute;top:6px;left:6px;font-family:var(--mono);font-size:.62rem;letter-spacing:.04em;background:rgba(20,12,6,.6);color:#fff;padding:2px 6px;border-radius:3px;pointer-events:none}
 .prompts{display:grid;gap:12px}
 .prompt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px}
@@ -135,9 +144,11 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 .views{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .views .v{background:var(--pic);border-radius:var(--r);overflow:hidden}
 .views .v svg{width:100%;height:auto;display:block}
-.views .cap{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:3px}
+.views .cap,.strip .cap{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:3px}
 .cmp td.vis{padding:6px}
 .cmp td.vis svg{width:100%;max-width:220px;height:auto;display:block;border-radius:4px}
+.cmp td.vis .pic{border-radius:4px;overflow:hidden}
+.cmp td.vis .pic svg{height:100%}
 @media (max-width:720px){.detail{grid-template-columns:1fr}}
 .detail .pic{background:var(--pic);border-radius:var(--r);aspect-ratio:200/310;max-width:100%}
 .detail .pic svg{width:100%;height:100%}
@@ -195,7 +206,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 <body>
 <header class="top">
   <div class="wrap">
-    <div class="brand"><h1>Loc Style Finder</h1><span class="sub">38 men's loc styles, scored on 15 attributes</span></div>
+    <div class="brand"><h1>Loc Style Finder</h1><span class="sub">38 men's loc styles, scored on 17 attributes</span></div>
     <nav class="tabs" role="tablist" id="tabs">
       <button class="tab" role="tab" data-view="browse" aria-selected="true">Browse</button>
       <button class="tab" role="tab" data-view="duel">Head-to-head</button>
@@ -210,12 +221,13 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 <main class="wrap">
   <!-- BROWSE -->
   <section class="view on" id="view-browse">
-    <p class="lede">Every style is reduced to the same 15 attributes (thickness, length, how the sides are cut, how tidy the roots are, how it is worn, colour, upkeep and so on). Similarity is computed from those attributes only, never from a photo or the person wearing it. Open a style to see the closest matches and the furthest contrasts.</p>
+    <p class="lede">Every style is reduced to the same 17 attributes (thickness, length, how the sides are cut, how tidy the roots are, how it is worn, colour, upkeep, what the crown and the nape look like, and so on). Similarity is computed from those attributes only, never from a photo or the person wearing it. Open a style to see the closest matches and the furthest contrasts.</p>
     <div class="browse">
       <aside class="rail" id="rail"></aside>
       <div>
         <div class="sortrow">
           <span id="count" class="note"></span>
+          <label>Angle <select id="angle"><option value="front">front</option><option value="side">side</option><option value="back">back</option><option value="top">top</option></select></label>
           <label>Show <select id="imgmode"><option value="photo">photos where available</option><option value="schematic">schematics only</option></select></label>
           <label>Tiles <select id="tile"><option value="225">regular</option><option value="320">large</option><option value="440">huge</option></select></label>
           <label>Sort <select id="sort">
@@ -266,7 +278,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
   <!-- PROMPTS / PHOTOS -->
   <section class="view" id="view-prompts">
     <h2 style="font-size:1.5rem">Photos and prompts</h2>
-    <p class="lede">The drawings are schematics. For realistic references, each style has a ready-made photo prompt built from the same attributes. Every prompt uses one fixed template (same man, same framing, same light, same backdrop) and only the hair sentences change, so the photos can be judged on the hairstyle alone.</p>
+    <p class="lede">The drawings are schematics. For realistic references, each style has a ready-made photo prompt built from the same attributes. Every prompt uses one fixed template (same man, same framing, same light, same backdrop) and only the hair sentences change, so the photos can be judged on the hairstyle alone. Each style has four prompts: front, side, back and top, because the crown and the nape can differ far more than the front does.</p>
     <div class="setup" id="photoSetup"></div>
     <div class="prompts" id="prompts"></div>
   </section>
@@ -274,7 +286,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
   <!-- ABOUT -->
   <section class="view" id="view-about">
     <h2 style="font-size:1.5rem">How similarity is scored</h2>
-    <p class="lede">Each style is a point in a 15-attribute space. Distance between two styles is a weighted average of per-attribute differences: numeric attributes contribute how far apart they are on their scale, categorical ones contribute 0 (same) or 1 (different). Similarity is 1 minus that distance. Heavier weights go to the attributes a barber or loctician would name first: thickness, length and how the sides are cut.</p>
+    <p class="lede">Each style is a point in a 17-attribute space. Distance between two styles is a weighted average of per-attribute differences: numeric attributes contribute how far apart they are on their scale, categorical ones contribute 0 (same) or 1 (different). Similarity is 1 minus that distance. Heavier weights go to the attributes a barber or loctician would name first: thickness, length and how the sides are cut.</p>
     <div class="about" id="about"></div>
   </section>
 </main>
@@ -561,16 +573,155 @@ const pic=s=>fresh(svgCache[s.id]||(svgCache[s.id]=headSVG(s)));
 const picGuided=s=>fresh(svgCache[s.id+'/g']||(svgCache[s.id+'/g']=headSVG(s,{guides:true})));
 const scalp=s=>fresh(svgCache[s.id+'/s']||(svgCache[s.id+'/s']=scalpSVG(s)));
 const swatch=s=>fresh(svgCache[s.id+'/w']||(svgCache[s.id+'/w']=swatchSVG(s)));
+/* ---- side view (left profile) and back view, drawn from the same attributes ---- */
+function sideSVG(s,opts={}){
+  const r=rng(s.id+'side');
+  const W=200,H=310,cx=104,cy=108,rx=58,ry=60;
+  const sw=SW[s.thickness];
+  let n=Math.round(NSTR[s.thickness]*0.85); if(s.id==='wicks')n=5; if(s.id==='congo')n=6;
+  const L=LEN[s.length], gid='__G__', y0=cy-ry;
+  const o=[],locs=[],over=[];
+  o.push(`<defs>${gradDefs(s,gid,y0,y0+L+50)}<clipPath id="${gid}c"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/></clipPath></defs>`);
+  o.push(`<rect width="${W}" height="${H}" fill="var(--pic)"/>`);
+  if(opts.guides) for(const [name,y] of GUIDES){ o.push(`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 4"/>`); over.push(`<text x="${W-4}" y="${y-3}" text-anchor="end" font-family="var(--mono)" font-size="8.5" fill="var(--guide-ink)" stroke="var(--pic)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${name}</text>`); }
+  // body in profile: chest forward (left), back to the right
+  o.push(`<path d="M30 ${H} L30 250 C30 214 60 198 108 196 C150 196 176 212 176 244 L176 ${H} Z" fill="var(--skin-shade)"/>`);
+  o.push(`<path d="M90 150 L92 200 L134 200 L132 150 Z" fill="var(--skin)"/>`);
+  o.push(`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="var(--skin)"/>`);
+  // face: brow, eye, nose, lips, jaw hint
+  o.push(`<path d="M52 98 q10 -6 20 -2" stroke="var(--skin-shade)" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M58 106 q6 -3 11 0" stroke="var(--skin-shade)" stroke-width="1.6" fill="none"/><path d="M47 110 l-8 16 l9 3" stroke="var(--skin-shade)" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M50 140 q5 2 9 0" stroke="var(--skin-shade)" stroke-width="1.4" fill="none"/>`);
+  const capColor=s.color===3?'var(--hair-tip)':'var(--hair)';
+  const capBottom=[150,96,86,96,88][s.sides];
+  const hairline=cx-rx+10;
+  // cap: over the top from the forehead hairline, then down the back behind the ear
+  o.push(`<rect x="${hairline}" y="${y0-3}" width="${rx*2-7}" height="${Math.min(capBottom,90)-(y0-3)}" fill="${capColor}" clip-path="url(#${gid}c)"/>`);
+  if(capBottom>90) o.push(`<rect x="${cx-6}" y="88" width="${rx+10}" height="${capBottom-88}" fill="${capColor}" clip-path="url(#${gid}c)"/>`);
+  if(s.sides===4){ // mohawk: only the crest keeps hair
+    o.push(`<rect x="${hairline}" y="${y0-3}" width="${rx*2}" height="${rx*2}" fill="var(--skin)" clip-path="url(#${gid}c)"/><path d="M${hairline+4} 86 Q${cx} ${y0-4} ${cx+rx-2} 90 L${cx+rx-2} 72 Q${cx} ${y0-3} ${hairline+4} 70 Z" fill="${capColor}" clip-path="url(#${gid}c)"/>`); }
+  if(s.sides===1||s.sides===2){
+    const top=capBottom, bot=s.sides===1?150:118;
+    for(let i=0;i<520;i++){const yy=top+r()*(bot-top); const p=1-(yy-top)/(bot-top); if(r()>p*p) continue; const xx=cx-34+r()*(rx+34); if(xx<cx-8&&yy>112) continue; o.push(`<circle cx="${f1(xx)}" cy="${f1(yy)}" r="${f1(0.6+p*0.9)}" fill="var(--hair)" clip-path="url(#${gid}c)"/>`);}
+  }
+  if(s.sides>=1&&s.sides<4){ o.push(`<rect x="${cx-34}" y="${capBottom-0.8}" width="${rx+36}" height="1.6" fill="var(--hair-dk)" clip-path="url(#${gid}c)"/><rect x="${hairline-0.8}" y="${y0+16}" width="1.6" height="${Math.min(capBottom,90)-y0-16}" fill="var(--hair-dk)" clip-path="url(#${gid}c)"/>`); }
+  // parting lines across the side (ear-to-ear parts read as verticals in profile)
+  if(s.neatness>=3&&s.roots===0&&!/rows|lattice|strip|spider/i.test(s.parting)){ const step=[0,6,8,11,15,22][s.thickness]; for(let x=hairline+step;x<cx+rx;x+=step) o.push(`<line x1="${f1(x)}" y1="${y0-3}" x2="${f1(x)}" y2="${capBottom}" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`); for(let k=1;k<=2;k++) o.push(`<path d="M${hairline} ${y0+14*k+6} Q${cx} ${y0+14*k-10} ${cx+rx} ${y0+14*k+6}" stroke="var(--part)" stroke-width="1" fill="none" clip-path="url(#${gid}c)"/>`); }
+  if(/spider/i.test(s.parting)){ for(let k=1;k<=4;k++) o.push(`<ellipse cx="${cx+6}" cy="${y0+6}" rx="${k*13}" ry="${k*9}" fill="none" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`); }
+  // rows running front to back read as ridges along the top in profile
+  if(s.roots>=1||/rows/i.test(s.parting)){ for(let k=0;k<4;k++){ const yy=y0+4+k*9; const d=`M${hairline+2} ${yy+22} Q${cx} ${yy-12} ${cx+rx-2} ${yy+26}`; if(s.roots===1) o.push(`<path d="${d}" stroke="var(--hair-dk)" stroke-width="${f1(sw*1.1+1.6)}" fill="none" stroke-linecap="round" clip-path="url(#${gid}c)"/><path d="${d}" stroke="var(--hair)" stroke-width="${f1(sw*1.1)}" fill="none" stroke-linecap="round" clip-path="url(#${gid}c)"/>`); else o.push(`<path d="${d}" stroke="var(--part)" stroke-width="1" fill="none" clip-path="url(#${gid}c)"/>`); for(let x=hairline+8;x<cx+rx-4;x+=7){const t=(x-hairline-2)/(rx*2-4); const py=(1-t)*(1-t)*(yy+22)+2*(1-t)*t*(yy-12)+t*t*(yy+26); o.push(s.roots===2?`<path d="M${f1(x-3)} ${f1(py-2)} L${f1(x)} ${f1(py+1.5)} L${f1(x+3)} ${f1(py-2)}" stroke="var(--hair-hi)" stroke-width="1.3" fill="none" stroke-linecap="round" clip-path="url(#${gid}c)"/>`:s.roots===1?`<line x1="${f1(x-2.5)}" y1="${f1(py-2)}" x2="${f1(x+2.5)}" y2="${f1(py+2)}" stroke="var(--hair-hi)" stroke-width="1.2" stroke-linecap="round" clip-path="url(#${gid}c)"/>`:'');} } }
+  if(/lattice/i.test(s.parting)){ for(let k=-5;k<=6;k++){o.push(`<line x1="${hairline+k*12-20}" y1="${y0-4}" x2="${hairline+k*12+30}" y2="${capBottom}" stroke="var(--hair-hi)" stroke-width="1.6" clip-path="url(#${gid}c)"/><line x1="${hairline+k*12+30}" y1="${y0-4}" x2="${hairline+k*12-20}" y2="${capBottom}" stroke="var(--hair-hi)" stroke-width="1.6" clip-path="url(#${gid}c)"/>`);} }
+  if(s.neatness===2){ for(let i=0;i<4;i++){const xx=cx-30+i*24+(r()-0.5)*10;o.push(`<path d="M${f1(xx)} ${y0} q${f1((r()-0.5)*10)} 18 ${f1((r()-0.5)*8)} 36" stroke="var(--part)" stroke-width="1" fill="none" clip-path="url(#${gid}c)"/>`);} }
+  // ear sits on top of the cap; locs will pass in front of and behind it
+  o.push(`<ellipse cx="${cx+12}" cy="${cy+6}" rx="7" ry="11" fill="var(--skin)" stroke="var(--skin-shade)" stroke-width="1.2"/><path d="M${cx+12} ${cy} q4 4 1 10" stroke="var(--skin-shade)" stroke-width="1" fill="none"/>`);
+  // anchors from the hairline over the top and down the back
+  const anchors=[];
+  const aStart=-148, aEnd=s.sides===0?34:(s.sides===4?-30:-6);
+  for(let i=0;i<n;i++){ const t=n===1?0.5:i/(n-1); const ang=(aStart+(aEnd-aStart)*t)*Math.PI/180; const x=cx+rx*Math.cos(ang)*0.98,y=cy+ry*Math.sin(ang)*0.98; if(y>capBottom+2) continue; if(s.sides===4&&y>86) continue; anchors.push({x,y,ang,t}); }
+  const jit=()=>(s.neatness<=2?(r()-0.5)*sw*0.9:(r()-0.5)*sw*0.2);
+  const bun=(bx,by,br)=>{ let b=`<circle cx="${bx}" cy="${by}" r="${br+1.5}" fill="var(--hair-dk)"/><circle cx="${bx}" cy="${by}" r="${br}" fill="${capColor}"/>`; for(let k=1;k<=3;k++) b+=`<path d="M${bx-br*0.8} ${by-br*0.1*k+br*0.35} q${br*0.8} ${-br*0.9} ${br*1.6} 0" stroke="var(--hair-hi)" stroke-width="1.4" fill="none" stroke-linecap="round" transform="rotate(${k*60} ${bx} ${by})"/>`; return b; };
+  const isTail=s.id==='ponytail'||s.id==='fishtail';
+  const nape={x:cx+rx-8,y:cy+ry-12};
+  for(const p of anchors){
+    const w=Math.max(1.6,sw+jit()); let len=L*(0.86+r()*0.28); if(s.surface==='Curled') len*=0.72;
+    const deg=p.ang*180/Math.PI;
+    if(s.arrange===2&&!isTail&&s.id!=='bantu'){ const bx=cx+14+(r()-0.5)*6,by=y0-14; locs.push(strand(gid,p,{x:(p.x+bx)/2,y:(p.y+by)/2-10},{x:bx,y:by},w,s.surface,r)); continue; }
+    if(isTail){ locs.push(strand(gid,p,{x:p.x+20,y:(p.y+nape.y)/2},nape,w,s.surface,r)); continue; }
+    if(s.id==='bantu') continue;
+    if(s.arrange===1&&deg>-125&&deg<-45){ const bx=cx+14+(r()-0.5)*6,by=y0-12; locs.push(strand(gid,p,{x:(p.x+bx)/2,y:(p.y+by)/2-8},{x:bx,y:by},w,s.surface,r)); continue; }
+    if(s.arrange===3){ const ul=Math.min(len,s.id==='wicks'?72:36); const nx=Math.cos(p.ang),ny=Math.sin(p.ang); const wob=(r()-0.5)*10; locs.push(strand(gid,p,{x:p.x+nx*ul*0.5+wob,y:p.y+ny*ul*0.5},{x:p.x+nx*ul+wob*1.5,y:p.y+ny*ul},w,s.surface,r)); continue; }
+    // hanging: front locs drape forward past the brow, top locs drape over the side, back locs down the back
+    const dir=deg<-120?-1:(deg<-75?0.4:1);
+    const ex=p.x+dir*(8+r()*8)+(r()-0.5)*6, ey=p.y+len;
+    locs.push(strand(gid,p,{x:p.x+dir*14,y:p.y+len*0.25},{x:ex,y:ey},w,s.surface,r));
+  }
+  if(s.arrange===2&&!isTail&&s.id!=='bantu') over.push(bun(cx+16,y0-16,11+s.length*2.4));
+  if(s.arrange===1) over.push(bun(cx+16,y0-13,8+s.length*1.6));
+  if(isTail){ const tl=L*0.95; over.push(strand(gid,nape,{x:nape.x+10,y:nape.y+tl*0.5},{x:nape.x+4,y:nape.y+tl},sw*2.8,s.id==='fishtail'?'Braided imprint':s.surface,r)); over.push(`<ellipse cx="${nape.x}" cy="${nape.y}" rx="${f1(sw*1.8)}" ry="${f1(sw*1.3)}" fill="var(--accent)" stroke="var(--hair-dk)" stroke-width="1"/>`); }
+  if(s.id==='bantu'){ const pts=[[cx-26,y0+12],[cx+4,y0-3],[cx+34,y0+12],[cx+50,y0+40]]; for(const [bx,by] of pts) over.push(`<circle cx="${bx}" cy="${by}" r="11.5" fill="var(--hair-dk)"/><circle cx="${bx}" cy="${by}" r="10" fill="${capColor}"/><path d="M${bx-7} ${by} a7 7 0 1 1 14 0 a4.5 4.5 0 1 1 -9 0 a2 2 0 1 1 4 0" stroke="var(--hair-hi)" stroke-width="1.6" fill="none"/>`); }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Side view of ${s.name}">${o.join('')}${locs.join('')}${over.join('')}</svg>`;
+}
+function backSVG(s,opts={}){
+  const r=rng(s.id+'back');
+  const W=200,H=310,cx=100,cy=108,rx=50,ry=60;
+  const sw=SW[s.thickness];
+  let n=Math.round(NSTR[s.thickness]*1.25); if(s.id==='wicks')n=7; if(s.id==='congo')n=8;
+  const L=LEN[s.length], gid='__G__', y0=cy-ry;
+  const o=[],locs=[],over=[];
+  o.push(`<defs>${gradDefs(s,gid,y0,y0+L+50)}<clipPath id="${gid}c"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/></clipPath></defs>`);
+  o.push(`<rect width="${W}" height="${H}" fill="var(--pic)"/>`);
+  if(opts.guides) for(const [name,y] of GUIDES){ o.push(`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 4"/>`); over.push(`<text x="${W-4}" y="${y-3}" text-anchor="end" font-family="var(--mono)" font-size="8.5" fill="var(--guide-ink)" stroke="var(--pic)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${name}</text>`); }
+  o.push(`<path d="M22 ${H} L22 244 C22 214 58 196 100 196 C142 196 178 214 178 244 L178 ${H} Z" fill="var(--skin-shade)"/>`);
+  o.push(`<path d="M70 206 Q100 198 130 206" stroke="var(--hair-dk)" stroke-opacity=".35" stroke-width="2" fill="none"/>`); // collar
+  o.push(`<rect x="84" y="150" width="32" height="52" fill="var(--skin)"/>`);
+  o.push(`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="var(--skin)"/>`);
+  const capColor=s.color===3?'var(--hair-tip)':'var(--hair)';
+  const capBottom=[160,96,86,96,160][s.sides];
+  let capX=cx-rx-2,capW=rx*2+4; if(s.sides===4){capX=cx-20;capW=40;}
+  if(s.sides===4) o.push(`<rect x="${cx-rx}" y="${y0}" width="${rx*2}" height="${ry*2}" fill="var(--skin)" clip-path="url(#${gid}c)"/>`);
+  o.push(`<rect x="${capX}" y="${y0-3}" width="${capW}" height="${capBottom-(y0-3)}" fill="${capColor}" clip-path="url(#${gid}c)"/>`);
+  if(s.sides===1||s.sides===2){ const top=capBottom, bot=s.sides===1?158:122; for(let i=0;i<560;i++){const yy=top+r()*(bot-top); const p=1-(yy-top)/(bot-top); if(r()>p*p) continue; const xx=cx+(r()-0.5)*rx*2; o.push(`<circle cx="${f1(xx)}" cy="${f1(yy)}" r="${f1(0.6+p*0.9)}" fill="var(--hair)" clip-path="url(#${gid}c)"/>`);} }
+  if(s.sides>=1&&s.sides<4) o.push(`<rect x="${capX}" y="${capBottom-0.8}" width="${capW}" height="1.6" fill="var(--hair-dk)" clip-path="url(#${gid}c)"/>`);
+  if(s.sides===0||s.sides===4) o.push(`<path d="M${capX} ${capBottom-6} Q${cx} ${capBottom+4} ${capX+capW} ${capBottom-6}" stroke="var(--hair-dk)" stroke-width="1.2" fill="none" clip-path="url(#${gid}c)"/>`); // nape hairline
+  // parting lines
+  const part=s.parting;
+  if(s.neatness>=3&&s.roots===0&&!/rows|lattice|strip|spider/i.test(part)){ const step=[0,6,8,11,15,22][s.thickness]; const x0=s.sides===4?cx-20:cx-rx, x1=s.sides===4?cx+20:cx+rx; for(let x=x0+step/2;x<x1;x+=step) o.push(`<line x1="${f1(x)}" y1="${y0-3}" x2="${f1(x)}" y2="${capBottom}" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`); for(let yy=y0+14;yy<capBottom-6;yy+=14) o.push(`<line x1="${x0}" y1="${f1(yy)}" x2="${x1}" y2="${f1(yy)}" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`); }
+  if(/spider/i.test(part)){ for(let k=1;k<=4;k++) o.push(`<ellipse cx="${cx}" cy="${y0+4}" rx="${k*12}" ry="${k*9}" fill="none" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`); for(let a=0;a<180;a+=22.5){const rad=a*Math.PI/180;o.push(`<line x1="${cx}" y1="${y0+4}" x2="${f1(cx+Math.cos(rad)*70)}" y2="${f1(y0+4+Math.sin(rad)*70)}" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`);} }
+  // rows front-to-back read as verticals converging toward the nape from behind
+  if(s.roots>=1||/rows/i.test(part)){ const rows=/Two to four/i.test(part)?3:7; for(let i=0;i<rows;i++){ const t=(i+0.5)/rows; const xt=cx-rx+6+(rx*2-12)*t, xb=cx+(xt-cx)*0.55; const d=`M${f1(xt)} ${y0-2} Q${f1((xt+xb)/2)} ${f1((y0+capBottom)/2)} ${f1(xb)} ${capBottom}`; if(s.roots===1) o.push(`<path d="${d}" stroke="var(--hair-dk)" stroke-width="${f1(sw*1.1+1.6)}" fill="none" stroke-linecap="round" clip-path="url(#${gid}c)"/><path d="${d}" stroke="var(--hair)" stroke-width="${f1(sw*1.1)}" fill="none" stroke-linecap="round" clip-path="url(#${gid}c)"/>`); else o.push(`<path d="${d}" stroke="var(--part)" stroke-width="1" fill="none" clip-path="url(#${gid}c)"/>`); for(let yy=y0+6;yy<capBottom-4;yy+=8){ const u=(yy-y0)/(capBottom-y0); const px=(1-u)*(1-u)*xt+2*(1-u)*u*((xt+xb)/2)+u*u*xb; o.push(s.roots===2?`<path d="M${f1(px-3)} ${f1(yy-2)} L${f1(px)} ${f1(yy+1.5)} L${f1(px+3)} ${f1(yy-2)}" stroke="var(--hair-hi)" stroke-width="1.3" fill="none" stroke-linecap="round" clip-path="url(#${gid}c)"/>`:s.roots===1?`<line x1="${f1(px-2.5)}" y1="${f1(yy-2)}" x2="${f1(px+2.5)}" y2="${f1(yy+2)}" stroke="var(--hair-hi)" stroke-width="1.2" stroke-linecap="round" clip-path="url(#${gid}c)"/>`:''); } } }
+  if(/lattice/i.test(part)){ for(let k=-5;k<=5;k++){o.push(`<line x1="${cx+k*12-30}" y1="${y0-4}" x2="${cx+k*12+30}" y2="${capBottom}" stroke="var(--hair-hi)" stroke-width="1.6" clip-path="url(#${gid}c)"/><line x1="${cx+k*12+30}" y1="${y0-4}" x2="${cx+k*12-30}" y2="${capBottom}" stroke="var(--hair-hi)" stroke-width="1.6" clip-path="url(#${gid}c)"/>`);} }
+  if(s.neatness===2){ for(let i=0;i<5;i++){const xx=cx-40+i*20+(r()-0.5)*10;o.push(`<path d="M${f1(xx)} ${y0} q${f1((r()-0.5)*10)} 30 ${f1((r()-0.5)*8)} 60" stroke="var(--part)" stroke-width="1" fill="none" clip-path="url(#${gid}c)"/>`);} }
+  // ears peek out at the sides
+  o.push(`<ellipse cx="${cx-rx+1}" cy="${cy+6}" rx="6" ry="10" fill="var(--skin)" stroke="var(--skin-shade)" stroke-width="1"/><ellipse cx="${cx+rx-1}" cy="${cy+6}" rx="6" ry="10" fill="var(--skin)" stroke="var(--skin-shade)" stroke-width="1"/>`);
+  // anchors along the top arc (hanging locs cover the back from there)
+  let a0=-172,a1=-8; if(s.sides===2){a0=-140;a1=-40} if(s.sides===3){a0=-130;a1=-50} if(s.sides===4){a0=-112;a1=-68}
+  const anchors=[]; for(let i=0;i<n;i++){const t=n===1?0.5:i/(n-1);const ang=(a0+(a1-a0)*t)*Math.PI/180;anchors.push({x:cx+rx*Math.cos(ang)*0.98,y:cy+ry*Math.sin(ang)*0.98,ang,t});}
+  if(s.sides===4){ for(let yy=y0+30;yy<capBottom-6;yy+=11) anchors.push({x:cx+(r()-0.5)*10,y:yy,ang:-Math.PI/2,t:0.5,strip:true}); }
+  const jit=()=>(s.neatness<=2?(r()-0.5)*sw*0.9:(r()-0.5)*sw*0.2);
+  const bun=(bx,by,br)=>{ let b=`<circle cx="${bx}" cy="${by}" r="${br+1.5}" fill="var(--hair-dk)"/><circle cx="${bx}" cy="${by}" r="${br}" fill="${capColor}"/>`; for(let k=1;k<=3;k++) b+=`<path d="M${bx-br*0.8} ${by-br*0.1*k+br*0.35} q${br*0.8} ${-br*0.9} ${br*1.6} 0" stroke="var(--hair-hi)" stroke-width="1.4" fill="none" stroke-linecap="round" transform="rotate(${k*60} ${bx} ${by})"/>`; return b; };
+  const isTail=s.id==='ponytail'||s.id==='fishtail';
+  const nape={x:cx,y:cy+ry-10};
+  for(const p of anchors){
+    const side=Math.cos(p.ang);
+    const w=Math.max(1.6,sw+jit()); let len=L*(0.86+r()*0.28); if(s.surface==='Curled') len*=0.72;
+    if(s.arrange===2&&!isTail&&s.id!=='bantu'){ const bx=cx+(r()-0.5)*6,by=y0-18; locs.push(strand(gid,p,{x:(p.x+bx)/2+side*10,y:(p.y+by)/2-10},{x:bx,y:by},w,s.surface,r)); continue; }
+    if(isTail){ locs.push(strand(gid,p,{x:p.x+side*6,y:(p.y+nape.y)/2},{x:nape.x+(r()-0.5)*6,y:nape.y},w,s.surface,r)); continue; }
+    if(s.id==='bantu') continue;
+    if(s.arrange===1&&Math.abs(p.t-0.5)<0.28){ const bx=cx+(r()-0.5)*6,by=y0-15; locs.push(strand(gid,p,{x:(p.x+bx)/2+side*7,y:(p.y+by)/2-8},{x:bx,y:by},w,s.surface,r)); continue; }
+    if(s.arrange===3){ const ul=Math.min(len,s.id==='wicks'?72:36); const nx=p.strip?(r()-0.5)*0.6:Math.cos(p.ang),ny=p.strip?-1:Math.sin(p.ang); const wob=(r()-0.5)*10; locs.push(strand(gid,p,{x:p.x+nx*ul*0.5+wob,y:p.y+ny*ul*0.5},{x:p.x+nx*ul+wob*1.5,y:p.y+ny*ul},w,s.surface,r)); continue; }
+    // hanging straight down the back, outer locs drifting slightly outward over the shoulders
+    const ex=p.x+side*(4+r()*8)+(r()-0.5)*6, ey=p.y+len;
+    locs.push(strand(gid,p,{x:p.x+side*8,y:p.y+len*0.3},{x:ex,y:ey},w,s.surface,r));
+  }
+  if(s.arrange===2&&!isTail&&s.id!=='bantu') over.push(bun(cx,y0-20,11+s.length*2.4));
+  if(s.arrange===1) over.push(bun(cx,y0-16,8+s.length*1.6));
+  if(isTail){ const tl=L*0.95; over.push(strand(gid,nape,{x:cx+8,y:nape.y+tl*0.5},{x:cx,y:nape.y+tl},sw*2.8,s.id==='fishtail'?'Braided imprint':s.surface,r)); over.push(`<ellipse cx="${cx}" cy="${nape.y}" rx="${f1(sw*1.8)}" ry="${f1(sw*1.3)}" fill="var(--accent)" stroke="var(--hair-dk)" stroke-width="1"/>`); }
+  if(s.id==='bantu'){ const pts=[[cx-30,y0+14],[cx,y0-3],[cx+30,y0+14],[cx-17,y0+42],[cx+17,y0+42],[cx,y0+70]]; for(const [bx,by] of pts) over.push(`<circle cx="${bx}" cy="${by}" r="11.5" fill="var(--hair-dk)"/><circle cx="${bx}" cy="${by}" r="10" fill="${capColor}"/><path d="M${bx-7} ${by} a7 7 0 1 1 14 0 a4.5 4.5 0 1 1 -9 0 a2 2 0 1 1 4 0" stroke="var(--hair-hi)" stroke-width="1.6" fill="none"/>`); }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Back view of ${s.name}">${o.join('')}${locs.join('')}${over.join('')}</svg>`;
+}
+/* one entry point for every angle */
+function drawing(s,view,guides){
+  const k=`${s.id}/${view}/${guides?1:0}`;
+  if(!svgCache[k]) svgCache[k]= view==='side'?sideSVG(s,{guides}) : view==='back'?backSVG(s,{guides}) : view==='top'?scalpSVG(s) : headSVG(s,{guides});
+  return fresh(svgCache[k]);
+}
 
 /* ---------------- photos ----------------
    Two sources: img/manifest.json (generated by tools/gen_images.py and committed) and
    pictures the viewer adds on a style sheet (kept in this browser's IndexedDB only). */
-let manifest={}, userPhotos={}, imgMode=store.get('imgmode','photo');
-const hasPhoto=id=>!!(userPhotos[id]||manifest[id]);
-function photoURL(id){ return userPhotos[id]?userPhotos[id].url:manifest[id]?manifest[id].file:null; }
-function vis(s){ // schematic underneath, photo on top; a photo that fails to load removes itself
-  const u=imgMode==='photo'?photoURL(s.id):null;
-  return pic(s)+(u?`<img src="${esc(u)}" alt="${esc(s.name)}" loading="lazy" onerror="this.remove()"><span class="badge">${userPhotos[s.id]?'your photo':'photo'}</span>`:'');
+let manifest={}, userPhotos={}, imgMode=store.get('imgmode','photo'), angle=store.get('angle','front');
+const pkey=(id,view)=>id+'|'+view;
+function photoURL(id,view='front'){
+  const u=userPhotos[pkey(id,view)]; if(u) return u.url;
+  const m=manifest[id]; if(!m) return null;
+  if(m.views&&m.views[view]) return m.views[view].file;
+  if(view==='front'&&m.file) return m.file;
+  return null;
+}
+const hasPhoto=(id,view)=>view?!!photoURL(id,view):VIEWS.some(v=>photoURL(id,v));
+const photoCount=()=>STYLES.filter(s=>hasPhoto(s.id)).length;
+const photoMeta=(id,view)=>userPhotos[pkey(id,view)]?'your photo':(manifest[id]&&((manifest[id].views||{})[view]||(view==='front'?manifest[id]:null)))?('photo · '+((manifest[id].views||{})[view]||manifest[id]).model||'generated'):'';
+function vis(s,view=angle,guides=false){ // schematic underneath, photo on top; a photo that fails to load removes itself
+  const u=imgMode==='photo'?photoURL(s.id,view):null;
+  return drawing(s,view,guides)+(u?`<img src="${esc(u)}" alt="${esc(s.name)}, ${view} view" loading="lazy" onerror="this.remove()"><span class="badge">${esc(photoMeta(s.id,view))}</span>`:`<span class="badge dim">${VIEW_LABEL[view]}</span>`);
 }
 const idb={
   open(){ return new Promise((res,rej)=>{ try{ const r=indexedDB.open('locs',1); r.onupgradeneeded=()=>r.result.createObjectStore('photos'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);}catch(e){rej(e)} }); },
@@ -580,16 +731,17 @@ const idb={
 };
 async function loadPhotos(){
   try{ const r=await fetch('img/manifest.json',{cache:'no-cache'}); if(r.ok) manifest=await r.json(); }catch(e){}
-  try{ const all=await idb.all(); for(const [id,blob] of Object.entries(all)) userPhotos[id]={url:URL.createObjectURL(blob)}; }catch(e){}
+  try{ const all=await idb.all(); for(const [k,blob] of Object.entries(all)) userPhotos[k.includes('|')?k:k+'|front']={url:URL.createObjectURL(blob)}; }catch(e){}
   updateCounts(); refreshAll();
 }
-async function addPhoto(id,file){
+async function addPhoto(id,view,file){
   if(!file||!file.type.startsWith('image/')){toast('Choose an image file');return;}
-  try{ await idb.put(id,file); if(userPhotos[id]) URL.revokeObjectURL(userPhotos[id].url); userPhotos[id]={url:URL.createObjectURL(file)}; toast('Photo saved in this browser'); }
+  const k=pkey(id,view);
+  try{ await idb.put(k,file); if(userPhotos[k]) URL.revokeObjectURL(userPhotos[k].url); userPhotos[k]={url:URL.createObjectURL(file)}; toast(`${VIEW_LABEL[view]} photo saved in this browser`); }
   catch(e){ toast('This browser would not store the photo'); }
-  updateCounts(); if($('#overlay').classList.contains('on')) openDetail(id); refreshAll();
+  updateCounts(); if($('#overlay').classList.contains('on')) openDetail(id,view); refreshAll();
 }
-async function removePhoto(id){ try{ await idb.del(id); }catch(e){} if(userPhotos[id]){URL.revokeObjectURL(userPhotos[id].url); delete userPhotos[id];} toast('Photo removed'); updateCounts(); if($('#overlay').classList.contains('on')) openDetail(id); refreshAll(); }
+async function removePhoto(id,view){ const k=pkey(id,view); try{ await idb.del(k); }catch(e){} if(userPhotos[k]){URL.revokeObjectURL(userPhotos[k].url); delete userPhotos[k];} toast('Photo removed'); updateCounts(); if($('#overlay').classList.contains('on')) openDetail(id,view); refreshAll(); }
 function copyText(t){ return navigator.clipboard.writeText(t).then(()=>toast('Copied'),()=>{ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');toast('Copied')}catch(e){toast('Select and copy the text by hand')} ta.remove(); }); }
 
 /* ---------------- helpers ---------------- */
@@ -659,8 +811,12 @@ function renderGrid(){
 }
 
 /* ---------------- detail ---------------- */
-function openDetail(id){
+let detailView='front';
+function openDetail(id,view){
   const s=BY[id];
+  if(view) detailView=view; else if($('#sheet').dataset.id!==id) detailView='front';
+  $('#sheet').dataset.id=id;
+  const dv=detailView;
   const others=STYLES.filter(x=>x.id!==id).map(x=>({x,sim:sim(s,x)})).sort((a,b)=>b.sim-a.sim);
   const near=others.slice(0,6), far=others.slice(-3).reverse();
   const liked=likes.has(id), inC=cmp.includes(id);
@@ -671,18 +827,19 @@ function openDetail(id){
     </div>
     <div class="detail">
       <div>
-        <div class="pic">${photoURL(id)?`${picGuided(s)}<img src="${esc(photoURL(id))}" alt="${esc(s.name)}" onerror="this.remove()"><span class="badge">${userPhotos[id]?'your photo':manifest[id]?('generated · '+esc(manifest[id].model||manifest[id].provider||'')):''}</span>`:picGuided(s)}</div>
-        <div class="views" ${photoURL(id)?'style="grid-template-columns:1fr 1fr 1fr"':''}>
-          ${photoURL(id)?`<div><div class="v">${picGuided(s)}</div><div class="cap">Attribute schematic</div></div>`:''}
-          <div><div class="v">${scalp(s)}</div><div class="cap">Scalp map, from above</div></div>
-          <div><div class="v">${swatch(s)}</div><div class="cap">One loc at true scale</div></div>
+        <div class="angles">${VIEWS.map(v=>`<button class="btn sm ${v===dv?'on':''}" data-angle="${v}">${VIEW_LABEL[v]}${hasPhoto(id,v)?' ●':''}</button>`).join('')}</div>
+        <div class="pic ${dv}">${vis(s,dv,true)}</div>
+        <div class="strip" style="grid-template-columns:repeat(4,1fr)">
+          ${VIEWS.filter(v=>v!==dv).map(v=>`<div><div class="pic ${v}" data-angle="${v}" title="${VIEW_LABEL[v]} view">${vis(s,v)}</div><div class="cap">${VIEW_LABEL[v]}</div></div>`).join('')}
+          <div><div class="v">${swatch(s)}</div><div class="cap">One loc, true scale</div></div>
         </div>
-        <p class="note" style="margin:8px 0 0">${photoURL(id)?'The photo is a generated or saved reference; the schematics are drawn from the attributes.':'No photo yet for this style; the drawing is a schematic built from the attributes.'} Dashed lines mark ear, chin, shoulder, chest and waist. Search real photos:</p>
+        <p class="note" style="margin:8px 0 0">${hasPhoto(id,dv)?'The photo is a generated or saved reference; the drawings are schematics built from the attributes.':'No '+VIEW_LABEL[dv].toLowerCase()+' photo yet for this style; the drawing is a schematic built from the attributes.'} Dashed lines mark ear, chin, shoulder, chest and waist. Search real photos:</p>
         ${photoLinks(s)}
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
-          <label class="btn">${userPhotos[id]?'Replace photo':'Add photo'}<input type="file" accept="image/*" hidden data-upload="${id}"></label>
-          ${userPhotos[id]?`<button class="btn" data-delphoto="${id}">Remove photo</button>`:''}
-          <button class="btn" data-copyprompt="${id}">Copy photo prompt</button>
+          <label class="btn">${userPhotos[pkey(id,dv)]?'Replace':'Add'} ${VIEW_LABEL[dv].toLowerCase()} photo<input type="file" accept="image/*" hidden data-upload="${id}" data-view="${dv}"></label>
+          ${userPhotos[pkey(id,dv)]?`<button class="btn" data-delphoto="${id}" data-view="${dv}">Remove</button>`:''}
+          <button class="btn" data-copyprompt="${id}" data-view="${dv}">Copy ${VIEW_LABEL[dv].toLowerCase()} prompt</button>
+          <button class="btn" data-copyprompt="${id}" data-view="all">Copy all 4 prompts</button>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
           <button class="btn ${liked?'on':''}" data-like="${id}">${liked?'♥ Shortlisted':'♡ Shortlist'}</button>
@@ -752,7 +909,8 @@ function renderDuel(){
   const cs=duelCur.map(id=>BY[id]);
   if(cs.length<2){$('#duel').innerHTML='';return;}
   $('#duel').innerHTML=cs.map(s=>`<article class="card" data-id="${s.id}">
-      <div class="pic" tabindex="0" role="button" aria-label="Open ${esc(s.name)}" data-open="${s.id}">${vis(s)}</div>
+      <div class="pic" tabindex="0" role="button" aria-label="Open ${esc(s.name)}" data-open="${s.id}">${vis(s,'front')}</div>
+      <div class="strip">${['side','back','top'].map(v=>`<div class="pic ${v}" data-open="${s.id}" data-view="${v}">${vis(s,v)}</div>`).join('')}</div>
       <div class="grp">${esc(s.group)}</div><h3>${esc(s.name)}</h3>
       <p class="note" style="margin:0">${esc(s.blurb)}</p>
       <div class="tags">${keyTags(s)}<span class="tag">${esc(fmtAttr(s,AT.maint))} upkeep</span></div>
@@ -797,8 +955,8 @@ function renderCompare(){
     {label:'Retwist / restyle',vals:cs.map(s=>s.retwist),diff:new Set(cs.map(s=>s.retwist)).size>1},
     {label:'Hair it suits',vals:cs.map(s=>s.hair),diff:new Set(cs.map(s=>s.hair)).size>1}];
   el.innerHTML=`<div class="pairs">${pairs.join('')}</div>
-  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th>${cs.map(s=>`<th><div class="pic">${picGuided(s)}${imgMode==='photo'&&photoURL(s.id)?`<img src="${esc(photoURL(s.id))}" alt="" onerror="this.remove()">`:''}</div>${esc(s.name)}<div style="margin-top:6px;display:flex;gap:4px"><button class="btn sm" data-open="${s.id}">Open</button><button class="btn sm" data-cmp="${s.id}" title="Remove">✕</button></div></th>`).join('')}</tr></thead>
-  <tbody><tr><th>Scalp map</th>${cs.map(s=>`<td class="vis">${scalp(s)}</td>`).join('')}</tr><tr><th>One loc, true scale</th>${cs.map(s=>`<td class="vis">${swatch(s)}</td>`).join('')}</tr>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th>${cs.map(s=>`<th><div class="pic">${vis(s,'front',true)}</div>${esc(s.name)}<div style="margin-top:6px;display:flex;gap:4px"><button class="btn sm" data-open="${s.id}">Open</button><button class="btn sm" data-cmp="${s.id}" title="Remove">✕</button></div></th>`).join('')}</tr></thead>
+  <tbody>${['side','back','top'].map(v=>`<tr><th>${VIEW_LABEL[v]} view</th>${cs.map(s=>`<td class="vis"><div class="pic ${v}" style="width:120px;${v==="top"?"aspect-ratio:1/1":"aspect-ratio:200/310"}">${vis(s,v)}</div></td>`).join('')}</tr>`).join('')}<tr><th>One loc, true scale</th>${cs.map(s=>`<td class="vis">${swatch(s)}</td>`).join('')}</tr>
   ${rows.map(r=>`<tr class="${r.diff?'diff':''}"><th>${r.label}</th>${r.vals.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
   <p class="note" style="margin-top:10px">Highlighted rows differ from the first column. ${cs.length<4?'Up to four styles can be compared.':''}</p>`;
 }
@@ -831,22 +989,25 @@ function renderAbout(){
 
 /* ---------------- prompts view ---------------- */
 function renderPrompts(){
-  const have=STYLES.filter(s=>hasPhoto(s.id)).length;
-  $('#photoSetup').innerHTML=`<div class="status">${have} of ${STYLES.length} styles have a photo${have?'':' yet'}.</div>
+  const have=photoCount(); const haveViews=STYLES.reduce((a,s)=>a+VIEWS.filter(v=>hasPhoto(s.id,v)).length,0);
+  $('#photoSetup').innerHTML=`<div class="status">${haveViews} of ${STYLES.length*4} angle photos present (${have} styles with at least one).</div>
     <p style="margin:8px 0 6px"><b>Generate them in one go.</b> From the repository, with an image-model key in the environment:</p>
     <pre>export OPENAI_API_KEY=…    # or GEMINI_API_KEY, REPLICATE_API_TOKEN, STABILITY_API_KEY
-python3 tools/gen_images.py   # writes docs/locs/img/*.jpg + manifest.json; a few dollars for all 38</pre>
+python3 tools/gen_images.py                 # 4 angles × 38 styles = 152 images, roughly 5 to 12 dollars
+python3 tools/gen_images.py --views front    # or start with one angle</pre>
     <p style="margin:6px 0"><b>Or use any image tool by hand.</b> Copy a prompt below into ChatGPT, Gemini, Midjourney or similar, then open the style here and use <i>Add photo</i> to attach the result (kept in this browser), or save it as <code>img/&lt;id&gt;.jpg</code> and list it in <code>img/manifest.json</code> so everyone sees it.</p>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="copyAllPrompts">Copy all prompts as JSON</button><button class="btn" id="copyNeg">Copy the negative prompt</button></div>`;
-  $('#prompts').innerHTML=STYLES.map(s=>{const p=promptFor(s);return `<div class="prompt" id="prompt-${s.id}">
-    <div class="pic" data-open="${s.id}" role="button" tabindex="0" aria-label="Open ${esc(s.name)}">${vis(s)}</div>
-    <div style="min-width:0"><div class="eyebrow">${esc(s.id)} · ${hasPhoto(s.id)?'has photo':'no photo yet'}</div><h3>${esc(s.name)}</h3><pre>${esc(p.positive)}</pre>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" data-copyprompt="${s.id}">Copy prompt</button><label class="btn sm">Add photo<input type="file" accept="image/*" hidden data-upload="${s.id}"></label>${userPhotos[s.id]?`<button class="btn sm" data-delphoto="${s.id}">Remove photo</button>`:''}</div></div>
-  </div>`;}).join('');
+  $('#prompts').innerHTML=STYLES.map(s=>`<div class="prompt" id="prompt-${s.id}">
+    <div class="pic" data-open="${s.id}" role="button" tabindex="0" aria-label="Open ${esc(s.name)}">${vis(s,'front')}</div>
+    <div style="min-width:0"><div class="eyebrow">${esc(s.id)} · ${VIEWS.filter(v=>hasPhoto(s.id,v)).length} of 4 angles have a photo</div><h3>${esc(s.name)}</h3>
+      ${VIEWS.map(v=>`<details ${v==='front'?'open':''}><summary style="cursor:pointer;font-size:.86rem;font-weight:600">${VIEW_LABEL[v]} view${hasPhoto(s.id,v)?' · has photo':''}</summary><pre>${esc(promptFor(s,v).positive)}</pre>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" data-copyprompt="${s.id}" data-view="${v}">Copy</button><label class="btn sm">Add ${VIEW_LABEL[v].toLowerCase()} photo<input type="file" accept="image/*" hidden data-upload="${s.id}" data-view="${v}"></label>${userPhotos[pkey(s.id,v)]?`<button class="btn sm" data-delphoto="${s.id}" data-view="${v}">Remove</button>`:''}</div></details>`).join('')}
+      <div style="margin-top:8px"><button class="btn sm" data-copyprompt="${s.id}" data-view="all">Copy all 4 prompts</button></div></div>
+  </div>`).join('');
 }
 
 /* ---------------- wiring ---------------- */
-function updateCounts(){ $('#nCmp').textContent=cmp.length?cmp.length:''; $('#nLike').textContent=likes.size?likes.size:''; const ph=STYLES.filter(s=>hasPhoto(s.id)).length; $('#nPhoto').textContent=ph?ph:''; }
+function updateCounts(){ $('#nCmp').textContent=cmp.length?cmp.length:''; $('#nLike').textContent=likes.size?likes.size:''; const ph=photoCount(); $('#nPhoto').textContent=ph?ph:''; }
 function show(view){
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.view===view));
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='view-'+view));
@@ -861,17 +1022,18 @@ function refreshAll(){ renderGrid(); if($('#view-compare').classList.contains('o
 
 document.addEventListener('click',e=>{
   if(e.target.closest('label')&&e.target.closest('label').querySelector('input[type=file]')) return; // let the file picker open
-  const t=e.target.closest('[data-open],[data-like],[data-cmp],[data-win],[data-contrast],[data-f],[data-copyprompt],[data-delphoto],.tab,#closeSheet,#clearF,#copyAllPrompts,#copyNeg');
+  const t=e.target.closest('[data-open],[data-like],[data-cmp],[data-win],[data-contrast],[data-f],[data-copyprompt],[data-delphoto],[data-angle],.tab,#closeSheet,#clearF,#copyAllPrompts,#copyNeg');
   if(!t){ if(e.target===$('#overlay')) closeDetail(); return; }
   if(t.classList.contains('tab')){show(t.dataset.view);return;}
   if(t.id==='closeSheet'){closeDetail();return;}
   if(t.id==='clearF'){filters={};persist();renderRail();renderGrid();return;}
-  if(t.id==='copyAllPrompts'){copyText(JSON.stringify(STYLES.map(s=>({id:s.id,name:s.name,...promptFor(s)})),null,1));return;}
+  if(t.id==='copyAllPrompts'){copyText(JSON.stringify(STYLES.map(s=>({id:s.id,name:s.name,prompts:Object.fromEntries(VIEWS.map(v=>[v,promptFor(s,v).positive])),negative:PROMPT_NEGATIVE})),null,1));return;}
+  if(t.dataset.angle){ openDetail($('#sheet').dataset.id,t.dataset.angle); return; }
   if(t.id==='copyNeg'){copyText(PROMPT_NEGATIVE);return;}
-  if(t.dataset.copyprompt){copyText(promptFor(BY[t.dataset.copyprompt]).positive);return;}
-  if(t.dataset.delphoto){removePhoto(t.dataset.delphoto);return;}
+  if(t.dataset.copyprompt){ const st=BY[t.dataset.copyprompt], v=t.dataset.view||'front'; copyText(v==='all'?VIEWS.map(x=>`## ${VIEW_LABEL[x]}\n${promptFor(st,x).positive}`).join('\n\n')+`\n\n## Negative\n${PROMPT_NEGATIVE}`:promptFor(st,v).positive); return; }
+  if(t.dataset.delphoto){removePhoto(t.dataset.delphoto,t.dataset.view||'front');return;}
   if(t.dataset.f){ const k=t.dataset.f,v=JSON.parse(t.dataset.v); const sel=filters[k]||[]; filters[k]=sel.includes(v)?sel.filter(x=>x!==v):[...sel,v]; persist(); renderRail(); renderGrid(); return; }
-  if(t.dataset.open){openDetail(t.dataset.open);return;}
+  if(t.dataset.open){openDetail(t.dataset.open,t.dataset.view||undefined);return;}
   if(t.dataset.like){ const id=t.dataset.like; likes.has(id)?likes.delete(id):likes.add(id); persist(); toast(likes.has(id)?'Shortlisted':'Removed from shortlist'); if($('#overlay').classList.contains('on')) openDetail(id); refreshAll(); return; }
   if(t.dataset.cmp){ const id=t.dataset.cmp; if(cmp.includes(id)) cmp=cmp.filter(x=>x!==id); else { if(cmp.length>=4){toast('Compare holds four styles. Remove one first.');return;} cmp.push(id);} persist(); toast(cmp.includes(id)?`In compare (${cmp.length})`:'Removed from compare'); if($('#overlay').classList.contains('on')) openDetail(id); refreshAll(); return; }
   if(t.dataset.win){duelWin(t.dataset.win);return;}
@@ -879,9 +1041,11 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('#overlay').classList.contains('on')) closeDetail(); if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.open){e.preventDefault();openDetail(e.target.dataset.open);} });
 $('#sort').addEventListener('change',renderGrid);
-document.addEventListener('change',e=>{ if(e.target.dataset&&e.target.dataset.upload){ addPhoto(e.target.dataset.upload,e.target.files[0]); e.target.value=''; } });
+document.addEventListener('change',e=>{ if(e.target.dataset&&e.target.dataset.upload){ addPhoto(e.target.dataset.upload,e.target.dataset.view||'front',e.target.files[0]); e.target.value=''; } });
 $('#imgmode').addEventListener('change',e=>{imgMode=e.target.value;store.set('imgmode',imgMode);refreshAll();});
 $('#imgmode').value=imgMode;
+$('#angle').addEventListener('change',e=>{angle=e.target.value;store.set('angle',angle);refreshAll();});
+$('#angle').value=angle;
 $('#tile').addEventListener('change',e=>{$('#grid').style.setProperty('--tile',e.target.value+'px');store.set('tile',e.target.value);});
 {const t=store.get('tile','225');$('#tile').value=t;$('#grid').style.setProperty('--tile',t+'px');}
 $('#duelN').addEventListener('change',()=>pickDuel());
