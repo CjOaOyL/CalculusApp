@@ -5,7 +5,7 @@ Open `index.html` directly, or through GitHub Pages at `/locs/`.
 
 ## Files
 
-- `index.html` – the page (browse, head-to-head, compare, shortlist, prompts, scoring).
+- `index.html` – the page (swipe deck, browse, head-to-head, compare, shortlist, prompts, scoring). Swipe is the default view: drag a card right to like, left to pass, up to shortlist, down to see later; arrow keys and buttons do the same. Passed styles drop out of Browse and head-to-head until brought back.
 - `catalog.js` – the 38 styles, the 21-attribute schema, a written construction profile per style (how it is built, how to recognise it, install time and cost, products, how long it holds, care, variants, pairings, pros and cons), sources, and the photo-prompt template. Shared by the page and the generator.
 - `img/` – optional photoreal reference images, one per style per angle (front, side, back, top), plus `img/manifest.json` naming them. The page falls back to its attribute-drawn schematics when an image is missing.
 - `../../tools/gen_images.py` – generates the images with an image model.
