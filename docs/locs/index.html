@@ -180,7 +180,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 .scard.dragging{cursor:grabbing;transition:none!important}
 .scard.behind{transform:scale(.95) translateY(14px);opacity:.85;pointer-events:none}
 .scard.settle{transition:transform .28s cubic-bezier(.2,.8,.2,1)}
-.scard.fly{transition:transform .38s ease-in,opacity .38s ease-in;opacity:0}
+.scard.fly{transition:transform .38s ease-in,opacity .38s ease-in;opacity:0;pointer-events:none}
 .scard .shot{flex:1;min-height:0;position:relative;background:var(--pic);display:grid;place-items:center}
 .scard .shot svg{width:100%;height:100%}
 .scard .shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -403,6 +403,10 @@ let likes=new Set(store.get('likes',[]));
 let cmp=store.get('cmp',[]);
 let taste=store.get('taste',{wins:{},losses:{},rounds:0,seen:[]});
 taste.passed=taste.passed||{}; taste.swiped=taste.swiped||[];
+// drop ids that no longer exist in the catalogue (a renamed or removed style must not brick the page)
+{ const ok=id=>Object.prototype.hasOwnProperty.call(BY,id);
+  likes=new Set([...likes].filter(ok)); cmp=cmp.filter(ok); taste.seen=taste.seen.filter(ok); taste.swiped=taste.swiped.filter(ok);
+  for(const k of ['wins','losses','passed']) for(const id of Object.keys(taste[k])) if(!ok(id)) delete taste[k][id]; }
 let hidePassed=store.get('hidePassed',true);
 let filters=store.get('filters',{});
 let duelCur=[];
@@ -414,11 +418,12 @@ function tasteWeights(){
   for(const id of likes) w[id]=(w[id]||0)+1.5;
   for(const [id,n] of Object.entries(taste.wins)) w[id]=(w[id]||0)+n;
   for(const [id,n] of Object.entries(taste.losses)) w[id]=(w[id]||0)-0.5*n;
+  for(const id of Object.keys(taste.passed)) w[id]=Math.min(w[id]||0,-0.5);
   return w;
 }
 function tasteScore(s){ // similarity to the user's positive picks, penalised by losses
   const w=tasteWeights(); let num=0,den=0;
-  for(const [id,wt] of Object.entries(w)){ if(id===s.id||wt===0) continue; const sm=sim(s,BY[id]); num+=wt*sm; den+=Math.abs(wt); }
+  for(const [id,wt] of Object.entries(w)){ if(id===s.id||wt===0||!BY[id]) continue; const sm=sim(s,BY[id]); num+=wt*sm; den+=Math.abs(wt); }
   return den?num/den:0;
 }
 function hasTaste(){ return Object.values(tasteWeights()).some(v=>v>0); }
@@ -802,7 +807,7 @@ function photoURL(id,view='front'){
 }
 const hasPhoto=(id,view)=>view?!!photoURL(id,view):VIEWS.some(v=>photoURL(id,v));
 const photoCount=()=>STYLES.filter(s=>hasPhoto(s.id)).length;
-const photoMeta=(id,view)=>userPhotos[pkey(id,view)]?'your photo':(manifest[id]&&((manifest[id].views||{})[view]||(view==='front'?manifest[id]:null)))?('photo · '+((manifest[id].views||{})[view]||manifest[id]).model||'generated'):'';
+const photoMeta=(id,view)=>{ if(userPhotos[pkey(id,view)]) return 'your photo'; const m=manifest[id]; const e=m&&(((m.views||{})[view])||(view==='front'&&m.file?m:null)); return e?('photo · '+(e.model||e.provider||'generated')):''; };
 function vis(s,view=angle,guides=false){ // schematic underneath, photo on top; a photo that fails to load removes itself
   const u=imgMode==='photo'?photoURL(s.id,view):null;
   return drawing(s,view,guides)+(u?`<img src="${esc(u)}" alt="${esc(s.name)}, ${view} view" loading="lazy" onerror="this.remove()"><span class="badge">${esc(photoMeta(s.id,view))}</span>`:`<span class="badge dim">${VIEW_LABEL[view]}</span>`);
@@ -815,7 +820,7 @@ const idb={
 };
 async function loadPhotos(){
   try{ const r=await fetch('img/manifest.json',{cache:'no-cache'}); if(r.ok) manifest=await r.json(); }catch(e){}
-  try{ const all=await idb.all(); for(const [k,blob] of Object.entries(all)) userPhotos[k.includes('|')?k:k+'|front']={url:URL.createObjectURL(blob)}; }catch(e){}
+  try{ const all=await idb.all(); for(const [k,blob] of Object.entries(all)){ let key=k; if(!k.includes('|')){ key=k+'|front'; try{ await idb.put(key,blob); await idb.del(k); }catch(e){} } userPhotos[key]={url:URL.createObjectURL(blob)}; } }catch(e){}
   updateCounts(); refreshAll();
 }
 async function addPhoto(id,view,file){
@@ -975,7 +980,8 @@ function pickDuel(seedId){
     // one candidate near the taste centroid that has not been shown much
     const ranked=pool.filter(s=>!(s.id in taste.losses)).sort((a,b)=>tasteScore(b)-tasteScore(a));
     const fresh=ranked.filter(s=>!seen.has(s.id));
-    chosen.push((fresh.length?fresh:ranked)[Math.floor(Math.random()*Math.min(3,(fresh.length?fresh:ranked).length))]);
+    const src=fresh.length?fresh:(ranked.length?ranked:[...pool].sort((a,b)=>tasteScore(b)-tasteScore(a)));
+    chosen.push(src[Math.floor(Math.random()*Math.min(3,src.length))]);
   } else {
     const fresh=pool.filter(s=>!seen.has(s.id));
     const src=fresh.length?fresh:pool;
@@ -992,9 +998,10 @@ function pickDuel(seedId){
       d+=Math.random()*0.05;
       if(d>bd){bd=d;best=s;}
     }
+    if(!best) break;
     chosen.push(best);
   }
-  duelCur=chosen.map(s=>s.id);
+  duelCur=chosen.filter(Boolean).map(s=>s.id);
   renderDuel();
 }
 function renderDuel(){
@@ -1026,7 +1033,7 @@ function renderProfile(){
     const lvl=a.levels[Math.round(m)]||'';
     return `<div class="bar"><span>${a.label}</span><div class="track"><div class="fill" style="width:${((m-a.min)/(a.max-a.min)*100).toFixed(0)}%"></div></div><span class="v">${esc(lvl)}</span></div>`;
   }).join('');
-  const top=STYLES.map(s=>({s,v:tasteScore(s)})).sort((a,b)=>b.v-a.v).slice(0,6);
+  const top=STYLES.filter(s=>!taste.passed[s.id]).map(s=>({s,v:tasteScore(s)})).sort((a,b)=>b.v-a.v).slice(0,6);
   el.innerHTML=`<div class="eyebrow">Your taste so far · ${taste.rounds} round${taste.rounds===1?'':'s'} · ${pos.length} liked</div>
     <h3 style="font-size:1.15rem;margin:4px 0 10px">Where your picks land</h3>
     <div class="bars">${rows}</div>
@@ -1075,6 +1082,7 @@ function whyShown(s){
   return 'A deliberate contrast to what you have seen';
 }
 function renderSwipe(){
+  dragState=null;
   if(!deck.length||deck.some(id=>reviewed(id))) buildDeck();
   const el=$('#deck');
   const total=STYLES.length, done=STYLES.filter(s=>reviewed(s.id)).length;
@@ -1100,11 +1108,11 @@ function bindDrag(card){
   if(!card) return;
   const stamps={like:card.querySelector('.stamp.like'),pass:card.querySelector('.stamp.pass'),love:card.querySelector('.stamp.love'),later:card.querySelector('.stamp.later')};
   const setStamps=(dx,dy)=>{ const ax=Math.abs(dx),ay=Math.abs(dy); const horiz=ax>=ay; stamps.like.style.opacity=horiz&&dx>0?Math.min(1,dx/90):0; stamps.pass.style.opacity=horiz&&dx<0?Math.min(1,-dx/90):0; stamps.love.style.opacity=!horiz&&dy<0?Math.min(1,-dy/110):0; stamps.later.style.opacity=!horiz&&dy>0?Math.min(1,dy/110):0; };
-  card.addEventListener('pointerdown',e=>{ if(e.button!==undefined&&e.button!==0) return; dragState={x0:e.clientX,y0:e.clientY,dx:0,dy:0,moved:false,id:card.dataset.id}; card.setPointerCapture(e.pointerId); card.classList.add('dragging'); card.classList.remove('settle'); });
+  card.addEventListener('pointerdown',e=>{ if(e.button!==undefined&&e.button!==0) return; if(e.target.closest('.angles-strip')) return; dragState={x0:e.clientX,y0:e.clientY,dx:0,dy:0,moved:false,id:card.dataset.id}; card.setPointerCapture(e.pointerId); card.classList.add('dragging'); card.classList.remove('settle'); });
   card.addEventListener('pointermove',e=>{ if(!dragState) return; dragState.dx=e.clientX-dragState.x0; dragState.dy=e.clientY-dragState.y0; if(Math.hypot(dragState.dx,dragState.dy)>6) dragState.moved=true; card.style.transform=`translate(${dragState.dx}px,${dragState.dy}px) rotate(${dragState.dx/18}deg)`; setStamps(dragState.dx,dragState.dy); });
-  const end=e=>{ if(!dragState) return; const {dx,dy,moved,id}=dragState; dragState=null; card.classList.remove('dragging');
+  const end=e=>{ if(!dragState) return; if(dragState.id!==card.dataset.id){ dragState=null; card.classList.remove('dragging'); card.style.transform=''; return; } const {dx,dy,moved,id}=dragState; dragState=null; card.classList.remove('dragging');
     const ax=Math.abs(dx),ay=Math.abs(dy);
-    if(!moved){ card.style.transform=''; if(!e.target.closest('[data-open]')) openDetail(id); return; }
+    if(!moved){ card.style.transform=''; openDetail(id); return; }
     if(ax>=ay&&ax>110) return fling(card,dx>0?'like':'pass',dx,dy);
     if(ay>ax&&dy<-120) return fling(card,'love',dx,dy);
     if(ay>ax&&dy>120) return fling(card,'later',dx,dy);
@@ -1112,6 +1120,7 @@ function bindDrag(card){
   card.addEventListener('pointerup',end); card.addEventListener('pointercancel',end);
 }
 function fling(card,action,dx=0,dy=0){
+  if(card.dataset.flying) return; card.dataset.flying='1';
   const id=card.dataset.id;
   const tx=action==='like'?900:action==='pass'?-900:dx*2, ty=action==='love'?-900:action==='later'?900:dy*2;
   card.classList.add('fly'); card.style.transform=`translate(${tx}px,${ty}px) rotate(${tx/18}deg)`;
@@ -1119,6 +1128,7 @@ function fling(card,action,dx=0,dy=0){
   setTimeout(()=>applySwipe(id,action),300);
 }
 function applySwipe(id,action){
+  if(!deck.includes(id)) return; // already applied (double fling) or deck rebuilt
   const before={wins:taste.wins[id]||0,losses:taste.losses[id]||0,passed:!!taste.passed[id],liked:likes.has(id),swiped:taste.swiped.includes(id),deckIndex:deck.indexOf(id)};
   undoStack.push({id,action,before}); if(undoStack.length>30) undoStack.shift();
   if(action==='like'){ taste.wins[id]=(taste.wins[id]||0)+1; }
@@ -1254,7 +1264,7 @@ document.addEventListener('keydown',e=>{
     const card=$('#deck .scard:not(.behind)'); const map={ArrowLeft:'pass',ArrowRight:'like',ArrowUp:'love',ArrowDown:'later'};
     if(map[e.key]&&card){e.preventDefault();fling(card,map[e.key]);return;}
     if((e.key==='z'||e.key==='Z'||e.key==='Backspace')){e.preventDefault();undoSwipe();return;}
-    if(e.key==='Enter'&&card){openDetail(card.dataset.id);return;}
+    if(e.key==='Enter'&&card&&!(e.target.dataset&&e.target.dataset.open)){openDetail(card.dataset.id);return;}
   }
   if(e.key==='Escape'&&$('#overlay').classList.contains('on')) closeDetail(); if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.open){e.preventDefault();openDetail(e.target.dataset.open);} });
 $('#sort').addEventListener('change',renderGrid);
@@ -1268,7 +1278,7 @@ $('#tile').addEventListener('change',e=>{$('#grid').style.setProperty('--tile',e
 {const t=store.get('tile','225');$('#tile').value=t;$('#grid').style.setProperty('--tile',t+'px');}
 $('#duelN').addEventListener('change',()=>pickDuel());
 $('#duelSkip').addEventListener('click',()=>{ for(const c of duelCur) if(!taste.seen.includes(c)) taste.seen.push(c); persist(); pickDuel(); });
-$('#duelReset').addEventListener('click',()=>{ taste={wins:{},losses:{},rounds:0,seen:[],passed:{},swiped:[]}; persist(); renderSwipe(); toast('Taste profile cleared'); pickDuel(); updateCounts(); });
+$('#duelReset').addEventListener('click',()=>{ taste={wins:{},losses:{},rounds:0,seen:[],passed:{},swiped:[]}; deck=[]; undoStack=[]; persist(); renderSwipe(); toast('Taste profile cleared'); pickDuel(); updateCounts(); });
 
 renderRail(); renderAbout(); updateCounts();
 const start=(location.hash||'').replace('#','');

@@ -572,7 +572,7 @@ const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
 function hairSentences(s,view){
   const mm=[0,3,5.5,10,16,26][s.thickness];
   const out=[
-    `Hairstyle: ${s.name.toLowerCase()}${s.aka.length?` (also called ${s.aka[0]})`:''}.`,
+    `Hairstyle: ${s.name.replace(/\s*\(men\)/i,'').toLowerCase()}${s.aka.length?` (also called ${s.aka[0]})`:''}.`,
     `About ${s.count} individual locs, each roughly ${mm} mm thick${s.thickness>=5?', as thick as a broom handle':s.thickness===1?', as fine as a shoelace':''}.`,
     cap(LENGTH_WORDS[s.length])+', '+SIDES_WORDS[s.sides]+'.',
     cap(NEAT_WORDS[s.neatness])+(s.parting&&!/none/i.test(s.parting)?`, parted in a ${s.parting.toLowerCase()} pattern`:'')+'.',
@@ -582,7 +582,7 @@ function hairSentences(s,view){
   ];
   if(s.construction) out.push('Construction: '+s.construction);
   out.push(`The ends are ${s.ends.toLowerCase()}.`);
-  if(s.section) out.push(`Each loc grows from a parting square about ${s.section} inches on a side.`);
+  if(s.section) out.push(`Each loc grows from a parting square about ${s.section===1?'1 inch':s.section+' inches'} on a side.`);
   if(view==='side') out.push(`In profile the ${s.sides?'line where the cut meets the locs above the ear is clearly visible':'locs cover the side of the head down to the hairline'}, and the length is read against the jaw and shoulder.`);
   if(view==='back') out.push(`From behind: ${s.nape.toLowerCase()}.`);
   if(view==='top') out.push(`From above: ${s.crown.toLowerCase()}.`);

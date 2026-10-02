@@ -45,6 +45,8 @@ def http(url, data=None, headers=None, method=None, timeout=300):
     except urllib.error.HTTPError as e:
         body = e.read().decode('utf-8', 'replace')[:800]
         raise SystemExit(f'HTTP {e.code} from {url}\n{body}')
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        raise SystemExit(f'Could not reach {url}: {e}. Progress so far is saved in the manifest; rerun to continue.')
 
 def gen_openai(p, key):
     body = json.dumps({'model': 'gpt-image-1', 'prompt': p['positive'], 'size': ('1024x1024' if p['view']=='top' else '1024x1536'), 'quality': 'medium', 'n': 1}).encode()
@@ -102,12 +104,17 @@ def main():
     ap.add_argument('--sleep', type=float, default=1.0, help='seconds between calls')
     a = ap.parse_args()
 
-    views = [v.strip() for v in a.views.split(',') if v.strip() in ('front', 'side', 'back', 'top')]
-    if not views:
-        raise SystemExit('--views must name front, side, back or top')
+    views = [v.strip() for v in a.views.split(',') if v.strip()]
+    bad = [v for v in views if v not in ('front', 'side', 'back', 'top')]
+    if bad or not views:
+        raise SystemExit(f"--views must name front, side, back or top (got: {', '.join(bad) or 'nothing'})")
     prompts = load_prompts(views)
     if a.only:
-        want = set(a.only.split(','))
+        want = [x.strip() for x in a.only.split(',') if x.strip()]
+        known = {p['id'] for p in prompts}
+        unknown = [x for x in want if x not in known]
+        if unknown:
+            raise SystemExit(f"Unknown style id(s): {', '.join(unknown)}. Known: {', '.join(sorted(known))}")
         prompts = [p for p in prompts if p['id'] in want]
     os.makedirs(IMG, exist_ok=True)
     manifest = json.load(open(MANIFEST)) if os.path.exists(MANIFEST) else {}
