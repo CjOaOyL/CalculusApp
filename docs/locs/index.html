@@ -21,9 +21,14 @@
   --accent-soft:#f1dcc3;
   --good:#2f7a4f;
   --warn:#a8542b;
-  --pic:#e4ded4;
-  --hair:#2a1e17;
-  --hair-tip:#d79a3c;
+  --pic:#dcd5ca;       /* illustration backdrop */
+  --hair:#3a2920;
+  --hair-dk:#140c08;
+  --hair-hi:#9a7558;
+  --hair-tip:#e2a444;
+  --part:#d9c3a6;      /* parting lines on the scalp */
+  --guide:#a89b8c;
+  --guide-ink:#5b5047;
   --skin:#8d5a3b;
   --skin-shade:#6f4530;
   --shadow:0 10px 30px rgba(50,35,20,.12);
@@ -36,14 +41,14 @@
   :root:not([data-theme="light"]){
     --bg:#17130f; --surface:#211b16; --surface-2:#2c251f; --fg:#f1e9df; --muted:#a4968a;
     --line:#3c332b; --accent:#e0a04a; --accent-ink:#1d1409; --accent-soft:#3d2c17;
-    --good:#6fc48f; --warn:#e58a5b; --pic:#5b4c41; --hair:#17100b; --hair-tip:#e8b45a; --skin:#a46d49; --skin-shade:#7f4f33;
+    --good:#6fc48f; --warn:#e58a5b; --pic:#6d5e52; --hair:#24170f; --hair-dk:#0b0603; --hair-hi:#a98166; --hair-tip:#edb75a; --part:#e3cfae; --guide:#b7a999; --guide-ink:#efe4d6; --skin:#a46d49; --skin-shade:#7f4f33;
     --shadow:0 10px 30px rgba(0,0,0,.45); color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#17130f; --surface:#211b16; --surface-2:#2c251f; --fg:#f1e9df; --muted:#a4968a;
   --line:#3c332b; --accent:#e0a04a; --accent-ink:#1d1409; --accent-soft:#3d2c17;
-  --good:#6fc48f; --warn:#e58a5b; --pic:#5b4c41; --hair:#17100b; --hair-tip:#e8b45a; --skin:#a46d49; --skin-shade:#7f4f33;
+  --good:#6fc48f; --warn:#e58a5b; --pic:#6d5e52; --hair:#24170f; --hair-dk:#0b0603; --hair-hi:#a98166; --hair-tip:#edb75a; --part:#e3cfae; --guide:#b7a999; --guide-ink:#efe4d6; --skin:#a46d49; --skin-shade:#7f4f33;
   --shadow:0 10px 30px rgba(0,0,0,.45); color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -85,10 +90,10 @@ h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
 .sortrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
 .sortrow label{font-size:.85rem;color:var(--muted)}
 select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:5px 8px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--tile,225px),1fr));gap:14px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0;transition:transform .15s,box-shadow .15s}
 .card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-.card .pic{background:var(--pic);border-radius:var(--r);aspect-ratio:4/5;max-width:100%;display:grid;place-items:center;overflow:hidden;cursor:pointer}
+.card .pic{background:var(--pic);border-radius:var(--r);aspect-ratio:200/310;max-width:100%;display:grid;place-items:center;overflow:hidden;cursor:pointer}
 .card .pic svg{width:100%;height:100%}
 .card h3{font-size:1.02rem;font-weight:700}
 .card .grp{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
@@ -113,9 +118,15 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 .sheet-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
 .sheet h2{font-size:1.7rem;font-weight:800}
 .aka{color:var(--muted);font-size:.9rem}
-.detail{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:20px;margin-top:14px}
+.detail{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:22px;margin-top:14px}
+.views{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.views .v{background:var(--pic);border-radius:var(--r);overflow:hidden}
+.views .v svg{width:100%;height:auto;display:block}
+.views .cap{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:3px}
+.cmp td.vis{padding:6px}
+.cmp td.vis svg{width:100%;max-width:220px;height:auto;display:block;border-radius:4px}
 @media (max-width:720px){.detail{grid-template-columns:1fr}}
-.detail .pic{background:var(--pic);border-radius:var(--r);aspect-ratio:4/5;max-width:100%}
+.detail .pic{background:var(--pic);border-radius:var(--r);aspect-ratio:200/310;max-width:100%}
 .detail .pic svg{width:100%;height:100%}
 .attrs{width:100%;border-collapse:collapse;font-size:.88rem}
 .attrs th,.attrs td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -132,7 +143,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 /* duel */
 .duel-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
 .duel{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,340px));gap:14px;justify-content:center}
-.duel .card .pic{aspect-ratio:4/4.6}
+.duel .card .pic{aspect-ratio:200/300}
 .diffrow{margin:14px 0 6px;font-size:.88rem;color:var(--muted)}
 .diffrow b{color:var(--fg)}
 .profile{margin-top:24px;border-top:1px solid var(--line);padding-top:16px}
@@ -147,7 +158,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 .cmp{border-collapse:collapse;min-width:620px;width:100%;font-size:.86rem}
 .cmp th,.cmp td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 .cmp thead th{background:var(--surface-2);font-weight:700}
-.cmp thead th .pic{width:90px;aspect-ratio:4/5;background:var(--pic);border-radius:4px;margin-bottom:6px}
+.cmp thead th .pic{width:100px;aspect-ratio:200/310;background:var(--pic);border-radius:4px;margin-bottom:6px}
 .cmp thead th .pic svg{width:100%;height:100%}
 .cmp tbody th{color:var(--muted);font-weight:500;white-space:nowrap}
 .cmp td{font-family:var(--mono);font-size:.78rem}
@@ -191,6 +202,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
       <div>
         <div class="sortrow">
           <span id="count" class="note"></span>
+          <label>Tiles <select id="tile"><option value="225">regular</option><option value="320">large</option><option value="440">huge</option></select></label>
           <label>Sort <select id="sort">
             <option value="group">by family</option>
             <option value="name">A to Z</option>
@@ -524,130 +536,230 @@ function tasteScore(s){ // similarity to the user's positive picks, penalised by
 }
 function hasTaste(){ return Object.values(tasteWeights()).some(v=>v>0); }
 
-/* ---------------- illustration ---------------- */
+/* ---------------- illustration ----------------
+   Three schematic views per style, all drawn from the attributes:
+   headSVG   front view with length guides (ear, chin, shoulder, chest, waist)
+   scalpSVG  top-down map of the parting pattern, loc bases and shaved area
+   swatchSVG one loc at true scale against a millimetre ruler, showing surface texture */
 function rng(seed){let h=2166136261;for(const c of seed)h=Math.imul(h^c.charCodeAt(0),16777619);return()=>{h+=0x6D2B79F5;let t=Math.imul(h^h>>>15,1|h);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296}}
-function headSVG(s){
+const MM=[0,3,5.5,10,16,26];              // representative diameter per thickness level
+const SW=[0,2.6,3.8,5.4,7.8,12.5];        // stroke width in the head drawing
+const NSTR=[0,44,30,20,13,8];             // strands visible from the front
+const LEN=[0,25,42,110,170,220];          // drop from the scalp anchor, in drawing units
+const GUIDES=[['ear',112],['chin',168],['shoulder',200],['chest',245],['waist',295]];
+const f1=v=>Math.round(v*10)/10;
+
+function gradDefs(s,gid,y0,y1){
+  let st='';
+  const H='var(--hair)',T='var(--hair-tip)';
+  if(s.color===0) st=`<stop offset="0" stop-color="${H}"/><stop offset="1" stop-color="${H}"/>`;
+  if(s.color===1) st=`<stop offset="0" stop-color="${H}"/><stop offset=".66" stop-color="${H}"/><stop offset=".74" stop-color="${T}"/><stop offset="1" stop-color="${T}"/>`;
+  if(s.color===2) st=`<stop offset="0" stop-color="${H}"/><stop offset=".28" stop-color="${H}"/><stop offset="1" stop-color="${T}"/>`;
+  if(s.color===3) st=`<stop offset="0" stop-color="${T}"/><stop offset="1" stop-color="${T}"/>`;
+  return `<linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="0" y1="${y0}" x2="0" y2="${y1}">${st}</linearGradient>`;
+}
+/* quadratic bezier sampling for texture marks */
+function qpts(p0,c,p1,step){
+  const out=[]; const len=Math.hypot(p1.x-p0.x,p1.y-p0.y)+Math.hypot(c.x-p0.x,c.y-p0.y)*0.3;
+  const n=Math.max(2,Math.round(len/step));
+  for(let i=1;i<n;i++){const t=i/n,u=1-t;out.push({x:u*u*p0.x+2*u*t*c.x+t*t*p1.x,y:u*u*p0.y+2*u*t*c.y+t*t*p1.y});}
+  return out;
+}
+/* one loc: dark outline, gradient body, highlight edge, then surface marks */
+function strand(gid,p0,c,p1,w,surface,r){
+  const d=`M${f1(p0.x)} ${f1(p0.y)} Q${f1(c.x)} ${f1(c.y)} ${f1(p1.x)} ${f1(p1.y)}`;
+  let o='';
+  if(surface==='Matted / organic'){
+    // uneven body: several overlapping segments of different widths plus frizz
+    const pts=[p0,...qpts(p0,c,p1,14),p1];
+    o+=`<path d="${d}" stroke="var(--hair-dk)" stroke-width="${f1(w*1.35+1.6)}" stroke-linecap="round" fill="none"/>`;
+    for(let i=0;i<pts.length-1;i++){const ww=w*(0.65+r()*0.8);o+=`<line x1="${f1(pts[i].x)}" y1="${f1(pts[i].y)}" x2="${f1(pts[i+1].x)}" y2="${f1(pts[i+1].y)}" stroke="url(#${gid})" stroke-width="${f1(ww)}" stroke-linecap="round"/>`;
+      if(r()<0.6){const dx=(r()-0.5)*w*1.6;o+=`<line x1="${f1(pts[i].x)}" y1="${f1(pts[i].y)}" x2="${f1(pts[i].x+dx)}" y2="${f1(pts[i].y+3+r()*4)}" stroke="var(--hair-hi)" stroke-opacity=".8" stroke-width="1" stroke-linecap="round"/>`;}}
+    return o;
+  }
+  o+=`<path d="${d}" stroke="var(--hair-dk)" stroke-width="${f1(w+1.8)}" stroke-linecap="round" fill="none"/>`;
+  o+=`<path d="${d}" stroke="url(#${gid})" stroke-width="${f1(w)}" stroke-linecap="round" fill="none"/>`;
+  if(w>=3.4) o+=`<path d="${d}" stroke="var(--hair-hi)" stroke-opacity=".6" stroke-width="${f1(Math.max(1,w*0.26))}" stroke-linecap="round" fill="none" transform="translate(${f1(-w*0.26)},0)"/>`;
+  const marks=qpts(p0,c,p1, surface==='Coiled'?5:7);
+  const hw=w*0.46;
+  if(surface==='Twisted rope') for(const m of marks) o+=`<line x1="${f1(m.x-hw)}" y1="${f1(m.y-hw*0.7)}" x2="${f1(m.x+hw)}" y2="${f1(m.y+hw*0.7)}" stroke="var(--hair-hi)" stroke-width="${f1(Math.max(1,w*0.22))}" stroke-linecap="round"/>`;
+  if(surface==='Braided imprint') for(const m of marks) o+=`<path d="M${f1(m.x-hw)} ${f1(m.y-hw*0.6)} L${f1(m.x)} ${f1(m.y+hw*0.5)} L${f1(m.x+hw)} ${f1(m.y-hw*0.6)}" stroke="var(--hair-hi)" stroke-width="${f1(Math.max(1,w*0.2))}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(surface==='Coiled') for(const m of marks) o+=`<line x1="${f1(m.x-hw)}" y1="${f1(m.y)}" x2="${f1(m.x+hw)}" y2="${f1(m.y)}" stroke="var(--hair-hi)" stroke-width="1" stroke-linecap="round"/>`;
+  return o;
+}
+function headSVG(s,opts={}){
   const r=rng(s.id);
-  const W=200,H=250,cx=100,cy=108,rx=50,ry=60;
-  const sw=[0,2.2,3.4,5,7.5,12][s.thickness];
-  let n=[0,34,26,18,12,7][s.thickness];
-  if(s.id==='wicks') n=6; if(s.id==='congo') n=7;
-  const L=[0,22,52,92,135,178][s.length];
+  const W=200,H=310,cx=100,cy=108,rx=50,ry=60;
+  const sw=SW[s.thickness];
+  let n=NSTR[s.thickness]; if(s.id==='wicks')n=6; if(s.id==='congo')n=7;
+  const L=LEN[s.length];
   const gid='__G__';
-  const o=[];
-  // colour gradient along the hanging length
-  let stops='';
-  if(s.color===0) stops=`<stop offset="0" stop-color="var(--hair)"/><stop offset="1" stop-color="var(--hair)"/>`;
-  if(s.color===1) stops=`<stop offset="0" stop-color="var(--hair)"/><stop offset=".68" stop-color="var(--hair)"/><stop offset=".76" stop-color="var(--hair-tip)"/><stop offset="1" stop-color="var(--hair-tip)"/>`;
-  if(s.color===2) stops=`<stop offset="0" stop-color="var(--hair)"/><stop offset=".3" stop-color="var(--hair)"/><stop offset="1" stop-color="var(--hair-tip)"/>`;
-  if(s.color===3) stops=`<stop offset="0" stop-color="var(--hair-tip)"/><stop offset="1" stop-color="var(--hair-tip)"/>`;
-  const y0=cy-ry, y1=cy-ry+L+40;
-  o.push(`<defs><linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="0" y1="${y0}" x2="0" y2="${y1}">${stops}</linearGradient>
-  <linearGradient id="${gid}f" gradientUnits="userSpaceOnUse" x1="0" y1="${[0,96,86,0,0][s.sides]||0}" x2="0" y2="${[0,150,124,0,0][s.sides]||1}"><stop offset="0" stop-color="var(--hair)" stop-opacity=".9"/><stop offset="1" stop-color="var(--hair)" stop-opacity="0"/></linearGradient>
-  <clipPath id="${gid}c"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/></clipPath></defs>`);
-  // shoulders, neck, head
-  o.push(`<path d="M22 ${H} C32 206 66 194 100 194 C134 194 168 206 178 ${H} Z" fill="var(--skin-shade)"/>`);
-  o.push(`<rect x="84" y="150" width="32" height="50" fill="var(--skin)"/>`);
+  const o=[],locs=[],over=[];
+  const y0=cy-ry;
+  o.push(`<defs>${gradDefs(s,gid,y0,y0+L+50)}<clipPath id="${gid}c"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/></clipPath></defs>`);
+  o.push(`<rect width="${W}" height="${H}" fill="var(--pic)"/>`);
+  // length guides behind everything
+  if(opts.guides) for(const [name,y] of GUIDES){ o.push(`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 4"/>`); over.push(`<text x="${W-4}" y="${y-3}" text-anchor="end" font-family="var(--mono)" font-size="8.5" fill="var(--guide-ink)" stroke="var(--pic)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${name}</text>`); }
+  // body
+  o.push(`<path d="M22 ${H} L22 244 C22 214 58 196 100 196 C142 196 178 214 178 244 L178 ${H} Z" fill="var(--skin-shade)"/>`);
+  o.push(`<rect x="84" y="150" width="32" height="52" fill="var(--skin)"/>`);
   o.push(`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="var(--skin)"/>`);
-  o.push(`<ellipse cx="${cx-rx+1}" cy="${cy+6}" rx="6" ry="10" fill="var(--skin)"/><ellipse cx="${cx+rx-1}" cy="${cy+6}" rx="6" ry="10" fill="var(--skin)"/>`);
-  // hair cap on scalp
-  const hairTopColor = s.color===3?'var(--hair-tip)':'var(--hair)';
-  let capBottom=[150,0,0,96,88][s.sides];
-  let capX=cx-rx, capW=rx*2;
-  if(s.sides===4){capX=cx-20;capW=40;}
+  o.push(`<ellipse cx="${cx-rx+1}" cy="${cy+6}" rx="6" ry="10" fill="var(--skin)" stroke="var(--skin-shade)" stroke-width="1"/><ellipse cx="${cx+rx-1}" cy="${cy+6}" rx="6" ry="10" fill="var(--skin)" stroke="var(--skin-shade)" stroke-width="1"/>`);
+  // face hints: brows and nose, so the drawing reads as a head at small size
+  o.push(`<path d="M78 104 q10 -5 20 0 M102 104 q10 -5 20 0" stroke="var(--skin-shade)" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M100 110 l-5 22 h10" stroke="var(--skin-shade)" stroke-width="1.5" fill="none" stroke-linejoin="round"/>`);
+  // hair cap
+  const capColor=s.color===3?'var(--hair-tip)':'var(--hair)';
+  let capBottom=[150,96,86,96,88][s.sides];
+  let capX=cx-rx-2,capW=rx*2+4; if(s.sides===4){capX=cx-20;capW=40;}
+  o.push(`<rect x="${capX}" y="${y0-3}" width="${capW}" height="${capBottom-(y0-3)}" fill="${capColor}" clip-path="url(#${gid}c)"/>`);
+  // fade stipple for taper / fade
   if(s.sides===1||s.sides===2){
-    o.push(`<rect x="${cx-rx}" y="${cy-ry}" width="${rx*2}" height="${ry*2}" fill="url(#${gid}f)" clip-path="url(#${gid}c)"/>`);
-    capBottom=s.sides===1?96:86;
+    const top=capBottom, bot=s.sides===1?150:118;
+    for(let i=0;i<420;i++){const yy=top+r()*(bot-top); const p=1-(yy-top)/(bot-top); if(r()>p*p) continue; const xx=cx+(r()-0.5)*rx*2; if(Math.abs(xx-cx)<26&&yy<top+8) continue; o.push(`<circle cx="${f1(xx)}" cy="${f1(yy)}" r="${f1(0.6+p*0.9)}" fill="var(--hair)" clip-path="url(#${gid}c)"/>`);}
   }
-  o.push(`<rect x="${capX}" y="${cy-ry-2}" width="${capW}" height="${capBottom-(cy-ry-2)}" fill="${hairTopColor}" clip-path="url(#${gid}c)" opacity="${s.sides>=3?1:0.95}"/>`);
-  if(s.sides>=3){ // hard edge of undercut / mohawk
-    o.push(`<rect x="${capX}" y="${capBottom-1}" width="${capW}" height="2" fill="var(--skin-shade)" clip-path="url(#${gid}c)" opacity=".5"/>`);
-  }
-  // root pattern
-  if(s.roots===1){ for(let i=0;i<4;i++){const yy=cy-ry+10+i*9;o.push(`<path d="M${cx-34+i*3} ${yy} Q${cx} ${yy-6} ${cx+34-i*3} ${yy}" stroke="var(--pic)" stroke-opacity=".35" stroke-width="2" fill="none"/>`);} }
-  if(s.roots===2){ for(let i=-3;i<=3;i++){const xx=cx+i*9;o.push(`<path d="M${xx} ${cy-ry+2} l3 8 l-6 8 l6 8 l-6 8 l6 8" stroke="var(--pic)" stroke-opacity=".35" stroke-width="1.6" fill="none"/>`);} }
-  if(s.neatness===4){ for(let i=-4;i<=4;i++)for(let j=0;j<3;j++){const xx=cx+i*8,yy=cy-ry+8+j*9;if((xx-cx)**2/(rx*rx)+(yy-cy)**2/(ry*ry)<0.85)o.push(`<circle cx="${xx}" cy="${yy}" r="1" fill="var(--pic)" fill-opacity=".45"/>`);} }
-  // anchor angles
-  let a0=-168,a1=-12;
-  if(s.sides===2){a0=-140;a1=-40}
-  if(s.sides===3){a0=-130;a1=-50}
-  if(s.sides===4){a0=-112;a1=-68}
-  const anchors=[];
-  for(let i=0;i<n;i++){
-    const t=n===1?0.5:i/(n-1);
-    const ang=(a0+(a1-a0)*t)*Math.PI/180;
-    anchors.push({x:cx+rx*Math.cos(ang)*0.98,y:cy+ry*Math.sin(ang)*0.98,ang,t});
-  }
-  const stroke=`stroke="url(#${gid})" stroke-linecap="round" fill="none"`;
-  const jit=()=> (s.neatness<=2? (r()-0.5)*sw*0.9 : (r()-0.5)*sw*0.25);
-  const locs=[], knots=[];
-  const bun=(bx,by,br)=>knots.push(`<circle cx="${bx}" cy="${by}" r="${br}" fill="${hairTopColor}"/><circle cx="${bx-br*0.3}" cy="${by-br*0.3}" r="${br*0.35}" fill="var(--pic)" fill-opacity=".18"/>`);
-  for(const p of anchors){
-    const side=Math.cos(p.ang); // -1 left .. 1 right
-    const w=Math.max(1.4,sw+jit());
-    let len=L*(0.85+r()*0.3);
-    if(s.surface==='Curled') len*=0.7;
-    const up= s.arrange===3 || (s.arrange===1 && Math.abs(p.t-0.5)<0.28) || s.arrange===2;
-    if(s.arrange===2 && s.id!=='ponytail' && s.id!=='fishtail' && s.id!=='bantu'){
-      // top knot: short arcs into the bun
-      const bx=cx+(r()-0.5)*6, by=cy-ry-16;
-      locs.push(`<path d="M${p.x} ${p.y} Q${(p.x+bx)/2+side*8} ${(p.y+by)/2-10} ${bx} ${by}" stroke-width="${w}" ${stroke}/>`);
-      continue;
-    }
-    if(s.arrange===2 && (s.id==='ponytail'||s.id==='fishtail')){
-      // sweep back to the nape then one tail down the back
-      const bx=cx+(r()-0.5)*4, by=cy+ry-12;
-      locs.push(`<path d="M${p.x} ${p.y} Q${p.x+side*18} ${cy} ${bx} ${by}" stroke-width="${w}" ${stroke} opacity=".55"/>`);
-      continue;
-    }
-    if(s.arrange===2 && s.id==='bantu'){ continue; }
-    if(s.arrange===1 && Math.abs(p.t-0.5)<0.28){
-      const bx=cx+(r()-0.5)*6, by=cy-ry-14;
-      locs.push(`<path d="M${p.x} ${p.y} Q${(p.x+bx)/2+side*6} ${(p.y+by)/2-8} ${bx} ${by}" stroke-width="${w}" ${stroke}/>`);
-      continue;
-    }
-    if(s.arrange===3){
-      const ul=Math.min(len,s.id==='wicks'?70:34);
-      const nx=Math.cos(p.ang),ny=Math.sin(p.ang);
-      const wob=(r()-0.5)*10;
-      locs.push(`<path d="M${p.x} ${p.y} q${nx*ul*0.5+wob} ${ny*ul*0.5} ${nx*ul+wob*1.5} ${ny*ul}" stroke-width="${w}" ${stroke}/>`);
-      continue;
-    }
-    // hanging
-    const ex=p.x+side*(10+r()*10)+(r()-0.5)*6, ey=p.y+len;
-    const c1x=p.x+side*16, c1y=p.y+len*0.25;
-    if(s.surface==='Curled'){
-      let d=`M${p.x} ${p.y}`; let yy=p.y; const amp=5+sw*0.4; let xx=p.x+side*8;
-      while(yy<ey){ d+=` q${side*amp} ${6} 0 ${12} q${-side*amp} ${6} 0 ${12}`; yy+=24; }
-      locs.push(`<path d="${d}" transform="translate(${side*6},0)" stroke-width="${w}" ${stroke}/>`);
-    } else if(s.neatness<=2){
-      const mx=(r()-0.5)*12;
-      locs.push(`<path d="M${p.x} ${p.y} C${c1x} ${c1y} ${ex+mx} ${p.y+len*0.6} ${ex} ${ey}" stroke-width="${w}" ${stroke}/>`);
-      if(s.surface==='Matted / organic'&&r()<0.5) locs.push(`<path d="M${ex} ${ey-len*0.3} l${side*3} ${len*0.08}" stroke-width="${w*0.6}" ${stroke}/>`);
+  // crisp hairline / line-up for every cut
+  if(s.sides>=1) o.push(`<rect x="${capX}" y="${capBottom-0.8}" width="${capW}" height="1.6" fill="var(--hair-dk)" clip-path="url(#${gid}c)"/>`);
+  // parting lines on the cap
+  const part=s.parting;
+  if(s.neatness>=3 && s.roots===0 && !/rows|lattice|strip/i.test(part)){
+    const step=[0,6,8,11,15,22][s.thickness];
+    const x0=s.sides===4?cx-20:cx-rx, x1=s.sides===4?cx+20:cx+rx;
+    if(/spider/i.test(part)){
+      for(let k=1;k<=4;k++) o.push(`<ellipse cx="${cx}" cy="${y0+4}" rx="${k*12}" ry="${k*9}" fill="none" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`);
+      for(let a=0;a<180;a+=22.5){const rad=a*Math.PI/180;o.push(`<line x1="${cx}" y1="${y0+4}" x2="${f1(cx+Math.cos(rad)*70)}" y2="${f1(y0+4+Math.sin(rad)*70)}" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`);}
     } else {
-      locs.push(`<path d="M${p.x} ${p.y} Q${c1x} ${c1y} ${ex} ${ey}" stroke-width="${w}" ${stroke}/>`);
+      for(let x=x0+step/2;x<x1;x+=step) o.push(`<line x1="${f1(x)}" y1="${y0-3}" x2="${f1(x)}" y2="${capBottom}" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`);
+      const rows=/brick/i.test(part)?[y0+12,y0+24,y0+36]:[y0+14,y0+28];
+      rows.forEach((yy,i)=>{ if(/brick/i.test(part)){ for(let x=x0+(i%2?step:step/2);x<x1;x+=step*2) o.push(`<line x1="${f1(x)}" y1="${f1(yy)}" x2="${f1(x+step)}" y2="${f1(yy)}" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`);} else o.push(`<line x1="${x0}" y1="${f1(yy)}" x2="${x1}" y2="${f1(yy)}" stroke="var(--part)" stroke-width="1" clip-path="url(#${gid}c)"/>`); });
     }
-    if(s.surface==='Twisted rope'||s.surface==='Braided imprint'){
-      for(let k=1;k<len/12;k++){const yy=p.y+k*12;const xx=p.x+side*(10+r()*2)*Math.min(1,k*12/(len*0.25+1));o.length;locs.push(`<circle cx="${xx+(ex-p.x-side*10)*(k*12/len)}" cy="${yy}" r="${w*0.22}" fill="var(--pic)" fill-opacity=".35"/>`);}
+  }
+  if(s.neatness===2){ for(let i=0;i<4;i++){const xx=cx-36+i*24+(r()-0.5)*10;o.push(`<path d="M${f1(xx)} ${y0} q${f1((r()-0.5)*10)} 18 ${f1((r()-0.5)*8)} 36" stroke="var(--part)" stroke-width="1" fill="none" clip-path="url(#${gid}c)"/>`);} }
+  // root styling
+  if(s.roots===1){ for(let i=0;i<4;i++){const yy=y0+8+i*11; const d=`M${cx-40+i*4} ${yy+4} Q${cx} ${yy-8} ${cx+40-i*4} ${yy+4}`; o.push(`<path d="${d}" stroke="var(--hair-dk)" stroke-width="${f1(sw*1.1+1.6)}" fill="none" stroke-linecap="round" clip-path="url(#${gid}c)"/><path d="${d}" stroke="var(--hair)" stroke-width="${f1(sw*1.1)}" fill="none" stroke-linecap="round" clip-path="url(#${gid}c)"/>`); for(let x=cx-36;x<=cx+36;x+=7){const yy2=yy+4-8*(1-((x-cx)/40)**2);o.push(`<line x1="${f1(x-2.5)}" y1="${f1(yy2-2)}" x2="${f1(x+2.5)}" y2="${f1(yy2+2)}" stroke="var(--hair-hi)" stroke-width="1.2" stroke-linecap="round" clip-path="url(#${gid}c)"/>`);} } }
+  if(s.roots===2){ for(let i=-3;i<=3;i++){const xx=cx+i*11; const d=`M${xx} ${y0-2} Q${f1(xx+i*1.5)} ${y0+22} ${f1(xx+i*3)} ${capBottom}`; o.push(`<path d="${d}" stroke="var(--part)" stroke-width="1" fill="none" clip-path="url(#${gid}c)"/>`); for(let yy=y0+4;yy<capBottom-4;yy+=7){const t=(yy-y0)/(capBottom-y0);const px=xx+i*1.5*2*t*(1-t)+i*3*t*t; o.push(`<path d="M${f1(px-3)} ${f1(yy-2)} L${f1(px)} ${f1(yy+1.5)} L${f1(px+3)} ${f1(yy-2)}" stroke="var(--hair-hi)" stroke-width="1.3" fill="none" stroke-linecap="round" clip-path="url(#${gid}c)"/>`);} } }
+  if(/lattice/i.test(part)){ for(let k=-5;k<=5;k++){o.push(`<line x1="${cx+k*12-30}" y1="${y0-4}" x2="${cx+k*12+30}" y2="${capBottom}" stroke="var(--hair-hi)" stroke-width="1.6" clip-path="url(#${gid}c)"/><line x1="${cx+k*12+30}" y1="${y0-4}" x2="${cx+k*12-30}" y2="${capBottom}" stroke="var(--hair-hi)" stroke-width="1.6" clip-path="url(#${gid}c)"/>`);} }
+  if(s.neatness===4){ for(let i=-4;i<=4;i++)for(let j=0;j<3;j++){const xx=cx+i*9,yy=y0+8+j*10;if((xx-cx)**2/(rx*rx)+(yy-cy)**2/(ry*ry)<0.85)o.push(`<circle cx="${xx}" cy="${yy}" r="1.3" fill="var(--part)"/>`);} }
+  // anchors along the top arc
+  let a0=-168,a1=-12; if(s.sides===2){a0=-140;a1=-40} if(s.sides===3){a0=-130;a1=-50} if(s.sides===4){a0=-112;a1=-68}
+  const anchors=[]; for(let i=0;i<n;i++){const t=n===1?0.5:i/(n-1);const ang=(a0+(a1-a0)*t)*Math.PI/180;anchors.push({x:cx+rx*Math.cos(ang)*0.98,y:cy+ry*Math.sin(ang)*0.98,ang,t});}
+  const jit=()=>(s.neatness<=2?(r()-0.5)*sw*0.9:(r()-0.5)*sw*0.2);
+  const bun=(bx,by,br)=>{ let b=`<circle cx="${bx}" cy="${by}" r="${br+1.5}" fill="var(--hair-dk)"/><circle cx="${bx}" cy="${by}" r="${br}" fill="${capColor}"/>`; for(let k=1;k<=3;k++) b+=`<path d="M${bx-br*0.8} ${by-br*0.1*k+br*0.35} q${br*0.8} ${-br*0.9} ${br*1.6} 0" stroke="var(--hair-hi)" stroke-width="1.4" fill="none" stroke-linecap="round" transform="rotate(${k*60} ${bx} ${by})"/>`; return b; };
+  const isTail=s.id==='ponytail'||s.id==='fishtail';
+  for(const p of anchors){
+    const side=Math.cos(p.ang);
+    const w=Math.max(1.6,sw+jit());
+    let len=L*(0.86+r()*0.28);
+    if(s.surface==='Curled') len*=0.72;
+    if(s.arrange===2 && !isTail && s.id!=='bantu'){ const bx=cx+(r()-0.5)*6,by=y0-18; locs.push(strand(gid,p,{x:(p.x+bx)/2+side*10,y:(p.y+by)/2-10},{x:bx,y:by},w,s.surface,r)); continue; }
+    if(s.arrange===2 && isTail){ const bx=cx+(r()-0.5)*4,by=cy+ry-14; locs.push(strand(gid,p,{x:p.x+side*20,y:cy},{x:bx,y:by},w,s.surface,r)); continue; }
+    if(s.id==='bantu') continue;
+    if(s.arrange===1 && Math.abs(p.t-0.5)<0.28){ const bx=cx+(r()-0.5)*6,by=y0-15; locs.push(strand(gid,p,{x:(p.x+bx)/2+side*7,y:(p.y+by)/2-8},{x:bx,y:by},w,s.surface,r)); continue; }
+    if(s.arrange===3){ const ul=Math.min(len,s.id==='wicks'?72:36); const nx=Math.cos(p.ang),ny=Math.sin(p.ang); const wob=(r()-0.5)*10; locs.push(strand(gid,p,{x:p.x+nx*ul*0.5+wob,y:p.y+ny*ul*0.5},{x:p.x+nx*ul+wob*1.5,y:p.y+ny*ul},w,s.surface,r)); continue; }
+    const ex=p.x+side*(10+r()*10)+(r()-0.5)*6, ey=p.y+len;
+    const c={x:p.x+side*16,y:p.y+len*0.25};
+    if(s.surface==='Curled'){
+      let d=`M${f1(p.x)} ${f1(p.y)}`; let yy=p.y; const amp=5+w*0.4; while(yy<ey){ d+=` q${f1(side*amp)} 6 0 12 q${f1(-side*amp)} 6 0 12`; yy+=24; }
+      locs.push(`<g transform="translate(${f1(side*6)},0)"><path d="${d}" stroke="var(--hair-dk)" stroke-width="${f1(w+1.8)}" stroke-linecap="round" fill="none"/><path d="${d}" stroke="url(#${gid})" stroke-width="${f1(w)}" stroke-linecap="round" fill="none"/><path d="${d}" stroke="var(--hair-hi)" stroke-opacity=".6" stroke-width="${f1(Math.max(1,w*0.26))}" stroke-linecap="round" fill="none" transform="translate(${f1(-w*0.26)},0)"/></g>`);
+    } else locs.push(strand(gid,p,c,{x:ex,y:ey},w,s.surface,r));
+  }
+  if(s.arrange===2 && !isTail && s.id!=='bantu') over.push(bun(cx,y0-20,11+s.length*2.4));
+  if(s.arrange===1) over.push(bun(cx,y0-16,8+s.length*1.6));
+  if(isTail){ const tl=L*0.95; const p0={x:cx,y:cy+ry-14},c={x:cx+8,y:cy+ry-14+tl*0.5},p1={x:cx,y:cy+ry-14+tl}; over.push(strand(gid,p0,c,p1,sw*2.8,s.id==='fishtail'?'Braided imprint':s.surface,r)); over.push(`<ellipse cx="${cx}" cy="${cy+ry-14}" rx="${f1(sw*1.8)}" ry="${f1(sw*1.3)}" fill="var(--accent)" stroke="var(--hair-dk)" stroke-width="1"/>`); }
+  if(s.id==='bantu'){ const pts=[[cx-30,y0+14],[cx,y0-3],[cx+30,y0+14],[cx-17,y0+42],[cx+17,y0+42]]; for(const [bx,by] of pts) over.push(`<circle cx="${bx}" cy="${by}" r="11.5" fill="var(--hair-dk)"/><circle cx="${bx}" cy="${by}" r="10" fill="${capColor}"/><path d="M${bx-7} ${by} a7 7 0 1 1 14 0 a4.5 4.5 0 1 1 -9 0 a2 2 0 1 1 4 0" stroke="var(--hair-hi)" stroke-width="1.6" fill="none"/>`); }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Front view of ${s.name}">${o.join('')}${locs.join('')}${over.join('')}</svg>`;
+}
+/* top-down scalp map */
+function scalpSVG(s){
+  const r=rng(s.id+'scalp');
+  const W=200,H=200,cx=100,cy=100;
+  const gid='__G__';
+  const o=[`<rect width="${W}" height="${H}" fill="var(--pic)"/>`];
+  o.push(`<ellipse cx="${cx}" cy="${cy}" rx="72" ry="86" fill="var(--skin)" stroke="var(--skin-shade)" stroke-width="1.5"/>`);
+  o.push(`<path d="M94 186 q6 6 12 0" stroke="var(--skin-shade)" stroke-width="2" fill="none"/><text x="100" y="197" text-anchor="middle" font-family="var(--mono)" font-size="8" fill="var(--guide-ink)">front</text>`);
+  let rx=70,ry=84; if(s.sides===1){rx=62;ry=76} if(s.sides===2){rx=52;ry=66} if(s.sides===3){rx=46;ry=60}
+  const capColor=s.color===3?'var(--hair-tip)':'var(--hair)';
+  const clip=s.sides===4?`<clipPath id="${gid}s"><rect x="80" y="14" width="40" height="172"/></clipPath>`:`<clipPath id="${gid}s"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/></clipPath>`;
+  o.push(`<defs>${clip}</defs>`);
+  if(s.sides===1||s.sides===2){ for(let i=0;i<500;i++){const a=r()*Math.PI*2, rr=0.78+r()*0.22; const xx=cx+Math.cos(a)*72*rr, yy=cy+Math.sin(a)*86*rr; const inner=((xx-cx)/rx)**2+((yy-cy)/ry)**2; if(inner<1) continue; const p=1-Math.min(1,(Math.sqrt(inner)-1)/(s.sides===1?0.2:0.3)); if(r()>p) continue; o.push(`<circle cx="${f1(xx)}" cy="${f1(yy)}" r="${f1(0.6+p*0.8)}" fill="var(--hair)"/>`);} }
+  if(s.sides===4) o.push(`<rect x="80" y="14" width="40" height="172" rx="20" fill="${capColor}" stroke="var(--hair-dk)" stroke-width="1.5"/>`);
+  else o.push(`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${capColor}" stroke="var(--hair-dk)" stroke-width="1.5"/>`);
+  const cell=[0,7,10,15,22,34][s.thickness];
+  const part=s.parting, g=`clip-path="url(#${gid}s)"`;
+  const base=(x,y,rad)=>`<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(rad)}" fill="var(--hair-dk)"/><circle cx="${f1(x-rad*0.25)}" cy="${f1(y-rad*0.25)}" r="${f1(rad*0.45)}" fill="var(--hair-hi)" fill-opacity=".7"/>`;
+  const inside=(x,y)=>s.sides===4?(x>80&&x<120&&y>14&&y<186):(((x-cx)/rx)**2+((y-cy)/ry)**2<0.97);
+  if(/none|organic/i.test(part)){
+    const k=/none/i.test(part)?16:26;
+    for(let i=0;i<k;i++){let x,y,t=0;do{x=cx+(r()-0.5)*2*rx;y=cy+(r()-0.5)*2*ry;t++}while(!inside(x,y)&&t<20); const rad=cell*(0.3+r()*0.35); o.push(`<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(rad)}" ry="${f1(rad*(0.7+r()*0.6))}" fill="var(--hair-dk)" transform="rotate(${Math.round(r()*180)} ${f1(x)} ${f1(y)})"/>`);}
+    if(/organic/i.test(part)) for(let i=0;i<5;i++){o.push(`<path d="M${f1(cx-50+i*25)} ${cy-ry} q${f1((r()-0.5)*20)} ${ry} ${f1((r()-0.5)*20)} ${2*ry}" stroke="var(--part)" stroke-width="1" fill="none" ${g}/>`);}
+  } else if(/spider/i.test(part)){
+    for(let k=1;k<=5;k++) o.push(`<ellipse cx="${cx}" cy="${cy}" rx="${k*rx/5}" ry="${k*ry/5}" fill="none" stroke="var(--part)" stroke-width="1" ${g}/>`);
+    for(let a=0;a<360;a+=30){const rad=a*Math.PI/180;o.push(`<line x1="${cx}" y1="${cy}" x2="${f1(cx+Math.cos(rad)*100)}" y2="${f1(cy+Math.sin(rad)*100)}" stroke="var(--part)" stroke-width="1" ${g}/>`);}
+    for(let k=1;k<=5;k++) for(let a=15;a<360;a+=30){const rad=a*Math.PI/180,x=cx+Math.cos(rad)*(k-0.5)*rx/5,y=cy+Math.sin(rad)*(k-0.5)*ry/5; if(inside(x,y)) o.push(base(x,y,cell*0.3));}
+  } else if(/rows|strip/i.test(part)){
+    const nrows=/Two to four/i.test(part)?3:7; const stepx=(2*rx)/nrows;
+    for(let i=1;i<nrows;i++){const x=cx-rx+i*stepx;o.push(`<path d="M${f1(x)} ${cy-ry-5} Q${f1(x+(x-cx)*0.15)} ${cy} ${f1(x)} ${cy+ry+5}" stroke="var(--part)" stroke-width="1.2" fill="none" ${g}/>`);}
+    for(let i=0;i<nrows;i++){const x=cx-rx+(i+0.5)*stepx; for(let y=cy-ry+6;y<cy+ry;y+=8){ if(!inside(x,y)) continue; o.push(s.roots===2?`<path d="M${f1(x-stepx*0.3)} ${f1(y-3)} L${f1(x)} ${f1(y+2)} L${f1(x+stepx*0.3)} ${f1(y-3)}" stroke="var(--hair-hi)" stroke-width="1.4" fill="none" stroke-linecap="round"/>`:`<line x1="${f1(x-stepx*0.3)}" y1="${f1(y-3)}" x2="${f1(x+stepx*0.3)}" y2="${f1(y+3)}" stroke="var(--hair-hi)" stroke-width="1.4" stroke-linecap="round"/>`);} }
+  } else if(/lattice/i.test(part)){
+    for(let k=-8;k<=8;k++){o.push(`<line x1="${cx+k*cell-100}" y1="${cy-100}" x2="${cx+k*cell+100}" y2="${cy+100}" stroke="var(--hair-hi)" stroke-width="2" ${g}/><line x1="${cx+k*cell+100}" y1="${cy-100}" x2="${cx+k*cell-100}" y2="${cy+100}" stroke="var(--hair-hi)" stroke-width="2" ${g}/>`);}
+  } else {
+    const brick=/brick/i.test(part);
+    const c=/large|blocks/i.test(part)?Math.max(cell,22):cell;
+    let row=0;
+    for(let y=cy-ry+c/2;y<cy+ry;y+=c,row++){
+      o.push(`<line x1="0" y1="${f1(y-c/2)}" x2="${W}" y2="${f1(y-c/2)}" stroke="var(--part)" stroke-width="1" ${g}/>`);
+      const off=brick&&row%2?c/2:0;
+      for(let x=cx-rx+off;x<cx+rx+c;x+=c){ o.push(`<line x1="${f1(x-c/2)}" y1="${f1(y-c/2)}" x2="${f1(x-c/2)}" y2="${f1(y+c/2)}" stroke="var(--part)" stroke-width="1" ${g}/>`); if(inside(x,y)) o.push(base(x,y,c*0.3)); }
     }
   }
-  if(s.arrange===2 && s.id!=='ponytail' && s.id!=='fishtail' && s.id!=='bantu') bun(cx,cy-ry-18,10+s.length*2.4);
-  if(s.arrange===1) bun(cx,cy-ry-15,8+s.length*1.6);
-  if(s.id==='ponytail'||s.id==='fishtail'){
-    const tl=L*0.9;
-    knots.push(`<path d="M${cx} ${cy+ry-12} q${6} ${tl*0.5} 0 ${tl}" stroke-width="${sw*2.6}" ${stroke}/>`);
-    if(s.id==='fishtail') for(let k=0;k<tl/14;k++) knots.push(`<path d="M${cx-4} ${cy+ry-6+k*14} l8 6" stroke="var(--pic)" stroke-opacity=".35" stroke-width="1.5"/>`);
-    knots.push(`<ellipse cx="${cx}" cy="${cy+ry-12}" rx="${sw*1.6}" ry="${sw*1.2}" fill="var(--accent)"/>`);
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scalp map of ${s.name}">${o.join('')}</svg>`;
+}
+/* one loc at scale, 4 drawing units per millimetre */
+function swatchSVG(s){
+  const r=rng(s.id+'swatch');
+  const W=240,H=150,PX=3.5,x0=20,x1=220,ym=70;
+  const gid='__G__';
+  const mm=MM[s.thickness], h=mm*PX;
+  const o=[`<rect width="${W}" height="${H}" fill="var(--pic)"/>`];
+  o.push(`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0">${gradDefs(s,'x',0,1).replace(/<linearGradient[^>]*>|<\/linearGradient>/g,'')}</linearGradient></defs>`);
+  // ruler
+  const ry=122;
+  o.push(`<line x1="${x0}" y1="${ry}" x2="${x1}" y2="${ry}" stroke="var(--guide-ink)" stroke-width="1"/>`);
+  for(let m=0;m<=50;m++){const x=x0+m*PX;const big=m%10===0,mid=m%5===0;o.push(`<line x1="${x}" y1="${ry}" x2="${x}" y2="${ry-(big?9:mid?6:3)}" stroke="var(--guide-ink)" stroke-width="${big?1.2:0.8}"/>`); if(big) o.push(`<text x="${x}" y="${ry+12}" text-anchor="middle" font-family="var(--mono)" font-size="8" fill="var(--guide-ink)">${m}${m===50?' mm':''}</text>`);}
+  // reference: a pencil is about 7 mm
+  o.push(`<line x1="${x0}" y1="${ry-20}" x2="${x0+7*PX}" y2="${ry-20}" stroke="var(--guide)" stroke-width="3"/><text x="${x0+7*PX+4}" y="${ry-17}" font-family="var(--mono)" font-size="7.5" fill="var(--guide-ink)">pencil ≈ 7 mm</text>`);
+  // the loc
+  const yTop=ym-h/2;
+  if(s.surface==='Matted / organic'){
+    let d=`M${x0} ${f1(ym-h*0.45)}`; const segs=10;
+    const tops=[],bots=[]; for(let i=0;i<=segs;i++){const x=x0+(x1-x0)*i/segs; tops.push([x,ym-h*(0.3+r()*0.35)]); bots.push([x,ym+h*(0.3+r()*0.35)]);}
+    d=`M${f1(tops[0][0])} ${f1(tops[0][1])} `+tops.slice(1).map(p=>`L${f1(p[0])} ${f1(p[1])}`).join(' ')+' '+bots.reverse().map(p=>`L${f1(p[0])} ${f1(p[1])}`).join(' ')+' Z';
+    o.push(`<path d="${d}" fill="url(#${gid})" stroke="var(--hair-dk)" stroke-width="2" stroke-linejoin="round"/>`);
+    for(let i=0;i<30;i++){const x=x0+r()*(x1-x0),y=ym+(r()-0.5)*h*0.9;o.push(`<path d="M${f1(x)} ${f1(y)} q${f1((r()-0.5)*8)} ${f1(-4-r()*6)} ${f1((r()-0.5)*14)} ${f1(-h*0.5-r()*8)}" stroke="var(--hair-hi)" stroke-width="1" fill="none"/>`);}
+  } else {
+    const d=s.surface==='Curled'?null:`M${x0} ${f1(ym)} L${x1} ${f1(ym)}`;
+    if(s.surface==='Curled'){ const A=Math.min(h*0.5,8); let p=`M${x0} ${ym}`; let k=0; for(let x=x0;x<x1;x+=18,k++) p+=` q9 ${f1(k%2?A*2:-A*2)} 18 0`; o.push(`<path d="${p}" stroke="var(--hair-dk)" stroke-width="${f1(h+2)}" fill="none" stroke-linecap="round"/><path d="${p}" stroke="url(#${gid})" stroke-width="${f1(h)}" fill="none" stroke-linecap="round"/><path d="${p}" stroke="var(--hair-hi)" stroke-opacity=".6" stroke-width="${f1(Math.max(1,h*0.2))}" fill="none" transform="translate(0,${f1(-h*0.28)})"/>`); }
+    else {
+      o.push(`<rect x="${x0}" y="${f1(yTop-1)}" width="${x1-x0}" height="${f1(h+2)}" rx="${f1(h/2+1)}" fill="var(--hair-dk)"/><rect x="${x0+1}" y="${f1(yTop)}" width="${x1-x0-2}" height="${f1(h)}" rx="${f1(h/2)}" fill="url(#${gid})"/>`);
+      o.push(`<rect x="${x0+6}" y="${f1(yTop+h*0.12)}" width="${x1-x0-12}" height="${f1(Math.max(1.2,h*0.16))}" rx="1" fill="var(--hair-hi)" fill-opacity=".6"/>`);
+      const step=s.surface==='Coiled'?Math.max(4,h*0.35):Math.max(7,h*0.75);
+      for(let x=x0+step;x<x1-2;x+=step){
+        if(s.surface==='Twisted rope') o.push(`<line x1="${f1(x-h*0.35)}" y1="${f1(yTop+h*0.15)}" x2="${f1(x+h*0.35)}" y2="${f1(yTop+h*0.85)}" stroke="var(--hair-hi)" stroke-width="${f1(Math.max(1.2,h*0.12))}" stroke-linecap="round"/>`);
+        if(s.surface==='Braided imprint') o.push(`<path d="M${f1(x-h*0.35)} ${f1(yTop+h*0.15)} L${f1(x)} ${f1(yTop+h*0.8)} L${f1(x+h*0.35)} ${f1(yTop+h*0.15)}" stroke="var(--hair-hi)" stroke-width="${f1(Math.max(1.2,h*0.11))}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
+        if(s.surface==='Coiled') o.push(`<line x1="${f1(x)}" y1="${f1(yTop+h*0.1)}" x2="${f1(x)}" y2="${f1(yTop+h*0.9)}" stroke="var(--hair-hi)" stroke-width="1.2" stroke-linecap="round"/>`);
+        if(s.surface==='Woven'&&Math.round((x-x0)/step)%2) o.push(`<rect x="${f1(x-step*0.45)}" y="${f1(yTop+2)}" width="${f1(step*0.9)}" height="${f1(h-4)}" fill="var(--hair-hi)" fill-opacity=".35"/>`);
+      }
+    }
   }
-  if(s.id==='bantu'){
-    const pts=[[cx-28,cy-ry+16],[cx,cy-ry-2],[cx+28,cy-ry+16],[cx-16,cy-ry+40],[cx+16,cy-ry+40]];
-    for(const [bx,by] of pts) knots.push(`<circle cx="${bx}" cy="${by}" r="10" fill="${hairTopColor}"/><path d="M${bx-6} ${by} a6 6 0 1 1 12 0 a4 4 0 1 1 -8 0" stroke="var(--pic)" stroke-opacity=".35" stroke-width="1.6" fill="none"/>`);
-  }
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schematic of ${s.name}">${o.join('')}${locs.join('')}${knots.join('')}</svg>`;
+  o.push(`<text x="${x0}" y="14" font-family="var(--mono)" font-size="9" fill="var(--guide-ink)" stroke="var(--pic)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">≈ ${mm} mm wide · ${s.surface.toLowerCase()}</text>`);
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Close-up of one ${s.name} loc">${o.join('')}</svg>`;
 }
 const svgCache={}; let uid=0;
 // each rendered copy gets its own gradient/clip ids: a duplicate id inside a hidden view would blank the drawing
-const pic=s=>(svgCache[s.id]||(svgCache[s.id]=headSVG(s))).split('__G__').join('g'+(++uid));
+const fresh=str=>str.split('__G__').join('g'+(++uid));
+const pic=s=>fresh(svgCache[s.id]||(svgCache[s.id]=headSVG(s)));
+const picGuided=s=>fresh(svgCache[s.id+'/g']||(svgCache[s.id+'/g']=headSVG(s,{guides:true})));
+const scalp=s=>fresh(svgCache[s.id+'/s']||(svgCache[s.id+'/s']=scalpSVG(s)));
+const swatch=s=>fresh(svgCache[s.id+'/w']||(svgCache[s.id+'/w']=swatchSVG(s)));
 
 /* ---------------- helpers ---------------- */
 const $=sel=>document.querySelector(sel);
@@ -728,8 +840,12 @@ function openDetail(id){
     </div>
     <div class="detail">
       <div>
-        <div class="pic">${pic(s)}</div>
-        <p class="note" style="margin:8px 0 0">Schematic drawn from the attributes, not a photo. Real photos:</p>
+        <div class="pic">${picGuided(s)}</div>
+        <div class="views">
+          <div><div class="v">${scalp(s)}</div><div class="cap">Scalp map, from above</div></div>
+          <div><div class="v">${swatch(s)}</div><div class="cap">One loc at true scale</div></div>
+        </div>
+        <p class="note" style="margin:8px 0 0">Schematics drawn from the attributes, not photos. Dashed lines mark ear, chin, shoulder, chest and waist. Real photos:</p>
         ${photoLinks(s)}
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
           <button class="btn ${liked?'on':''}" data-like="${id}">${liked?'♥ Shortlisted':'♡ Shortlist'}</button>
@@ -844,8 +960,9 @@ function renderCompare(){
     {label:'Retwist / restyle',vals:cs.map(s=>s.retwist),diff:new Set(cs.map(s=>s.retwist)).size>1},
     {label:'Hair it suits',vals:cs.map(s=>s.hair),diff:new Set(cs.map(s=>s.hair)).size>1}];
   el.innerHTML=`<div class="pairs">${pairs.join('')}</div>
-  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th>${cs.map(s=>`<th><div class="pic">${pic(s)}</div>${esc(s.name)}<div style="margin-top:6px;display:flex;gap:4px"><button class="btn sm" data-open="${s.id}">Open</button><button class="btn sm" data-cmp="${s.id}" title="Remove">✕</button></div></th>`).join('')}</tr></thead>
-  <tbody>${rows.map(r=>`<tr class="${r.diff?'diff':''}"><th>${r.label}</th>${r.vals.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th>${cs.map(s=>`<th><div class="pic">${picGuided(s)}</div>${esc(s.name)}<div style="margin-top:6px;display:flex;gap:4px"><button class="btn sm" data-open="${s.id}">Open</button><button class="btn sm" data-cmp="${s.id}" title="Remove">✕</button></div></th>`).join('')}</tr></thead>
+  <tbody><tr><th>Scalp map</th>${cs.map(s=>`<td class="vis">${scalp(s)}</td>`).join('')}</tr><tr><th>One loc, true scale</th>${cs.map(s=>`<td class="vis">${swatch(s)}</td>`).join('')}</tr>
+  ${rows.map(r=>`<tr class="${r.diff?'diff':''}"><th>${r.label}</th>${r.vals.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
   <p class="note" style="margin-top:10px">Highlighted rows differ from the first column. ${cs.length<4?'Up to four styles can be compared.':''}</p>`;
 }
 
@@ -903,6 +1020,8 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('#overlay').classList.contains('on')) closeDetail(); if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.open){e.preventDefault();openDetail(e.target.dataset.open);} });
 $('#sort').addEventListener('change',renderGrid);
+$('#tile').addEventListener('change',e=>{$('#grid').style.setProperty('--tile',e.target.value+'px');store.set('tile',e.target.value);});
+{const t=store.get('tile','225');$('#tile').value=t;$('#grid').style.setProperty('--tile',t+'px');}
 $('#duelN').addEventListener('change',()=>pickDuel());
 $('#duelSkip').addEventListener('click',()=>{ for(const c of duelCur) if(!taste.seen.includes(c)) taste.seen.push(c); persist(); pickDuel(); });
 $('#duelReset').addEventListener('click',()=>{ taste={wins:{},losses:{},rounds:0,seen:[]}; persist(); toast('Taste profile cleared'); pickDuel(); updateCounts(); });
