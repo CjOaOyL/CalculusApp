@@ -95,6 +95,19 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 .card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
 .card .pic{background:var(--pic);border-radius:var(--r);aspect-ratio:200/310;max-width:100%;display:grid;place-items:center;overflow:hidden;cursor:pointer}
 .card .pic svg{width:100%;height:100%}
+.pic{position:relative}
+.pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.pic .badge{position:absolute;top:6px;left:6px;font-family:var(--mono);font-size:.62rem;letter-spacing:.04em;background:rgba(20,12,6,.6);color:#fff;padding:2px 6px;border-radius:3px;pointer-events:none}
+.prompts{display:grid;gap:12px}
+.prompt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px}
+.prompt .pic{aspect-ratio:200/310}
+.prompt .pic svg{width:100%;height:100%}
+.prompt pre{white-space:pre-wrap;font-family:var(--mono);font-size:.76rem;line-height:1.45;margin:6px 0 0;color:var(--muted);max-height:9.5em;overflow:auto}
+.prompt h3{font-size:1rem}
+.setup{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:16px}
+.setup code{font-family:var(--mono);font-size:.8rem;background:var(--surface-2);padding:1px 5px;border-radius:3px}
+.setup pre{font-family:var(--mono);font-size:.78rem;background:var(--surface-2);padding:10px;border-radius:var(--r);overflow-x:auto;margin:8px 0}
+.status{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
 .card h3{font-size:1.02rem;font-weight:700}
 .card .grp{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .tags{display:flex;flex-wrap:wrap;gap:4px}
@@ -188,6 +201,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
       <button class="tab" role="tab" data-view="duel">Head-to-head</button>
       <button class="tab" role="tab" data-view="compare">Compare<span class="n" id="nCmp"></span></button>
       <button class="tab" role="tab" data-view="likes">Shortlist<span class="n" id="nLike"></span></button>
+      <button class="tab" role="tab" data-view="prompts">Photos<span class="n" id="nPhoto"></span></button>
       <button class="tab" role="tab" data-view="about">How it scores</button>
     </nav>
   </div>
@@ -202,6 +216,7 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
       <div>
         <div class="sortrow">
           <span id="count" class="note"></span>
+          <label>Show <select id="imgmode"><option value="photo">photos where available</option><option value="schematic">schematics only</option></select></label>
           <label>Tiles <select id="tile"><option value="225">regular</option><option value="320">large</option><option value="440">huge</option></select></label>
           <label>Sort <select id="sort">
             <option value="group">by family</option>
@@ -248,6 +263,14 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
     <div id="likesArea"></div>
   </section>
 
+  <!-- PROMPTS / PHOTOS -->
+  <section class="view" id="view-prompts">
+    <h2 style="font-size:1.5rem">Photos and prompts</h2>
+    <p class="lede">The drawings are schematics. For realistic references, each style has a ready-made photo prompt built from the same attributes. Every prompt uses one fixed template (same man, same framing, same light, same backdrop) and only the hair sentences change, so the photos can be judged on the hairstyle alone.</p>
+    <div class="setup" id="photoSetup"></div>
+    <div class="prompts" id="prompts"></div>
+  </section>
+
   <!-- ABOUT -->
   <section class="view" id="view-about">
     <h2 style="font-size:1.5rem">How similarity is scored</h2>
@@ -259,230 +282,8 @@ select,input[type=range]{font:inherit;color:var(--fg);background:var(--surface);
 <div class="overlay" id="overlay" role="dialog" aria-modal="true"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
 
+<script src="catalog.js"></script>
 <script>
-/* ---------------- attribute schema ---------------- */
-const ATTRS = [
-  {key:'thickness', label:'Loc thickness', type:'num', min:1, max:5, w:1.6,
-   levels:['','Micro (2–4 mm)','Small (4–7 mm)','Medium (7–13 mm)','Thick (13–20 mm)','Jumbo / wick (20 mm+)'],
-   why:'Diameter of each loc. Sisterlocks at the thin end, wicks at the thick end.'},
-  {key:'length', label:'Length', type:'num', min:1, max:5, w:1.5,
-   levels:['','Starter (under 4 in)','Short (ear)','Medium (chin to shoulder)','Long (chest)','Extra long (waist+)'],
-   why:'How far the locs fall when hanging.'},
-  {key:'sides', label:'Sides and back', type:'num', min:0, max:4, w:1.3,
-   levels:['Full head','Taper','Fade','Undercut / shaved sides','Mohawk strip'],
-   why:'How much of the sides and back is cut away. 0 is a full head of locs.'},
-  {key:'neatness', label:'Root discipline', type:'num', min:1, max:4, w:1.0,
-   levels:['','Freeform','Semi-freeform','Manicured','Precision grid'],
-   why:'From hair left to lock on its own, to an interlocked grid with retightened parts.'},
-  {key:'roots', label:'Root styling', type:'num', min:0, max:2, w:0.8,
-   levels:['Loose roots','Twisted roots','Braided roots'],
-   why:'Whether the locs are twisted or braided together at the scalp.'},
-  {key:'arrange', label:'How it is worn', type:'num', min:0, max:3, w:1.0,
-   levels:['Hanging free','Half up','Tied up (bun or tail)','Standing up'],
-   why:'Resting position of the locs.'},
-  {key:'color', label:'Colour', type:'num', min:0, max:3, w:0.7,
-   levels:['Natural','Dyed tips','Ombre / highlights','Full colour'],
-   why:'How much of the loc is coloured.'},
-  {key:'maint', label:'Upkeep', type:'num', min:1, max:5, w:0.9,
-   levels:['','Minimal','Low','Moderate','High','Very high'],
-   why:'Retwist, restyle and salon frequency combined.'},
-  {key:'count', label:'Number of locs', type:'log', min:Math.log(4), max:Math.log(450), w:0.6,
-   fmt:v=>'about '+v, why:'Approximate locs on a full head. Scored on a log scale.'},
-  {key:'surface', label:'Surface texture', type:'cat', w:0.6,
-   why:'What the body of the loc looks like up close.'},
-  {key:'formality', label:'Dress code fit', type:'num', min:1, max:5, w:0.5,
-   levels:['','Streetwear','Casual','Smart casual','Office-friendly','Conservative'],
-   why:'A rough read of how the style lands in formal settings.'},
-  {key:'months', label:'Time to achieve', type:'log', min:0, max:Math.log1p(60), w:0.5,
-   fmt:v=>v===0?'same day':v+' months', why:'Months of growth or maturity needed before the look reads as intended. Scored on a log scale.'},
-  {key:'permanent', label:'Permanence', type:'cat', w:0.8, fmt:v=>v?'Permanent':'Temporary',
-   why:'Real locs versus a removable installed style.'},
-  {key:'start', label:'How it is started', type:'cat', w:0.3,
-   why:'The method that forms the locs.'},
-  {key:'parting', label:'Parting pattern', type:'cat', w:0.4,
-   why:'Shape of the sections on the scalp.'},
-];
-const AT = Object.fromEntries(ATTRS.map(a=>[a.key,a]));
-
-/* ---------------- catalogue ----------------
-   thickness 1-5, length 1-5, sides 0-4, neatness 1-4, roots 0-2, arrange 0-3, color 0-3, maint 1-5, formality 1-5 */
-const S = (o)=>o;
-const STYLES = [
- S({id:'classic', group:'Foundation', name:'Classic traditional locs', aka:['Rasta-style locs','medium locs'],
-   blurb:'Pencil-width locs, palm-rolled at the roots, hanging free to the shoulder. The reference point every other style here is measured against.',
-   thickness:3,length:3,sides:0,neatness:3,roots:0,arrange:0,color:0,maint:3,count:80,surface:'Smooth round',formality:4,months:12,permanent:true,start:'Comb coils or twists, palm-rolled',parting:'Brick grid',
-   retwist:'every 4–6 weeks', hair:'4a–4c, works on 3c'}),
- S({id:'freeform', group:'Foundation', name:'Freeform locs', aka:['organic locs','neglect method'],
-   blurb:'No parting and no retwisting. Hair is washed and left to mat and merge on its own, so locs come out uneven in width and the lowest-upkeep of all.',
-   thickness:4,length:3,sides:0,neatness:1,roots:0,arrange:0,color:0,maint:1,count:30,surface:'Matted / organic',formality:2,months:12,permanent:true,start:'Wash and separate only',parting:'None (natural)',
-   retwist:'never', hair:'4a–4c'}),
- S({id:'semifree', group:'Foundation', name:'Semi-freeform locs', aka:['semi-freeforms'],
-   blurb:'Roots are separated and occasionally retwisted to keep the parts readable, but the bodies of the locs grow as they like. Clean hairline, rugged length.',
-   thickness:4,length:3,sides:0,neatness:2,roots:0,arrange:0,color:0,maint:2,count:45,surface:'Matted / organic',formality:3,months:12,permanent:true,start:'Twists, then infrequent palm-rolling',parting:'Loose organic',
-   retwist:'every 2–4 months', hair:'4a–4c'}),
- S({id:'wicks', group:'Foundation', name:'Wicks', aka:['bonks','globs','South Florida wicks'],
-   blurb:'The thickest loc there is. Mature locs are combined with a multi-prong crochet needle or rubber bands into as few as 4 to 20 upright cylinders that stand like candle wicks.',
-   thickness:5,length:3,sides:0,neatness:2,roots:0,arrange:3,color:0,maint:1,count:10,surface:'Matted / organic',formality:1,months:24,permanent:true,start:'Combining mature locs (crochet or band method)',parting:'Large blocks',
-   retwist:'none; wash and separate', hair:'4a–4c'}),
- S({id:'congo', group:'Foundation', name:'Congo locs', aka:['congos','merged locs'],
-   blurb:'Two or more locs fused along their length into one wide loc. Unlike wicks they hang rather than stand, and often sit beside unmerged locs on the same head.',
-   thickness:5,length:4,sides:0,neatness:2,roots:0,arrange:0,color:0,maint:1,count:14,surface:'Matted / organic',formality:1,months:24,permanent:true,start:'Letting or crocheting mature locs together',parting:'Large blocks',
-   retwist:'rarely', hair:'4a–4c'}),
- S({id:'chunky', group:'Foundation', name:'Chunky manicured locs', aka:['thick locs','jumbo locs'],
-   blurb:'Marker-width locs that are still parted and retwisted on a schedule. The heft of freeform with the clean roots of a salon style.',
-   thickness:4,length:3,sides:0,neatness:3,roots:0,arrange:0,color:0,maint:3,count:35,surface:'Smooth round',formality:3,months:14,permanent:true,start:'Large two-strand twists',parting:'Large square grid',
-   retwist:'every 5–7 weeks', hair:'4a–4c'}),
- S({id:'thin', group:'Foundation', name:'Thin manicured locs', aka:['small locs','pencil-thin locs'],
-   blurb:'Chopstick-width locs in a tidy grid. More locs means more movement and more styling options, at the cost of longer retwist sessions.',
-   thickness:2,length:3,sides:0,neatness:3,roots:0,arrange:0,color:0,maint:3,count:150,surface:'Smooth round',formality:4,months:12,permanent:true,start:'Small comb coils or twists',parting:'Small square grid',
-   retwist:'every 4–6 weeks', hair:'3c–4c'}),
- S({id:'micro', group:'Foundation', name:'Microlocs', aka:['micro locs'],
-   blurb:'Shoelace-to-straw width locs, usually 150 or more, started by braiding, twisting or interlocking. Lighter and more free-flowing than traditional locs.',
-   thickness:2,length:3,sides:0,neatness:3,roots:0,arrange:0,color:0,maint:2,count:220,surface:'Smooth round',formality:5,months:18,permanent:true,start:'Interlocking, braids or small twists',parting:'Small grid, any pattern',
-   retwist:'retighten every 6–8 weeks', hair:'all textures; good for fine hair'}),
- S({id:'sister', group:'Foundation', name:'Sisterlocks (men)', aka:['Brotherlocks'],
-   blurb:'Trademarked system installed by a certified consultant on a precise grid with an interlocking tool. 400 or more very fine locs that read almost like loose hair.',
-   thickness:1,length:3,sides:0,neatness:4,roots:0,arrange:0,color:0,maint:2,count:420,surface:'Smooth round',formality:5,months:18,permanent:true,start:'Certified interlocking install (24–36 hours)',parting:'Precision symmetric grid',
-   retwist:'retighten every 4–6 weeks', hair:'all textures'}),
- S({id:'instant', group:'Starter', name:'Instant locs (crochet)', aka:['crochet locs'],
-   blurb:'Loose hair is crocheted into tight, mature-looking locs in a single sitting. Skips the fuzzy budding stage; needs a light taper to look finished.',
-   thickness:3,length:1,sides:1,neatness:3,roots:0,arrange:0,color:0,maint:3,count:70,surface:'Smooth round',formality:4,months:0,permanent:true,start:'Crochet hook on loose sections',parting:'Square grid',
-   retwist:'crochet touch-up every 6–8 weeks', hair:'3c–4c, 3+ inches'}),
- S({id:'coils', group:'Starter', name:'Comb-coil starter locs', aka:['finger coils','baby locs'],
-   blurb:'Short sections coiled with a rat-tail comb into tight springs. Neat and uniform, but they unravel when wet and need frequent retwisting until they bud.',
-   thickness:3,length:1,sides:1,neatness:3,roots:0,arrange:0,color:0,maint:5,count:90,surface:'Coiled',formality:4,months:0,permanent:true,start:'Comb coils',parting:'Square grid',
-   retwist:'every 2–4 weeks', hair:'4b–4c best'}),
- S({id:'twiststart', group:'Starter', name:'Two-strand twist starter locs', aka:['twist locs'],
-   blurb:'Sections twisted around themselves from root to tip and left to lock. Holds better than coils and the twist pattern stays visible for months.',
-   thickness:3,length:1,sides:0,neatness:3,roots:0,arrange:0,color:0,maint:4,count:70,surface:'Twisted rope',formality:4,months:0,permanent:true,start:'Two-strand twists',parting:'Square grid',
-   retwist:'every 3–5 weeks', hair:'3c–4c, medium length'}),
- S({id:'braidlocs', group:'Starter', name:'Braidlocs', aka:['plait locs','braid starter locs'],
-   blurb:'Three-strand braids left to lock from the tip up. Very secure in the early months; the braid imprint shows on the loc for a year or more.',
-   thickness:2,length:2,sides:0,neatness:3,roots:0,arrange:0,color:0,maint:3,count:110,surface:'Braided imprint',formality:4,months:3,permanent:true,start:'Box braids',parting:'Square grid',
-   retwist:'every 6–8 weeks', hair:'all textures, including looser curls'}),
- S({id:'taper', group:'Cut and fade', name:'Short locs with taper fade', aka:['low taper locs'],
-   blurb:'Ear-length locs on top, hair shortened gradually down to the neckline and around the ears. The most common way men wear short locs to work.',
-   thickness:3,length:1,sides:1,neatness:3,roots:0,arrange:0,color:0,maint:4,count:60,surface:'Smooth round',formality:5,months:6,permanent:true,start:'Coils or twists',parting:'Square grid',
-   retwist:'every 3–4 weeks; cut every 2–3', hair:'4a–4c'}),
- S({id:'hightop', group:'Cut and fade', name:'High-top locs with skin fade', aka:['high top dreads'],
-   blurb:'Sides faded to skin high on the head, locs concentrated on top and left to fall forward or to the side. Maximum contrast between cut and texture.',
-   thickness:3,length:2,sides:2,neatness:3,roots:0,arrange:0,color:0,maint:4,count:50,surface:'Smooth round',formality:3,months:8,permanent:true,start:'Twists',parting:'Square grid, top only',
-   retwist:'every 3–4 weeks; fade every 2', hair:'4a–4c'}),
- S({id:'undercut', group:'Cut and fade', name:'Locs with undercut', aka:['shaved-sides locs'],
-   blurb:'Sides and back buzzed to one short length with a hard edge, longer locs on top that can hang over the undercut or be tied up to show it off.',
-   thickness:3,length:3,sides:3,neatness:3,roots:0,arrange:0,color:0,maint:3,count:45,surface:'Smooth round',formality:3,months:12,permanent:true,start:'Twists',parting:'Square grid, top only',
-   retwist:'every 4–6 weeks; buzz every 3', hair:'4a–4c'}),
- S({id:'mohawk', group:'Cut and fade', name:'Loc mohawk with burst fade', aka:['frohawk locs','loc hawk'],
-   blurb:'A strip of locs down the centre, fade curving around the ears, locs pushed upward or back. The loudest cut in the catalogue.',
-   thickness:3,length:2,sides:4,neatness:3,roots:0,arrange:3,color:0,maint:4,count:35,surface:'Smooth round',formality:1,months:8,permanent:true,start:'Twists',parting:'Centre strip',
-   retwist:'every 3–4 weeks; fade every 2', hair:'4a–4c'}),
- S({id:'dropfade', group:'Cut and fade', name:'Medium locs with drop fade and line-up', aka:['locs with lineup'],
-   blurb:'A fade that drops behind the ear, crisp edged hairline, ear-to-chin locs on top. Clean enough for the office, still clearly a loc style.',
-   thickness:3,length:2,sides:2,neatness:3,roots:0,arrange:0,color:0,maint:4,count:60,surface:'Smooth round',formality:4,months:8,permanent:true,start:'Coils or twists',parting:'Square grid',
-   retwist:'every 4 weeks; line-up every 2', hair:'4a–4c'}),
- S({id:'spiky', group:'Cut and fade', name:'Spiky short locs with low fade', aka:['starter locs spiked'],
-   blurb:'Short stiff locs that stand straight up or out from the head, with a low fade to keep the edges tidy. Works best before the locs gain weight and drop.',
-   thickness:3,length:1,sides:1,neatness:3,roots:0,arrange:3,color:0,maint:4,count:70,surface:'Smooth round',formality:2,months:4,permanent:true,start:'Coils or twists',parting:'Square grid',
-   retwist:'every 3–4 weeks', hair:'4b–4c'}),
- S({id:'barrel', group:'Styled', name:'Barrel twists', aka:['barrel rolls','two-barrel'],
-   blurb:'Locs gathered into two or more fat rope-twists running straight back along the scalp. Sculptural, sits flat, and lasts two to three weeks.',
-   thickness:3,length:2,sides:1,neatness:3,roots:1,arrange:2,color:0,maint:4,count:60,surface:'Twisted rope',formality:4,months:6,permanent:true,start:'Styled on existing locs',parting:'Two to four lengthwise rows',
-   retwist:'restyle every 2–3 weeks', hair:'any locs over 4 in'}),
- S({id:'flattwist', group:'Styled', name:'Flat-twisted locs', aka:['flat twist rows'],
-   blurb:'Narrow rows of locs flat-twisted along the scalp, ends left hanging. Shows off clean parts and keeps hair off the face.',
-   thickness:3,length:3,sides:0,neatness:3,roots:1,arrange:0,color:0,maint:4,count:60,surface:'Twisted rope',formality:4,months:10,permanent:true,start:'Styled on existing locs',parting:'Straight or curved rows',
-   retwist:'restyle every 2–3 weeks', hair:'any locs over 5 in'}),
- S({id:'cornrow', group:'Styled', name:'Cornrowed locs', aka:['braided-root locs','feed-in loc braids'],
-   blurb:'Locs braided into cornrows at the scalp, released part-way to hang free. Protective, neat and good for a week or two between wears.',
-   thickness:3,length:3,sides:0,neatness:3,roots:2,arrange:0,color:0,maint:4,count:60,surface:'Braided imprint',formality:4,months:10,permanent:true,start:'Styled on existing locs',parting:'Straight back rows',
-   retwist:'restyle every 2–3 weeks', hair:'any locs over 5 in'}),
- S({id:'pairs', group:'Styled', name:'Two-strand twisted locs', aka:['loc twists','double twists'],
-   blurb:'Locs twisted together in pairs and banded at the ends, which makes them read as twice as thick and gives a rope texture across the whole head.',
-   thickness:4,length:3,sides:0,neatness:3,roots:1,arrange:0,color:0,maint:3,count:40,surface:'Twisted rope',formality:3,months:10,permanent:true,start:'Styled on existing locs',parting:'Square grid',
-   retwist:'restyle every 2–4 weeks', hair:'any locs over 5 in'}),
- S({id:'basket', group:'Styled', name:'Basket-weave locs', aka:['loc basket weave','woven crown'],
-   blurb:'Thin locs woven over and under each other across the crown into a lattice, with the remaining length hanging. Needs plenty of small locs to work.',
-   thickness:2,length:3,sides:0,neatness:4,roots:2,arrange:1,color:0,maint:4,count:120,surface:'Woven',formality:3,months:12,permanent:true,start:'Styled on existing locs',parting:'Woven lattice',
-   retwist:'restyle every 2–3 weeks', hair:'small or micro locs'}),
- S({id:'halfup', group:'Styled', name:'Half up, half down', aka:['half bun locs'],
-   blurb:'Top half of the locs pulled into a knot, the rest left to hang. The everyday middle ground for anyone with locs past the chin.',
-   thickness:3,length:4,sides:0,neatness:3,roots:0,arrange:1,color:0,maint:3,count:70,surface:'Smooth round',formality:4,months:18,permanent:true,start:'Styled on existing locs',parting:'Square grid',
-   retwist:'every 4–6 weeks', hair:'locs past the chin'}),
- S({id:'bun', group:'Styled', name:'Loc bun / top knot', aka:['loc knot','man bun locs'],
-   blurb:'All the locs gathered high and wrapped into a knot, usually with a light taper so the neckline stays clean. The most conservative way to wear long locs.',
-   thickness:3,length:4,sides:1,neatness:3,roots:0,arrange:2,color:0,maint:3,count:70,surface:'Smooth round',formality:5,months:18,permanent:true,start:'Styled on existing locs',parting:'Square grid',
-   retwist:'every 4–6 weeks', hair:'locs past the shoulder'}),
- S({id:'ponytail', group:'Styled', name:'Long locs in a low ponytail', aka:['loc tail'],
-   blurb:'Chest-to-waist locs tied at the nape. Low effort, keeps weight off the face, and shows length without the bulk of a bun.',
-   thickness:3,length:5,sides:0,neatness:3,roots:0,arrange:2,color:0,maint:2,count:70,surface:'Smooth round',formality:4,months:36,permanent:true,start:'Styled on existing locs',parting:'Square grid',
-   retwist:'every 6–8 weeks', hair:'locs past the chest'}),
- S({id:'fishtail', group:'Styled', name:'Single braided locs', aka:['loc fishtail','one big braid'],
-   blurb:'All the locs plaited into one braid down the back, three-strand or fishtail. Needs real length, holds for days.',
-   thickness:3,length:5,sides:0,neatness:3,roots:0,arrange:2,color:0,maint:2,count:70,surface:'Braided imprint',formality:4,months:36,permanent:true,start:'Styled on existing locs',parting:'Square grid',
-   retwist:'every 6–8 weeks', hair:'locs past the chest'}),
- S({id:'pipe', group:'Styled', name:'Pipe-cleaner curls', aka:['loc curls','spiral set'],
-   blurb:'Locs wrapped around pipe cleaners overnight and released into tight spirals that loosen over a week or two. Same locs, completely different silhouette.',
-   thickness:3,length:3,sides:0,neatness:3,roots:0,arrange:0,color:0,maint:4,count:70,surface:'Curled',formality:3,months:12,permanent:true,start:'Styled on existing locs',parting:'Square grid',
-   retwist:'reset every 1–2 weeks', hair:'locs past the ear'}),
- S({id:'bantu', group:'Styled', name:'Loc Bantu knots', aka:['loc knots','petal knots'],
-   blurb:'Sections of locs coiled around themselves into tight knots across the head. Worn as a style for a few days, then released into waves.',
-   thickness:3,length:3,sides:0,neatness:3,roots:0,arrange:2,color:0,maint:4,count:70,surface:'Coiled',formality:2,months:10,permanent:true,start:'Styled on existing locs',parting:'Large square or triangle grid',
-   retwist:'restyle weekly', hair:'locs past the ear'}),
- S({id:'tips', group:'Colour', name:'Blonde-tipped locs', aka:['dip-dyed locs','dyed ends'],
-   blurb:'Only the last few inches lifted to blonde or a bright shade. Less damage and easier touch-ups than a full head of colour, and the roots stay natural.',
-   thickness:3,length:3,sides:1,neatness:3,roots:0,arrange:0,color:1,maint:3,count:70,surface:'Smooth round',formality:3,months:12,permanent:true,start:'Colour on existing locs',parting:'Square grid',
-   retwist:'every 4–6 weeks; colour every 3–4 months', hair:'any mature locs'}),
- S({id:'ombre', group:'Colour', name:'Honey-blonde ombre locs', aka:['gradient locs','highlighted locs'],
-   blurb:'Colour that lightens gradually from natural at the root to honey or caramel at the ends. The most popular colour treatment on medium-length men\'s locs.',
-   thickness:3,length:3,sides:0,neatness:3,roots:0,arrange:0,color:2,maint:3,count:70,surface:'Smooth round',formality:3,months:12,permanent:true,start:'Colour on existing locs',parting:'Square grid',
-   retwist:'every 4–6 weeks; colour every 3 months', hair:'any mature locs'}),
- S({id:'fullcolor', group:'Colour', name:'Fully bleached or coloured locs', aka:['blonde locs','platinum locs','red locs'],
-   blurb:'Every loc lifted and toned, usually with a fade so the roots do not fight the colour. High impact, high upkeep, and drying on the hair.',
-   thickness:3,length:2,sides:2,neatness:3,roots:0,arrange:0,color:3,maint:4,count:60,surface:'Smooth round',formality:1,months:8,permanent:true,start:'Colour on existing locs',parting:'Square grid',
-   retwist:'every 4 weeks; roots every 6–8', hair:'healthy mature locs'}),
- S({id:'waist', group:'Length', name:'Waist-length classic locs', aka:['long locs','veteran locs'],
-   blurb:'Traditional locs grown out five years or more, hanging to the waist. Weight and length do the styling; upkeep drops as the locs mature.',
-   thickness:3,length:5,sides:0,neatness:3,roots:0,arrange:0,color:0,maint:2,count:80,surface:'Smooth round',formality:3,months:60,permanent:true,start:'Comb coils or twists, years ago',parting:'Brick grid',
-   retwist:'every 6–8 weeks', hair:'4a–4c'}),
- S({id:'spider', group:'Length', name:'Spider-part microlocs', aka:['spider web parts'],
-   blurb:'Small locs installed on a radiating web of curved parts rather than a square grid. The pattern is the point and shows best with a short cut and a taper.',
-   thickness:2,length:2,sides:1,neatness:4,roots:0,arrange:0,color:0,maint:3,count:180,surface:'Smooth round',formality:3,months:12,permanent:true,start:'Interlocking or small twists',parting:'Spider web',
-   retwist:'retighten every 5–7 weeks', hair:'3c–4c'}),
- S({id:'extensions', group:'Length', name:'Human-hair loc extensions', aka:['permanent loc extensions','instant long locs'],
-   blurb:'Pre-made human-hair locs crocheted onto your own short locs or loose hair for instant length. Permanent once attached; grows out with your hair.',
-   thickness:3,length:4,sides:1,neatness:3,roots:0,arrange:0,color:0,maint:3,count:70,surface:'Smooth round',formality:4,months:0,permanent:true,start:'Crochet-attached extensions',parting:'Square grid',
-   retwist:'every 4–6 weeks', hair:'3+ inches of own hair'}),
- S({id:'faux', group:'Temporary', name:'Faux locs (men)', aka:['wrapped locs','soft locs'],
-   blurb:'Synthetic or human hair wrapped around braided sections to imitate locs for six to eight weeks. A way to test a loc look before committing.',
-   thickness:3,length:3,sides:1,neatness:3,roots:0,arrange:0,color:0,maint:2,count:70,surface:'Smooth round',formality:3,months:0,permanent:false,start:'Wrapped over braids',parting:'Square grid',
-   retwist:'none; remove at 6–8 weeks', hair:'any texture, 3+ inches'}),
- S({id:'butterfly', group:'Temporary', name:'Butterfly / distressed locs', aka:['distressed faux locs','boho locs'],
-   blurb:'Temporary locs crocheted with deliberately loopy, frayed texture that imitates the look of freeform. Removable, and heavier than they look.',
-   thickness:4,length:3,sides:0,neatness:2,roots:0,arrange:0,color:0,maint:2,count:50,surface:'Matted / organic',formality:2,months:0,permanent:false,start:'Crochet-wrapped over braids',parting:'Square grid',
-   retwist:'none; remove at 6–8 weeks', hair:'any texture, 3+ inches'}),
-];
-const BY = Object.fromEntries(STYLES.map(s=>[s.id,s]));
-
-/* ---------------- sources ---------------- */
-const SOURCES = [
- ['StyleSeat, "Locs for men"','https://www.styleseat.com/blog/locs-for-men/'],
- ['StyleSeat, "Microlocs vs Sisterlocks"','https://www.styleseat.com/blog/microlocs-vs-sisterlocks/'],
- ['SalonCentric Pro Beauty Central, "7 loc styles for your client" (diameter ranges)','https://probeautycentral.saloncentric.com/7-loc-styles-for-your-client'],
- ['Curl Centric, "Dreadlock size chart"','https://curlcentric.com/dreadlock-size-chart'],
- ['Curl Centric, "Methods to start locs"','https://www.curlcentric.com/methods-to-start-locs/'],
- ['Curl Centric, "Wick dreads"','https://www.curlcentric.com/wick-dreads/'],
- ['Curl Centric, "How to get Congo dreads"','https://www.curlcentric.com/how-to-get-congo-dreads/'],
- ['Curl Centric, "How to maintain semi-freeform locs"','https://www.curlcentric.com/how-to-maintain-semi-freeform-locs/'],
- ['Curl Centric, "Palm rolling vs interlocking"','https://www.curlcentric.com/palm-rolling-vs-interlocking/'],
- ['Wikipedia, "Wicks (hairstyle)"','https://en.wikipedia.org/wiki/Wicks_(hairstyle)'],
- ['Blavity, "Freeform locs"','https://blavity.com/freeform-locs'],
- ['Blavity, "Spider part locs styles"','https://blavity.com/women/spider-part-locs-styles'],
- ['Un-ruly, "Barrel twist locs"','https://un-ruly.com/barrel-twist-locs-styles-how-to-all-the-juicy-tips/'],
- ['The Fashionisto, "Dread styles for men"','https://www.thefashionisto.com/?p=1452928'],
- ['The Right Hairstyles, "Men\'s dreadlocks styles"','https://therighthairstyles.com/mens-dreadlocks-styles/'],
- ['Pattern Beauty, "Microlocs vs Sisterlocks"','https://patternbeauty.com/blogs/news/microlocs-vs-sisterlocks'],
-];
-
 /* ---------------- similarity ---------------- */
 function val(s,a){
   const v=s[a.key];
@@ -761,6 +562,36 @@ const picGuided=s=>fresh(svgCache[s.id+'/g']||(svgCache[s.id+'/g']=headSVG(s,{gu
 const scalp=s=>fresh(svgCache[s.id+'/s']||(svgCache[s.id+'/s']=scalpSVG(s)));
 const swatch=s=>fresh(svgCache[s.id+'/w']||(svgCache[s.id+'/w']=swatchSVG(s)));
 
+/* ---------------- photos ----------------
+   Two sources: img/manifest.json (generated by tools/gen_images.py and committed) and
+   pictures the viewer adds on a style sheet (kept in this browser's IndexedDB only). */
+let manifest={}, userPhotos={}, imgMode=store.get('imgmode','photo');
+const hasPhoto=id=>!!(userPhotos[id]||manifest[id]);
+function photoURL(id){ return userPhotos[id]?userPhotos[id].url:manifest[id]?manifest[id].file:null; }
+function vis(s){ // schematic underneath, photo on top; a photo that fails to load removes itself
+  const u=imgMode==='photo'?photoURL(s.id):null;
+  return pic(s)+(u?`<img src="${esc(u)}" alt="${esc(s.name)}" loading="lazy" onerror="this.remove()"><span class="badge">${userPhotos[s.id]?'your photo':'photo'}</span>`:'');
+}
+const idb={
+  open(){ return new Promise((res,rej)=>{ try{ const r=indexedDB.open('locs',1); r.onupgradeneeded=()=>r.result.createObjectStore('photos'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);}catch(e){rej(e)} }); },
+  async all(){ const db=await this.open(); return new Promise((res,rej)=>{ const out={}; const c=db.transaction('photos').objectStore('photos').openCursor(); c.onsuccess=()=>{ const cur=c.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } else res(out); }; c.onerror=()=>rej(c.error); }); },
+  async put(id,blob){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('photos','readwrite'); t.objectStore('photos').put(blob,id); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
+  async del(id){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('photos','readwrite'); t.objectStore('photos').delete(id); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
+};
+async function loadPhotos(){
+  try{ const r=await fetch('img/manifest.json',{cache:'no-cache'}); if(r.ok) manifest=await r.json(); }catch(e){}
+  try{ const all=await idb.all(); for(const [id,blob] of Object.entries(all)) userPhotos[id]={url:URL.createObjectURL(blob)}; }catch(e){}
+  updateCounts(); refreshAll();
+}
+async function addPhoto(id,file){
+  if(!file||!file.type.startsWith('image/')){toast('Choose an image file');return;}
+  try{ await idb.put(id,file); if(userPhotos[id]) URL.revokeObjectURL(userPhotos[id].url); userPhotos[id]={url:URL.createObjectURL(file)}; toast('Photo saved in this browser'); }
+  catch(e){ toast('This browser would not store the photo'); }
+  updateCounts(); if($('#overlay').classList.contains('on')) openDetail(id); refreshAll();
+}
+async function removePhoto(id){ try{ await idb.del(id); }catch(e){} if(userPhotos[id]){URL.revokeObjectURL(userPhotos[id].url); delete userPhotos[id];} toast('Photo removed'); updateCounts(); if($('#overlay').classList.contains('on')) openDetail(id); refreshAll(); }
+function copyText(t){ return navigator.clipboard.writeText(t).then(()=>toast('Copied'),()=>{ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');toast('Copied')}catch(e){toast('Select and copy the text by hand')} ta.remove(); }); }
+
 /* ---------------- helpers ---------------- */
 const $=sel=>document.querySelector(sel);
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -780,7 +611,7 @@ function keyTags(s){
 function card(s,opts={}){
   const liked=likes.has(s.id), inC=cmp.includes(s.id);
   return `<article class="card" data-id="${s.id}">
-    <div class="pic" tabindex="0" role="button" aria-label="Open ${esc(s.name)}" data-open="${s.id}">${pic(s)}</div>
+    <div class="pic" tabindex="0" role="button" aria-label="Open ${esc(s.name)}" data-open="${s.id}">${vis(s)}</div>
     <div class="grp">${esc(s.group)}${opts.sim!=null?` · <span class="sim-pct">${Math.round(opts.sim*100)}% similar</span>`:''}</div>
     <h3>${esc(s.name)}</h3>
     <div class="tags">${opts.tags||keyTags(s)}</div>
@@ -840,14 +671,20 @@ function openDetail(id){
     </div>
     <div class="detail">
       <div>
-        <div class="pic">${picGuided(s)}</div>
-        <div class="views">
+        <div class="pic">${photoURL(id)?`${picGuided(s)}<img src="${esc(photoURL(id))}" alt="${esc(s.name)}" onerror="this.remove()"><span class="badge">${userPhotos[id]?'your photo':manifest[id]?('generated · '+esc(manifest[id].model||manifest[id].provider||'')):''}</span>`:picGuided(s)}</div>
+        <div class="views" ${photoURL(id)?'style="grid-template-columns:1fr 1fr 1fr"':''}>
+          ${photoURL(id)?`<div><div class="v">${picGuided(s)}</div><div class="cap">Attribute schematic</div></div>`:''}
           <div><div class="v">${scalp(s)}</div><div class="cap">Scalp map, from above</div></div>
           <div><div class="v">${swatch(s)}</div><div class="cap">One loc at true scale</div></div>
         </div>
-        <p class="note" style="margin:8px 0 0">Schematics drawn from the attributes, not photos. Dashed lines mark ear, chin, shoulder, chest and waist. Real photos:</p>
+        <p class="note" style="margin:8px 0 0">${photoURL(id)?'The photo is a generated or saved reference; the schematics are drawn from the attributes.':'No photo yet for this style; the drawing is a schematic built from the attributes.'} Dashed lines mark ear, chin, shoulder, chest and waist. Search real photos:</p>
         ${photoLinks(s)}
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+          <label class="btn">${userPhotos[id]?'Replace photo':'Add photo'}<input type="file" accept="image/*" hidden data-upload="${id}"></label>
+          ${userPhotos[id]?`<button class="btn" data-delphoto="${id}">Remove photo</button>`:''}
+          <button class="btn" data-copyprompt="${id}">Copy photo prompt</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
           <button class="btn ${liked?'on':''}" data-like="${id}">${liked?'♥ Shortlisted':'♡ Shortlist'}</button>
           <button class="btn ${inC?'on':''}" data-cmp="${id}">${inC?'⇄ In compare':'⇄ Compare'}</button>
           <button class="btn" data-contrast="${id}">Pick between this and a contrast</button>
@@ -915,7 +752,7 @@ function renderDuel(){
   const cs=duelCur.map(id=>BY[id]);
   if(cs.length<2){$('#duel').innerHTML='';return;}
   $('#duel').innerHTML=cs.map(s=>`<article class="card" data-id="${s.id}">
-      <div class="pic" tabindex="0" role="button" aria-label="Open ${esc(s.name)}" data-open="${s.id}">${pic(s)}</div>
+      <div class="pic" tabindex="0" role="button" aria-label="Open ${esc(s.name)}" data-open="${s.id}">${vis(s)}</div>
       <div class="grp">${esc(s.group)}</div><h3>${esc(s.name)}</h3>
       <p class="note" style="margin:0">${esc(s.blurb)}</p>
       <div class="tags">${keyTags(s)}<span class="tag">${esc(fmtAttr(s,AT.maint))} upkeep</span></div>
@@ -960,7 +797,7 @@ function renderCompare(){
     {label:'Retwist / restyle',vals:cs.map(s=>s.retwist),diff:new Set(cs.map(s=>s.retwist)).size>1},
     {label:'Hair it suits',vals:cs.map(s=>s.hair),diff:new Set(cs.map(s=>s.hair)).size>1}];
   el.innerHTML=`<div class="pairs">${pairs.join('')}</div>
-  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th>${cs.map(s=>`<th><div class="pic">${picGuided(s)}</div>${esc(s.name)}<div style="margin-top:6px;display:flex;gap:4px"><button class="btn sm" data-open="${s.id}">Open</button><button class="btn sm" data-cmp="${s.id}" title="Remove">✕</button></div></th>`).join('')}</tr></thead>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th>${cs.map(s=>`<th><div class="pic">${picGuided(s)}${imgMode==='photo'&&photoURL(s.id)?`<img src="${esc(photoURL(s.id))}" alt="" onerror="this.remove()">`:''}</div>${esc(s.name)}<div style="margin-top:6px;display:flex;gap:4px"><button class="btn sm" data-open="${s.id}">Open</button><button class="btn sm" data-cmp="${s.id}" title="Remove">✕</button></div></th>`).join('')}</tr></thead>
   <tbody><tr><th>Scalp map</th>${cs.map(s=>`<td class="vis">${scalp(s)}</td>`).join('')}</tr><tr><th>One loc, true scale</th>${cs.map(s=>`<td class="vis">${swatch(s)}</td>`).join('')}</tr>
   ${rows.map(r=>`<tr class="${r.diff?'diff':''}"><th>${r.label}</th>${r.vals.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
   <p class="note" style="margin-top:10px">Highlighted rows differ from the first column. ${cs.length<4?'Up to four styles can be compared.':''}</p>`;
@@ -992,8 +829,24 @@ function renderAbout(){
     <ul>${SOURCES.map(([t,u])=>`<li><a target="_blank" rel="noopener" href="${u}">${esc(t)}</a></li>`).join('')}</ul></div>`;
 }
 
+/* ---------------- prompts view ---------------- */
+function renderPrompts(){
+  const have=STYLES.filter(s=>hasPhoto(s.id)).length;
+  $('#photoSetup').innerHTML=`<div class="status">${have} of ${STYLES.length} styles have a photo${have?'':' yet'}.</div>
+    <p style="margin:8px 0 6px"><b>Generate them in one go.</b> From the repository, with an image-model key in the environment:</p>
+    <pre>export OPENAI_API_KEY=…    # or GEMINI_API_KEY, REPLICATE_API_TOKEN, STABILITY_API_KEY
+python3 tools/gen_images.py   # writes docs/locs/img/*.jpg + manifest.json; a few dollars for all 38</pre>
+    <p style="margin:6px 0"><b>Or use any image tool by hand.</b> Copy a prompt below into ChatGPT, Gemini, Midjourney or similar, then open the style here and use <i>Add photo</i> to attach the result (kept in this browser), or save it as <code>img/&lt;id&gt;.jpg</code> and list it in <code>img/manifest.json</code> so everyone sees it.</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="copyAllPrompts">Copy all prompts as JSON</button><button class="btn" id="copyNeg">Copy the negative prompt</button></div>`;
+  $('#prompts').innerHTML=STYLES.map(s=>{const p=promptFor(s);return `<div class="prompt" id="prompt-${s.id}">
+    <div class="pic" data-open="${s.id}" role="button" tabindex="0" aria-label="Open ${esc(s.name)}">${vis(s)}</div>
+    <div style="min-width:0"><div class="eyebrow">${esc(s.id)} · ${hasPhoto(s.id)?'has photo':'no photo yet'}</div><h3>${esc(s.name)}</h3><pre>${esc(p.positive)}</pre>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" data-copyprompt="${s.id}">Copy prompt</button><label class="btn sm">Add photo<input type="file" accept="image/*" hidden data-upload="${s.id}"></label>${userPhotos[s.id]?`<button class="btn sm" data-delphoto="${s.id}">Remove photo</button>`:''}</div></div>
+  </div>`;}).join('');
+}
+
 /* ---------------- wiring ---------------- */
-function updateCounts(){ $('#nCmp').textContent=cmp.length?cmp.length:''; $('#nLike').textContent=likes.size?likes.size:''; }
+function updateCounts(){ $('#nCmp').textContent=cmp.length?cmp.length:''; $('#nLike').textContent=likes.size?likes.size:''; const ph=STYLES.filter(s=>hasPhoto(s.id)).length; $('#nPhoto').textContent=ph?ph:''; }
 function show(view){
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.view===view));
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='view-'+view));
@@ -1001,16 +854,22 @@ function show(view){
   if(view==='duel'){ if(duelCur.length<+$('#duelN').value) pickDuel(); else renderDuel(); }
   if(view==='compare') renderCompare();
   if(view==='likes') renderLikes();
+  if(view==='prompts') renderPrompts();
   try{history.replaceState(null,'','#'+view)}catch(e){}
 }
-function refreshAll(){ renderGrid(); if($('#view-compare').classList.contains('on'))renderCompare(); if($('#view-likes').classList.contains('on'))renderLikes(); if($('#view-duel').classList.contains('on'))renderProfile(); updateCounts(); }
+function refreshAll(){ renderGrid(); if($('#view-compare').classList.contains('on'))renderCompare(); if($('#view-likes').classList.contains('on'))renderLikes(); if($('#view-duel').classList.contains('on'))renderProfile(); if($('#view-prompts').classList.contains('on'))renderPrompts(); updateCounts(); }
 
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-open],[data-like],[data-cmp],[data-win],[data-contrast],[data-f],.tab,#closeSheet,#clearF');
+  if(e.target.closest('label')&&e.target.closest('label').querySelector('input[type=file]')) return; // let the file picker open
+  const t=e.target.closest('[data-open],[data-like],[data-cmp],[data-win],[data-contrast],[data-f],[data-copyprompt],[data-delphoto],.tab,#closeSheet,#clearF,#copyAllPrompts,#copyNeg');
   if(!t){ if(e.target===$('#overlay')) closeDetail(); return; }
   if(t.classList.contains('tab')){show(t.dataset.view);return;}
   if(t.id==='closeSheet'){closeDetail();return;}
   if(t.id==='clearF'){filters={};persist();renderRail();renderGrid();return;}
+  if(t.id==='copyAllPrompts'){copyText(JSON.stringify(STYLES.map(s=>({id:s.id,name:s.name,...promptFor(s)})),null,1));return;}
+  if(t.id==='copyNeg'){copyText(PROMPT_NEGATIVE);return;}
+  if(t.dataset.copyprompt){copyText(promptFor(BY[t.dataset.copyprompt]).positive);return;}
+  if(t.dataset.delphoto){removePhoto(t.dataset.delphoto);return;}
   if(t.dataset.f){ const k=t.dataset.f,v=JSON.parse(t.dataset.v); const sel=filters[k]||[]; filters[k]=sel.includes(v)?sel.filter(x=>x!==v):[...sel,v]; persist(); renderRail(); renderGrid(); return; }
   if(t.dataset.open){openDetail(t.dataset.open);return;}
   if(t.dataset.like){ const id=t.dataset.like; likes.has(id)?likes.delete(id):likes.add(id); persist(); toast(likes.has(id)?'Shortlisted':'Removed from shortlist'); if($('#overlay').classList.contains('on')) openDetail(id); refreshAll(); return; }
@@ -1020,6 +879,9 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('#overlay').classList.contains('on')) closeDetail(); if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.open){e.preventDefault();openDetail(e.target.dataset.open);} });
 $('#sort').addEventListener('change',renderGrid);
+document.addEventListener('change',e=>{ if(e.target.dataset&&e.target.dataset.upload){ addPhoto(e.target.dataset.upload,e.target.files[0]); e.target.value=''; } });
+$('#imgmode').addEventListener('change',e=>{imgMode=e.target.value;store.set('imgmode',imgMode);refreshAll();});
+$('#imgmode').value=imgMode;
 $('#tile').addEventListener('change',e=>{$('#grid').style.setProperty('--tile',e.target.value+'px');store.set('tile',e.target.value);});
 {const t=store.get('tile','225');$('#tile').value=t;$('#grid').style.setProperty('--tile',t+'px');}
 $('#duelN').addEventListener('change',()=>pickDuel());
@@ -1028,7 +890,8 @@ $('#duelReset').addEventListener('click',()=>{ taste={wins:{},losses:{},rounds:0
 
 renderRail(); renderAbout(); updateCounts();
 const start=(location.hash||'').replace('#','');
-show(['browse','duel','compare','likes','about'].includes(start)?start:'browse');
+show(['browse','duel','compare','likes','prompts','about'].includes(start)?start:'browse');
+loadPhotos();
 </script>
 </body>
 </html>
